@@ -1,0 +1,10 @@
+RewriteBase /allen_frame_trial/
+
+# If the file is directly accessed, redirect to site root
+RewriteCond %{QUERY_STRING} !request_uri
+RewriteCond %{REQUEST_URI} /html(.*) [NC]
+RewriteRule (.*) .%1 [L,R=301]
+
+# If there is no cached html file, redirect to root handler
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule (.*) . [QSA,L]

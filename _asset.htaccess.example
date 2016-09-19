@@ -1,0 +1,19 @@
+RewriteBase /allen_frame_trial/
+
+# If the file is directly accessed, redirect to site root
+RewriteCond %{QUERY_STRING} !request_uri
+RewriteCond %{REQUEST_URI} /asset(.*) [NC]
+RewriteRule (.*) .%1 [L,R=301]
+
+# If static file does not exist, redirect to root handler
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} ^(/image|/css|/js)
+RewriteRule (.*) . [QSA,L]
+
+# If it is not a static resource, then check if it is a html page
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{QUERY_STRING} screen=([\d]+)
+RewriteRule (.*) html/$1/page_%1.html [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule (.*) html/$1/index.html [QSA,L]

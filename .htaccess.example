@@ -1,20 +1,17 @@
-ErrorDocument 404 /404
+ErrorDocument 404 /allen_frame_trial/404.html
 
-# URL Rewrite
 RewriteEngine On
-RewriteBase /
+RewriteBase /allen_frame_trial/
 
-RewriteRule ^(.*[^/]+)/+$ $1 [R=301,QSA]
+# Force remove trailing slash
+RewriteRule ^(.*)/$ $1 [L,R=301]
 
+# Redirect all request to cache folder
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^([0-9a-z_-]+)/([0-9a-z_-]+)/(.+)$ index.php?namespace=$1&instance=$2&extra_parameter=$3 [L,QSA]
-RewriteRule ^default/([0-9a-z_-]*)$ $1 [R=301,L,QSA]
-RewriteRule ^([0-9a-z_-]+)/([0-9a-z_-]+)$ index.php?namespace=$1&instance=$2 [L,QSA]
-RewriteRule ^home$ . [R=301,L,QSA]
-RewriteRule ^([0-9a-z_-]+)$ index.php?namespace=default&instance=$1 [L,QSA]
-RewriteRule ^()$ index.php?namespace=default&instance=home [L,QSA]
-
+RewriteCond %{REQUEST_URI} (.*)
+RewriteCond %{REQUEST_URI} !^/asset
+RewriteRule (.*) asset/$1?request_uri=%1 [QSA,NC,L]
 
 # Leverage browser caching
 AddType application/font-woff .woff
