@@ -1,0 +1,33 @@
+ErrorDocument 404 /allen_frame_trial/404.html
+ErrorDocument 403 /allen_frame_trial/404.html
+
+Options +FollowSymlinks
+Options -Indexes
+DirectorySlash Off
+
+RewriteEngine On
+RewriteBase /allen_frame_trial/
+
+# Force remove trailing slash
+RewriteRule ^(.*)/$ $1?slash_remove=$1 [L,R=301]
+
+# If pagination value is passed by url, redirect to query
+RewriteCond %{REQUEST_URI} /screen/([^/]*)
+RewriteRule (.*)(?:/screen/[^/]*)(.*) ./$1$2?screen=%1 [QSA,L,R=301]
+
+# If sort value is passed by url, redirect to query
+RewriteCond %{REQUEST_URI} /sort/([^/]*)
+RewriteRule (.*)(?:/sort/[^/]*)(.*) ./$1$2?sort=%1 [QSA,L,R=301]
+
+#RewriteCond %{REQUEST_URI} (^/allen_frame_trial/$)
+#RewriteRule (.*) asset/html/index.html?request_uri=%1&target_uri=$1 [QSA,NC,L]
+
+# Redirect all request to cache folder
+RewriteCond %{QUERY_STRING} !request_uri=
+RewriteCond %{REQUEST_URI} !^/allen_frame_trial/(asset|content|404)
+RewriteCond %{REQUEST_URI} (.*)
+RewriteRule (.*) asset/$1?request_uri=%1&rewrite_base=$1 [QSA,NC,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+#RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule (.*) load.php?final_request=$1 [QSA,NC,L]

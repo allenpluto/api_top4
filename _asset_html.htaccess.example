@@ -1,10 +1,16 @@
 RewriteBase /allen_frame_trial/
 
 # If the file is directly accessed, redirect to site root
-RewriteCond %{QUERY_STRING} !request_uri
+RewriteCond %{QUERY_STRING} !request_uri=
 RewriteCond %{REQUEST_URI} /html(.*) [NC]
 RewriteRule (.*) .%1 [L,R=301]
+#RewriteRule (.*) .%1?html_rewrite=%1 [L,R=301]
+
+
+#RewriteCond %{QUERY_STRING} !request_uri3=
+#RewriteCond %{REQUEST_URI} (.*)
+#RewriteRule (.*) asset/html/$1?request_uri3=%1&rewritebase3=$1 [QSA,NC,L]
 
 # If there is no cached html file, redirect to root handler
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule (.*) . [QSA,L]
+RewriteRule (.*) ./load.php?data_type=html [QSA,L]

@@ -1,19 +1,46 @@
+Options +FollowSymlinks
+DirectorySlash Off
+
+RewriteEngine On
 RewriteBase /allen_frame_trial/
 
 # If the file is directly accessed, redirect to site root
-RewriteCond %{QUERY_STRING} !request_uri
+RewriteCond %{QUERY_STRING} !request_uri=
 RewriteCond %{REQUEST_URI} /asset(.*) [NC]
 RewriteRule (.*) .%1 [L,R=301]
+#RewriteRule (.*) .%1?asset_rewrite=%1 [L,R=301]
+
+#RewriteCond %{QUERY_STRING} !request_uri2=
+#RewriteCond %{REQUEST_URI} (.*)
+#RewriteRule (.*) asset/$1?request_uri2=%1&rewritebase2=$1 [QSA,NC,L]
 
 # If static file does not exist, redirect to root handler
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_URI} ^(/image|/css|/js)
-RewriteRule (.*) . [QSA,L]
+RewriteCond %{REQUEST_URI} /asset/(image|css|js)
+RewriteRule (image|css|js)/(.*) ./load.php?data_type=%1 [QSA,L]
 
 # If it is not a static resource, then check if it is a html page
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{QUERY_STRING} screen=([\d]+)
-RewriteRule (.*) html/$1/page_%1.html [QSA,L]
+RewriteCond %{QUERY_STRING} sort=([\w]+)
+RewriteCond %{QUERY_STRING} !screen=
+RewriteRule (.*) asset/html/$1/%1.html?asset_redirect=$1/%1.html [QSA,L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule (.*) html/$1/index.html [QSA,L]
+RewriteCond %{QUERY_STRING} sort=([\w]+)(.+)screen=([\d]+)
+RewriteRule (.*) asset/html/$1/%1_%3.html?asset_redirect=$1/%1_%3.html [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{QUERY_STRING} screen=([\d]+)(.+)sort=([\w]+)
+RewriteRule (.*) asset/html/$1/%3_%1.html?asset_redirect=$1/%3_%1.html [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{QUERY_STRING} !sort=
+RewriteCond %{QUERY_STRING} screen=([\d]+)
+RewriteRule (.*) asset/html/$1/page_%1.html?asset_redirect=$1/page_%1.html [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} !^(.*)/asset/(image|css|js)
+RewriteCond %{REQUEST_URI} (.*)
+RewriteCond %{QUERY_STRING} !sort=
+RewriteCond %{QUERY_STRING} !screen=
+RewriteRule (.*) asset/html/$1/index.html?asset_redirect=html/$1/index.html [QSA,L]

@@ -1,40 +1,51 @@
 <?php
+// FOLDER
+define('FOLDER_ASSET', 'asset');
+define('FOLDER_CONTENT', 'content');
+define('FOLDER_CSS', 'css');
+define('FOLDER_HTML', 'html');
+define('FOLDER_IMAGE', 'image');
+define('FOLDER_JAR', 'jar');
+define('FOLDER_JS', 'js');
+define('FOLDER_JSON', 'json');
+
 // URI
-define('URI_SITE_BASE',URI_DOMAIN . URI_SITE_PATH);
+define('URI_SITE_BASE',URI_BASE.'/'.FOLDER_SITE_BASE.'/');
 
-define('URI_ASSET', URI_SITE_BASE . 'asset/');
-define('URI_IMAGE', URI_ASSET . 'image/');
+define('URI_ASSET', URI_SITE_BASE . FOLDER_ASSET. '/');
+define('URI_CSS', URI_ASSET . FOLDER_CSS . '/');
+define('URI_IMAGE', URI_ASSET . FOLDER_IMAGE . '/');
+define('URI_JS', URI_ASSET . FOLDER_JS . '/');
 
-define('URI_CONTENT', URI_SITE_BASE . 'content/');
-define('URI_CONTENT_CSS', URI_CONTENT . 'css/');
-define('URI_CONTENT_IMAGE', URI_CONTENT . 'image/');
-define('URI_CONTENT_JS', URI_CONTENT . 'js/');
+define('URI_CONTENT', URI_SITE_BASE . FOLDER_ASSET. '/');
+define('URI_CONTENT_CSS', URI_CONTENT . FOLDER_CSS . '/');
+define('URI_CONTENT_IMAGE', URI_CONTENT . FOLDER_IMAGE . '/');
+define('URI_CONTENT_JS', URI_CONTENT . FOLDER_JS . '/');
 
 // Core Paths
-define('PATH_SYSTEM', PATH_BASE . 'system/');
-define('PATH_CLASS', PATH_SYSTEM . 'class/');
-define('PATH_INCLUDE', PATH_SYSTEM . 'include/');
-define('PATH_TEMPLATE', PATH_SYSTEM . 'template/');
+define('PATH_BASE',str_replace(FOLDER_SITE_BASE.DIRECTORY_SEPARATOR,'',PATH_SITE_BASE));
 
-define('PATH_ASSET', PATH_BASE . 'asset/');
-define('PATH_IMAGE', PATH_ASSET . 'image/');
-define('PATH_CACHE', PATH_ASSET . 'cache/');
-define('PATH_CACHE_CSS', PATH_CACHE . 'css/');
-define('PATH_CACHE_FORMAT', PATH_CACHE . 'format/');
-define('PATH_CACHE_JS', PATH_CACHE . 'js/');
-define('PATH_CACHE_PAGE', PATH_CACHE . 'page/');
+define('PATH_SYSTEM', PATH_SITE_BASE . 'system' . DIRECTORY_SEPARATOR);
+define('PATH_CLASS', PATH_SYSTEM . 'class' . DIRECTORY_SEPARATOR);
+define('PATH_INCLUDE', PATH_SYSTEM . 'include' . DIRECTORY_SEPARATOR);
+define('PATH_TEMPLATE', PATH_SYSTEM . 'template' . DIRECTORY_SEPARATOR);
 
-define('PATH_CONTENT', PATH_BASE . 'content/');
-define('PATH_CONTENT_CSS', PATH_CONTENT . 'css/');
-define('PATH_CONTENT_IMAGE', PATH_CONTENT . 'image/');
-define('PATH_CONTENT_JAR', PATH_CONTENT . 'jar/');
-define('PATH_CONTENT_JS', PATH_CONTENT . 'js/');
+define('PATH_ASSET', PATH_SITE_BASE . FOLDER_ASSET . DIRECTORY_SEPARATOR);
+define('PATH_CSS', PATH_ASSET . FOLDER_CSS . DIRECTORY_SEPARATOR);
+define('PATH_HTML', PATH_ASSET . FOLDER_HTML . DIRECTORY_SEPARATOR);
+define('PATH_IMAGE', PATH_ASSET . FOLDER_IMAGE . DIRECTORY_SEPARATOR);
+define('PATH_JS', PATH_ASSET . FOLDER_JS . DIRECTORY_SEPARATOR);
+
+define('PATH_CONTENT', PATH_SITE_BASE . FOLDER_CONTENT . DIRECTORY_SEPARATOR);
+define('PATH_CONTENT_CSS', PATH_CONTENT . FOLDER_CSS . DIRECTORY_SEPARATOR);
+define('PATH_CONTENT_IMAGE', PATH_CONTENT . FOLDER_IMAGE . DIRECTORY_SEPARATOR);
+define('PATH_CONTENT_JAR', PATH_CONTENT . FOLDER_JAR . DIRECTORY_SEPARATOR);
+define('PATH_CONTENT_JS', PATH_CONTENT . FOLDER_JS . DIRECTORY_SEPARATOR);
 
 // File Extensions
 define('FILE_EXTENSION_CLASS', '.class.php');
 define('FILE_EXTENSION_INCLUDE', '.inc.php');
 define('FILE_EXTENSION_TEMPLATE', '.tpl');
-define('FILE_EXTENSION_CATCH', '.catch');
 
 // Prefix
 define('PREFIX_TEMPLATE_PAGE', 'page_');
@@ -43,6 +54,11 @@ define('PREFIX_TEMPLATE_PAGE', 'page_');
 // Preference (Global variables, can be overwritten)
 include_once(PATH_INCLUDE.'preference'.FILE_EXTENSION_INCLUDE);
 $global_preference = preference::get_instance();
+
+// Site Request
+//$global_preference->data_type = ['html','css','image','js','json'];    // html request as default
+//$global_preference->module = ['default','listing','business','business-amp'];    // modules for html and json requests
+//$global_preference->method = ['default','search','find'];    // modules for html and json requests
 
 // View Page Size (number of rows fetched from db and render)
 $global_preference->view_page_size = 100;
@@ -57,6 +73,17 @@ $global_preference->image_size_m = 300;
 $global_preference->image_size_l = 480;
 $global_preference->image_size_xl = 800;
 $global_preference->image_size_xxl = 1200;
+$global_preference->image = array(
+    'size'=>array(
+        'xxs'=>45,
+        'xs'=>90,
+        's'=>180,
+        'm'=>300,
+        'l'=>480,
+        'xl'=>800,
+        'xxl'=>1200
+    )
+);
 
 // Data Encode
 $global_preference->ajax_data_encode = 'base64';

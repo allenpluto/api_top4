@@ -6,27 +6,54 @@
 // Render template, create html page view...
 
 class content {
-    protected $content_old = array();
+    protected $construct = array();
     protected $cache = 0;
     public $parameter = array();
     public $content = array();
 
-    function __construct($parameter)
+    function __construct($parameter = array())
     {
+        $this->construct = array();
+        // Analyse uri structure and validate input variables
         if ($this->uri_decoder($parameter) === false)
         {
             return false;
         }
-        $this->content = array(
-            'html' => array(),
-            'script' => array(),
-            'style' => array()
-        );
     }
 
     function build_content()
     {
         $format = format::get_obj();
+
+        switch($this->construct['data_type'])
+        {
+            case 'css':
+                break;
+            case 'image':
+                break;
+            case 'js':
+                break;
+            case 'json':
+                break;
+            case 'html':
+            default:
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         $this->content['script'][] = array('type'=>'local_file', 'file_name'=>'jquery-1.11.3');
         $this->content['script'][] = array('type'=>'local_file', 'file_name'=>'default');
         // Google Analytics Tracking
@@ -613,176 +640,171 @@ class content {
         }
     }
 
-
-    // filter $_GET values or URI string, set up class parameter
     private function uri_decoder($value)
     {
-        $format = format::get_obj();
-        if (empty($value))
-        {
-            return false;
-        }
         if (is_array($value))
         {
             if (!empty($value['value']))
             {
                 extract($value);
             }
-        }
-        if (!isset($parameter)) $parameter = array();
-
-        $result = array();
-        if (is_string($value))
-        {
-            $uri_part = parse_url($value);
-            if (!isset($uri_part['path'])) return false;
-            $uri_path_part = $format->split_uri($uri_part['path']);
-            $result['namespace'] = isset($uri_path_part[0])?$uri_path_part[0]:'default';
-            $result['instance'] = isset($uri_path_part[1])?$uri_path_part[1]:'home';
-            $sub_uri = array_slice($uri_path_part, 2);
-
-            $uri_query_part = array();
-            if (isset($uri_part['query']))
+            else
             {
-                parse_str($uri_part['query'],$uri_query_part);
+                $option = $value;
+                $value = '';
             }
-            $sub_uri = array_merge($uri_query_part, $sub_uri);
+        }
+        if (empty($value))
+        {
+            $value = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        }
+        if (!isset($option)) $option = array();
+
+        if (!empty($_GET))
+        {
+            $option = array_merge($option,$_GET);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] == 'POST')
+        {
+            // default post request with json format Input and Output
+            $option = array_merge($option,$_POST);
+            if (!isset($option['data_type'])) $option['data_type'] = 'json';
+        }
+
+        $preference = preference::get_instance();
+        $message = message::get_instance();
+
+        $request_uri = trim(preg_replace('/^[\/]?'.FOLDER_SITE_BASE.'[\/]/','',$value),'/');
+        $request_path = explode('/',$request_uri);
+
+        $type = ['css','image','js','json','html'];
+        $request_path_part = array_shift($request_path);
+        if (in_array($request_path_part,$type))
+        {
+            $this->construct['data_type'] = $request_path_part;
+            $request_path_part = array_shift($request_path);
         }
         else
         {
-            $result['namespace'] = isset($value['namespace'])?$value['namespace']:'default';
-            $result['instance'] = isset($value['instance'])?$value['instance']:'home';
-            if (isset($value['extra_parameter']))
-            {
-                $result['extra_parameter'] = $value['extra_parameter'];
-                $sub_uri = $format->split_uri($value['extra_parameter']);
-            }
-            else
-            {
-                $sub_uri = array();
-            }
-         }
+            $this->construct['data_type'] = end($type);
+        }
 
-        switch($result['namespace'])
+
+        // HTML Page uri structure decoder
+        switch ($this->construct['data_type'])
         {
-            case 'asset':
-                switch($result['instance'])
-                {
-                    case 'image':
-                        if (count($sub_uri) > 1)
-                        {
-                            $result['image_file'] = end($sub_uri);
-                            $result['image_size'] = $sub_uri[0];
-                            if (!empty($result['image_size']) AND $result['image_size'] != 'default')
-                            {
-                                if ($GLOBALS['global_preference']->{'image_size_'.$result['image_size']})
-                                {
-                                    $result['image_width'] = $GLOBALS['global_preference']->{'image_size_'.$result['image_size']};
-                                }
-                                else
-                                {
-                                    $result['image_size'] = 'default';
-                                    $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): invalid file size option "'.$value['size'].'" for file "'.$result['image_file'].'"';
-                                }
-                            }
-                            if (isset($value['image_source']))
-                            {
-                                $result['image_source'] = $value['image_source'];
-                            }
-                        }
-                        else return false;
-                        break;
-                }
+            case 'css':
+                $this->construct['document'] = $request_path_part;
                 break;
-            case 'listing':
-                switch($result['instance'])
+            case 'html':
+                $module = ['listing','business','business-amp',''];
+                if (in_array($request_path_part,$module))
                 {
-                    case 'find':
-                        if (!empty($sub_uri[0])) $result['category'] = $sub_uri[0];
-                        else return false;
-                        if (!empty($sub_uri[1])) $result['state'] = strtolower($sub_uri[1]);
-                        if (!empty($sub_uri[2])) $result['region'] = str_replace('-',' ',$sub_uri[2]);
-                        if (!empty($sub_uri[3])) $result['suburb'] = str_replace('-',' ',$sub_uri[3]);
-                        break;
-                    case 'search':
-                        if (!empty($sub_uri[0])) $result['what'] = $sub_uri[0];
-                        else return false;
-                        if (isset($sub_uri[1]) AND $sub_uri[1] == 'where' AND !empty($sub_uri[2])) $result['where'] = $sub_uri[2];
+                    $this->construct['module'] = $request_path_part;
+                    $request_path_part = array_shift($request_path);
+                }
+                else
+                {
+                    $this->construct['module'] = end($module);
+                }
+
+                switch ($this->construct['module'])
+                {
+                    case 'listing':
+                        $method = ['search','find',''];
+                        if (in_array($request_path_part,$method))
+                        {
+                            $this->construct['method'] = $request_path_part;
+                            $request_path_part = array_shift($request_path);
+                        }
+                        else
+                        {
+                            $this->construct['method'] = end($method);
+                        }
+
+                        switch ($this->construct['method'])
+                        {
+                            case 'search':
+                                $this->construct['option'] = array('keyword'=> $request_path_part);
+                                if (count($request_path)>=2)
+                                {
+                                    $option = ['where','screen','sort'];
+                                    $path_max = floor(count($request_path)/2);
+                                    for ($i=0; $i<$path_max; $i++)
+                                    {
+                                        if (!in_array( $request_path[$i*2],$option))
+                                        {
+                                            $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->construct['data_type'];
+                                            break 2;
+                                        }
+                                        $this->construct['option'][$request_path[$i*2]] = $request_path[$i*2+1];
+                                    }
+                                }
+                                break;
+                            case 'find':
+                                $this->construct['option'] = array('category'=> $request_path_part);
+                                $location = ['state','region','suburb'];
+                                $option = ['keyword','where','screen','sort'];
+                                foreach($request_path as $request_path_part_index=>$request_path_part)
+                                {
+                                    // If it is not option key
+                                    if (in_array($request_path_part,$option))
+                                    {
+                                        $request_path = array_slice($request_path,$request_path_part_index);
+                                        break;
+                                    }
+                                    $this->construct['option'][$location[$request_path_part_index]] = $request_path_part;
+                                }
+                                if (count($request_path)>=2)
+                                {
+                                    $path_max = floor(count($request_path)/2);
+                                    for ($i=0; $i<$path_max; $i++)
+                                    {
+                                        if (!in_array( $request_path[$i*2],$option))
+                                        {
+                                            $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->construct['data_type'];
+                                            break 2;
+                                        }
+                                        $this->construct['option'][$request_path[$i*2]] = $request_path[$i*2+1];
+                                    }
+                                }
+                                break;
+                            default:
+                                //$this->construct['document'] = $request_path_part;
+                        }
                         break;
                     default:
+                        $this->construct['document'] = $request_path_part;
+                }
+
+                break;
+            case 'image':
+                $this->construct['sub_path'] = $request_path_part;
+                $this->construct['document'] = array_pop($request_path);
+
+                if (!empty($request_path))
+                {
+                    $request_path_part = array_shift($request_path);
+                    $size = array_keys($preference->image['size']);
+                    if (!in_array($request_path_part,$size))
+                    {
+                        $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown image size ['.$request_path_part.'] for '.$this->construct['data_type'];
+                        break;
+                    }
+                    $this->construct['size'] = $request_path_part;
+                    unset($request_path_part);
+
+                    // If more uri parts available, do something here
+                    //$this->construct['option'] = $request_path;
                 }
                 break;
-            default:
-        }
-
-        if (isset($value['page_size']))
-        {
-            $result['page_size'] = intval($value['page_size']);
-            if ($result['page_size'] <= 0)
-            {
-                return false;
-            }
-        }
-        if (isset($value['page_number']))
-        {
-            $result['page_number'] = intval($value['page_number']);
-            if ($result['page_number'] < 0)
-            {
-                return false;
-            }
-        }
-        $result['debug_mode'] = false;
-        if (isset($value['debug_mode']))
-        {
-            if ($value['debug_mode'])
-            {
-                $result['debug_mode'] = true;
-            }
-        }
-
-        // Looking for cached page
-        switch($result['namespace'])
-        {
-            case 'asset':
-                $result['cache_path'] =  PATH_ASSET . $result['namespace'];
-                if (isset($result['instance']))
-                {
-                    if (!empty($result['instance']))
-                    {
-                        $result['cache_path'] .= '/'.$result['instance'];
-                    }
-                }
-                if (isset($result['extra_parameter']))
-                {
-                    if (!empty($result['extra_parameter']))
-                    {
-                        $result['cache_path'] .= '/'.$result['extra_parameter'];
-                    }
-                }
+            case 'js':
+                $this->construct['document'] = $request_path_part;
                 break;
-            default:
-                $result['cache_path'] =  PATH_CACHE_PAGE . $result['namespace'];
-                if (isset($result['instance']))
-                {
-                    if (!empty($result['instance']))
-                    {
-                        $result['cache_path'] .= '/'.$result['instance'];
-                    }
-                }
-                if (isset($result['extra_parameter']))
-                {
-                    if (!empty($result['extra_parameter']))
-                    {
-                        $result['cache_path'] .= '/'.$result['extra_parameter'];
-                    }
-                }
+            case 'json':
+                break;
         }
-
-        if (!isset($value['nocache'])) $result['page_cache'] = $GLOBALS['global_preference']->page_cache;
-        else $result['page_cache'] = !($value['nocache']);
-
-        $this->parameter = $result;
-        return true;
     }
 
     function get_cache()

@@ -13,24 +13,9 @@ class format
 
     private function __construct()
     {
-        if (file_exists(PATH_CACHE_FORMAT.'format'.FILE_EXTENSION_CATCH))
-        {
-            //$GLOBALS['global_message']->notice = 'format object constructed';
-            self::$cached = json_decode(file_get_contents(PATH_CACHE_FORMAT.'format'.FILE_EXTENSION_CATCH),true);
-            if (!is_array(self::$cached)) self::$cached = array();
-        }
     }
     function __destruct()
     {
-        if (!empty(self::$cached))
-        {
-            if (!file_exists(PATH_CACHE_FORMAT))
-            {
-                mkdir(PATH_CACHE_FORMAT, 0755, true);
-            }
-            file_put_contents(PATH_CACHE_FORMAT.'format'.FILE_EXTENSION_CATCH, $this->minify_js(json_encode(self::$cached)));
-
-        }
     }
 
     public static function get_obj()
