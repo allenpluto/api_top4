@@ -10,6 +10,7 @@ echo file_exists('system/config/config.php');
 print_r(PATH_BASE);
 print_r($GLOBALS['global_preference']);
 print_r($page_content);
+print_r(template_render(['logo'=>3,'name'=>'Listing Title Testing'],'test_template'));
 exit();
     $page_content->render();
 ?>

@@ -389,7 +389,8 @@ class view
                                     $rendered_content = str_replace($matches[0][$key][0], '', $rendered_content);
                                     continue;
                                 }
-                                $rendered_content = str_replace($matches[0][$key][0], str_replace(chr(146),'\'',$content[$value[0]]), $rendered_content);
+                                $rendered_content = str_replace($matches[0][$key][0], str_replace(chr(145),chr(39),$content[$value[0]]), $rendered_content);
+                                $rendered_content = str_replace($matches[0][$key][0], str_replace(chr(146),chr(39),$content[$value[0]]), $rendered_content);
                                 break;
                             case '$':
                                 // view object, executing sub level rendering

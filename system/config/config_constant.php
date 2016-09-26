@@ -125,6 +125,7 @@ spl_autoload_extensions(FILE_EXTENSION_CLASS);
 spl_autoload_register();
 
 // Load System Functions (Functions that may call Classes)
+include_once(PATH_INCLUDE.'function'.FILE_EXTENSION_INCLUDE);
 include_once(PATH_INCLUDE.'content'.FILE_EXTENSION_INCLUDE);
 
 // Other configurations
