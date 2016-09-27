@@ -1,55 +1,15 @@
 <!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="author" content="Allen Wu">
-    <meta name="keywords" content="[[*meta_keywords]]">
-    <meta name="description" content="[[*description]]">
-    <title>[[*name]]</title>
-    <base href="[[*base]]" >
-
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <meta name="robots" content="[[*robots]]">
-
-    [[+style]]
-</head>
+[[$chunk_head]]
 <body>
 <div id="off_canvas_wrapper" class="wrapper">
     <div id="off_canvas_container" class="wrapper">
         <div id="off_canvas_container_mask" class="off_canvas_halt"></div>
         <div id="off_canvas_menu">
-            <div class="off_canvas_menu_section">
-                <div id="off_canvas_menu_section_nav_item_1" class="off_canvas_menu_item">
-                    <a href=""><span>Home</span></a>
-                </div>
-                <div id="off_canvas_menu_section_business_item_1" class="off_canvas_menu_item">
-                    <a href="listing/">Popular Categories</a>
-                </div>
-                <div id="off_canvas_menu_section_nav_item_2" class="off_canvas_menu_item">
-                    <a href="about-us"><span>About Us</span></a>
-                </div>
-                <div id="off_canvas_menu_section_nav_item_3" class="off_canvas_menu_item">
-                    <a href="advertise-with-us"><span>Advertise with Us</span></a>
-                </div>
-            </div><!-- #off_canvas_menu_section_main_menu -->
-            <div id="" class="off_canvas_menu_section">
-                <div id="off_canvas_menu_section_nav_item_4" class="off_canvas_menu_item">
-                    <a href="privacy-policy"><span>Privacy Policy</span></a>
-                </div>
-                <div id="off_canvas_menu_section_nav_item_5" class="off_canvas_menu_item">
-                    <a href="terms-conditions"><span>Terms & Conditions</span></a>
-                </div>
-            </div>
+            [[$chunk_menu]]
         </div><!-- #off_canvas_menu -->
         <div id="header_wrapper" class="wrapper">
-            <div id="top_wrapper" class="wrapper">
-                <div id="top_wrapper_off_canvas_trigger" class="off_canvas_trigger"></div>
-                <div id="top_wrapper_logo"><a href="./"><svg width="80" height="40"><image xlink:href="content/image/the-new-australian-social-business-directory_logo.svg" src="content/image/the-new-australian-social-business-directory_logo_small.png" alt="Top4 - The New Australian Social Business Directory" width="80" height="40" /></svg></a></div>
-                <div id="top_wrapper_search_trigger" class="search_trigger"></div>
-            </div><!-- #top_wrapper -->
+            [[$chunk_header_banner]]
             <div id="search_wrapper" class="wrapper">
                 <div id="search_container" class="container">
                     <div id="search_wrapper_close" class="search_halt"></div>
@@ -81,7 +41,7 @@
             <div id="action_button_wrapper" class="wrapper">
                 <a href="listing/" id="action_button_sign_up" class="action_button"><span class="font_icon font_icon_tags general_style_colour_orange"></span><span class="text">View Popular Categories</span></a>
             </div><!-- #action_button_wrapper -->
-            [[$body]]
+            [[$body has some static text]]
         </div><!-- #body_wrapper -->
         <div id="footer_wrapper" class="wrapper">
         </div><!-- #footer_wrapper -->

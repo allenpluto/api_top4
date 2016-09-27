@@ -37,7 +37,42 @@ class content {
                 break;
             case 'html':
             default:
+                $this->content['script'][] = array('type'=>'local_file', 'file_name'=>'jquery-1.11.3');
+                $this->content['script'][] = array('type'=>'local_file', 'file_name'=>'default');
+                switch($this->construct['module'])
+                {
+                    case 'listing':
+                        break;
+                    case '':
+                    default:
+                        if (!isset($this->construct['document']))
+                        {
+                            header("HTTP/1.0 404 Not Found");
+                            header('Location: '.URI_SITE_BASE.'404');
+                        }
+                        $page_obj = new view_web_page($this->construct['document']);
+                        if (empty($page_obj->id_group))
+                        {
+                            header("HTTP/1.0 404 Not Found");
+                            header('Location: '.URI_SITE_BASE.'404');
+                        }
+                        if (count($page_obj->id_group) > 1)
+                        {
+                            $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): multiple web page resources loaded '.implode(',',$page_obj->id_group);
+                            $page_obj->id_group = [$page_obj->id_group[0]];
+                        }
+                        $page_field = $page_obj->fetch_value();
+                        if (empty($page_field))
+                        {
+                            // TODO: do something about empty page
+                            $page_field = array();
+                        }
+                        print_r(render_html($page_field[0],'page_default'));
+                        //print_r($page_field);
+                        print_r($GLOBALS['global_message']->display());
+                        exit();
 
+                }
         }
 
 
