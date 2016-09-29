@@ -51,33 +51,51 @@ class entity_image extends entity
 
         $result = parent::set($parameter);
         if ($result === false) return false;
-        $format = format::get_obj();
 
-        foreach($this->row as $record_index=>$record)
-        {
-            if (isset($record['data']))
-            {
-                $file_name = $format->file_name((!empty($record['friendly_url'])?$record['friendly_url']:$record['name']).'-'.$record['id']);
-                switch($record['mime'])
-                {
-                    case 'image/gif':
-                        $file_name .= '.gif';
-                        break;
-                    case 'image/png':
-                        $file_name .= '.png';
-                        break;
-                    case 'image/jpeg':
-                    case 'image/pjpeg';
-                    default:
-                        $file_name .= '.jpg';
-                }
-                file_put_contents(PATH_IMAGE.'default/'.$file_name,  $record['data']);
-            }
-        }
-
+        $this->generate_cache_file();
         //$listing_image = explode(',', $_POST['listing_logo_thumb']);
 
         //file_put_contents($file_path,  base64_decode($listing_image[count($listing_image)-1]));
+
+    }
+
+    function generate_cache_file($parameter = array())
+    {
+        if (!empty($this->row))
+        {
+            $format = format::get_obj();
+            foreach($this->row as $record_index=>$record)
+            {
+                if (isset($record['data']))
+                {
+                    $file_name = $format->file_name((!empty($record['friendly_url'])?$record['friendly_url']:$record['name']).'-'.$record['id']);
+                    switch($record['mime'])
+                    {
+                        case 'image/gif':
+                            $file_name .= '.gif';
+                            break;
+                        case 'image/png':
+                            $file_name .= '.png';
+                            break;
+                        case 'image/jpeg':
+                        case 'image/pjpeg';
+                        default:
+                            $file_name .= '.jpg';
+                    }
+                    $sub_path = '';
+                    $sub_path_index = floor($record['id'] / 1000);
+                    while($sub_path_index > 0)
+                    {
+                        $sub_path_remain = $sub_path_index % 1000;
+                        $sub_path_index = floor($sub_path_index / 1000);
+                        $sub_path .= $sub_path_remain.DIRECTORY_SEPARATOR;
+                    }
+                    if (!empty($parameter['size'])) $sub_path .= $parameter['size'].DIRECTORY_SEPARATOR;
+                    if (!file_exists(PATH_IMAGE.$sub_path)) mkdir(PATH_IMAGE.$sub_path, 0755, true);
+                    file_put_contents(PATH_IMAGE.$sub_path.$file_name,  $record['data']);
+                }
+            }
+        }
 
     }
 }

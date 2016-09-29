@@ -24,12 +24,269 @@ class content {
     function build_content()
     {
         $format = format::get_obj();
+        $preference = preference::get_instance();
 
         switch($this->construct['data_type'])
         {
             case 'css':
                 break;
             case 'image':
+                // Try to locate the source image
+                // Check whether image file with original size exists in cache folder
+                if (file_exists(PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type']))
+                {
+                    $source_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
+                    $source_image_size = getimagesize($source_image_path);
+                    if ($source_image_size === false)
+                    {
+                        // TODO: Error Handling,fail to get source image size
+                        break;
+                    }
+                    switch ($source_image_size['mime']) {
+                        case 'image/png':
+                            $source_image = imagecreatefrompng($source_image_path);
+                            break;
+                        case 'image/gif':
+                            $source_image = imagecreatefromgif($source_image_path);
+                            break;
+                        case 'image/jpg':
+                        case 'image/jpeg':
+                            $source_image = imagecreatefromjpeg($source_image_path);
+                            break;
+                        default:
+                            $source_image = imagecreatefromstring($source_image_path);
+                    }
+                    if ($source_image === FALSE) {
+                        // TODO: Error Handling, fail to create image
+                        header('Location: ' . URI_SITE_BASE . '/content/image/img_listing_default_280_280.jpg');
+                        exit();
+                    }
+                }
+                else
+                {
+                    $default_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
+                    // Check whether image file with same name exists in content folder
+                    if (file_exists(PATH_CONTENT_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type']))
+                    {
+                        $source_image_path = PATH_CONTENT_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
+                        $source_image_size = getimagesize($source_image_path);
+                        if ($source_image_size === false)
+                        {
+                            // TODO: Error Handling,fail to get source image size
+                            break;
+                        }
+                        switch ($source_image_size['mime']) {
+                            case 'image/png':
+                                $source_image = imagecreatefrompng($source_image_path);
+                                break;
+                            case 'image/gif':
+                                $source_image = imagecreatefromgif($source_image_path);
+                                break;
+                            case 'image/jpg':
+                            case 'image/jpeg':
+                                $source_image = imagecreatefromjpeg($source_image_path);
+                                break;
+                            default:
+                                $source_image = imagecreatefromstring($source_image_path);
+                        }
+
+
+
+                        if ($source_image_size !== false)
+                        {
+                            $max_image_width = max($preference['image']['size']);
+                            if ($source_image_size[0] > $max_image_width)
+                            {
+                                switch($source_image_size['mime'])
+                                {
+                                    case 'image/png':
+                                        $source_image = imagecreatefrompng($source_image_path);
+                                        break;
+                                    case 'image/gif':
+                                        $source_image = imagecreatefromgif($source_image_path);
+                                        break;
+                                    case 'image/jpg':
+                                    case 'image/jpeg':
+                                        $source_image = imagecreatefromjpeg($source_image_path);
+                                        break;
+                                    default:
+                                        $source_image = imagecreatefromstring($source_image_path);
+                                }
+                                if ($source_image === FALSE)
+                                {
+                                    // TODO: Error Handling, fail to create image
+                                    header('Location: '.URI_SITE_BASE.'/content/image/img_listing_default_280_280.jpg');
+                                    exit();
+                                }
+
+                                $file_name = $format->file_name((!empty($record['friendly_url'])?$record['friendly_url']:$record['name']).'-'.$record['id']);
+                                switch($source_image_size['mime'])
+                                {
+                                    case 'image/gif':
+                                        $file_name .= '.gif';
+                                        break;
+                                    case 'image/png':
+                                        $file_name .= '.png';
+                                        break;
+                                    case 'image/jpeg':
+                                    case 'image/pjpeg';
+                                    default:
+                                        $file_name .= '.jpg';
+                                }
+
+
+                            }
+                            else
+                            {
+                                copy($source_image_path, $default_image_path);
+                            }
+                            $parameter['row'][$record_index]['width'] = $image_size[0];
+                            $parameter['row'][$record_index]['height'] = $image_size[1];
+                        }
+
+                    }
+                    else
+                    {
+                        $document_name_part = explode('-',$this->construct['name']);
+                        if (is_numeric(end($document_name_part)))
+                        {
+                            $entity_image_obj = new entity_image(end($document_name_part));
+                            if (empty($entity_image_obj->id_group))
+                            {
+                                // TODO: Error handling, image does not exist
+                                break;
+                            }
+                            //$entity_image_obj->get();
+                            $entity_image_obj->generate_cache_file();
+                        }
+                    }
+                }
+
+
+
+
+                if (!file_exists(PATH_IMAGE . $this->parameter['image_size'] . '/' . $this->parameter['image_file']))
+                {
+                    if (empty($this->parameter['image_size']))
+                    {
+                        header('Location: '.URI_IMAGE.'default/'.$this->parameter['image_file']);
+                        exit();
+                    }
+                    if ($this->parameter['image_size'] == 'default')
+                    {
+                        $source_image_path = URI_IMAGE_EXTERNAL.$this->parameter['image_file'];
+                        unset($target_width);
+                    }
+                    else
+                    {
+                        $default_image_path = PATH_IMAGE . 'default/' . $this->parameter['image_file'];
+                        if (file_exists($default_image_path))
+                        {
+                            $source_image_path = $default_image_path;
+                            $default_image_exists = true;
+                        }
+                        else
+                        {
+                            $source_image_path = URI_IMAGE_EXTERNAL.$this->parameter['image_file'];
+                            $default_image_exists = false;
+                        }
+                        $target_width = $this->parameter['image_width'];
+                    }
+                    if (isset($this->parameter['image_source'])) $source_image_path = $this->parameter['image_source'];
+
+                    $source_image_size = getimagesize($source_image_path);
+
+                    if (!empty($source_image_size[0]))
+                    {
+                        switch($source_image_size['mime'])
+                        {
+                            case 'image/png':
+                                $source_image = imagecreatefrompng($source_image_path);
+                                break;
+                            case 'image/gif':
+                                $source_image = imagecreatefromgif($source_image_path);
+                                break;
+                            case 'image/jpg':
+                            case 'image/jpeg':
+                                $source_image = imagecreatefromjpeg($source_image_path);
+                                break;
+                            default:
+                                $source_image = imagecreatefromstring($source_image_path);
+                        }
+
+                        if ($source_image === FALSE)
+                        {
+                            header('Location: '.URI_SITE_BASE.'/content/image/img_listing_default_280_280.jpg');
+                            exit();
+                        }
+
+
+                        if (!isset($target_width)) $target_width = min($source_image_size[0],  $GLOBALS['global_preference']->image_size_xxl);
+                        $target_height = $source_image_size[1] / $source_image_size[0] *  $target_width;
+                        $target_image = imagecreatetruecolor($target_width, $target_height);
+
+                        imagecopyresized($target_image, $source_image,0,0,0,0,$target_width, $target_height,$source_image_size[0], $source_image_size[1]);
+
+                        if (!$default_image_exists)
+                        {
+                            $default_image_width = min($source_image_size[0],  $GLOBALS['global_preference']->image_size_xxl);
+                            $default_image_height = $source_image_size[1] / $source_image_size[0] *  $default_image_width;
+                            $default_image = imagecreatetruecolor($default_image_width, $default_image_height);
+
+                            imagecopyresized($default_image, $source_image,0,0,0,0,$default_image_width, $default_image_height,$source_image_size[0], $source_image_size[1]);
+                        }
+
+                        if (!file_exists(PATH_IMAGE. $this->parameter['image_size'] . '/'))
+                        {
+                            mkdir(PATH_IMAGE. $this->parameter['image_size'] . '/', 0755, true);
+                        }
+                        if (!file_exists(PATH_IMAGE. 'default/'))
+                        {
+                            mkdir(PATH_IMAGE. 'default/', 0755, true);
+                        }
+
+                        if (!isset($source_image_size['mime'])) $source_image_size['mime'] = 'image/jpeg';
+                        $target_image_path = PATH_IMAGE. $this->parameter['image_size'] . '/' . $this->parameter['image_file'];
+                        switch($source_image_size['mime'])
+                        {
+                            case 'image/png':
+                                if (!$default_image_exists)
+                                {
+                                    imagepng($default_image, $default_image_path, 0, PNG_NO_FILTER);
+                                }
+                                imageinterlace($target_image,true);
+                                imagepng($target_image, $target_image_path, 9, PNG_ALL_FILTERS);
+                                break;
+                            case 'image/gif':
+                                if (!$default_image_exists)
+                                {
+                                    imagegif($default_image, $default_image_path);
+                                }
+                                imageinterlace($target_image,true);
+                                imagegif($target_image, $target_image_path);
+                                break;
+                            case 'image/jpg':
+                            case 'image/jpeg':
+                            default:
+                                if (!$default_image_exists)
+                                {
+                                    imagejpeg($default_image, $default_image_path, 100);
+                                }
+                                imageinterlace($target_image,true);
+                                imagejpeg($target_image, $target_image_path, 75);
+                        }
+                        imagedestroy($source_image);
+                        imagedestroy($target_image);
+                        if (!$default_image_exists)
+                        {
+                            imagedestroy($default_image);
+                        }
+                        header('Content-type: '.$source_image_size['mime']);
+                        header('Content-Length: '.filesize($target_image_path));
+                        readfile($target_image_path);
+                    }
+                }
+
                 break;
             case 'js':
                 break;
@@ -47,34 +304,41 @@ class content {
                     default:
                         if (!isset($this->construct['document']))
                         {
-                            header("HTTP/1.0 404 Not Found");
-                            header('Location: '.URI_SITE_BASE.'404');
+                            include(PATH_SITE_BASE.'404.php');
+                            //header("HTTP/1.0 404 Not Found");
+                            //header('Location: '.URI_SITE_BASE.'404.php');
                         }
                         $page_obj = new view_web_page($this->construct['document']);
                         if (empty($page_obj->id_group))
                         {
-                            header("HTTP/1.0 404 Not Found");
-                            header('Location: '.URI_SITE_BASE.'404');
+                            include(PATH_SITE_BASE.'404.php');
+                            // If page does not exist in database
+                            //header("HTTP/1.0 404 Not Found");
+                            //header('Location: '.URI_SITE_BASE.'404.php');
                         }
                         if (count($page_obj->id_group) > 1)
                         {
                             $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): multiple web page resources loaded '.implode(',',$page_obj->id_group);
-                            $page_obj->id_group = [$page_obj->id_group[0]];
                         }
-                        $page_field = $page_obj->fetch_value();
-                        if (empty($page_field))
+                        $page_fetched_value = $page_obj->fetch_value(['page_size'=>1]);
+                        if (empty($page_fetched_value))
                         {
-                            // TODO: do something about empty page
-                            $page_field = array();
+                            // SQL Error? Page id doesn't exist in database any more?
+                            $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): unknown error cannot load desired page';
+                            $page_fetched_value = array();
                         }
-                        print_r(render_html($page_field[0],'page_default'));
-                        //print_r($page_field);
-                        print_r($GLOBALS['global_message']->display());
-                        exit();
+                        else
+                        {
+                            $field = $page_fetched_value[0];
+                            print_r(render_html($field,'page_default'));
+                        }
 
                 }
         }
 
+        //print_r($page_field);
+        print_r($GLOBALS['global_message']->display());
+        exit();
 
 
 
@@ -718,21 +982,34 @@ class content {
         if (in_array($request_path_part,$type))
         {
             $this->construct['data_type'] = $request_path_part;
-            $request_path_part = array_shift($request_path);
         }
         else
         {
             $this->construct['data_type'] = end($type);
         }
 
-
         // HTML Page uri structure decoder
         switch ($this->construct['data_type'])
         {
             case 'css':
-                $this->construct['document'] = $request_path_part;
+            case 'js':
+                if (empty($request_path))
+                {
+                    // TODO: css/js folder forbid direct access
+                    break;
+                }
+                $file_name = array_pop($request_path);
+                $file_part = explode('.',$file_name);
+                $this->construct['document'] = array_shift($file_part);
+                if (!empty($file_part)) $this->construct['file_type'] = array_pop($file_part);
+                $this->construct['extension'] = $file_part;
+                unset($file_name);
+                unset($file_part);
+
+                $this->construct['sub_path'] = $request_path;
                 break;
             case 'html':
+                $request_path_part = array_shift($request_path);
                 $module = ['listing','business','business-amp',''];
                 if (in_array($request_path_part,$module))
                 {
@@ -815,27 +1092,27 @@ class content {
 
                 break;
             case 'image':
-                $this->construct['sub_path'] = $request_path_part;
-                $this->construct['document'] = array_pop($request_path);
+                $file_name = array_pop($request_path);
+                $file_part = explode('.',$file_name);
+                $this->construct['document'] = array_shift($file_part);
+                if (!empty($file_part)) $this->construct['file_type'] = array_pop($file_part);
+                $this->construct['extension'] = $file_part;
+                unset($file_name);
+                unset($file_part);
+
+                $image_size = array_keys($preference->image['size']);
 
                 if (!empty($request_path))
                 {
-                    $request_path_part = array_shift($request_path);
-                    $size = array_keys($preference->image['size']);
-                    if (!in_array($request_path_part,$size))
+                    if (in_array(end($request_path),$image_size))
                     {
-                        $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown image size ['.$request_path_part.'] for '.$this->construct['data_type'];
-                        break;
+                        $this->construct['size'] = array_pop($request_path);
                     }
-                    $this->construct['size'] = $request_path_part;
-                    unset($request_path_part);
+                    $this->construct['sub_path'] = $request_path;
 
                     // If more uri parts available, do something here
                     //$this->construct['option'] = $request_path;
                 }
-                break;
-            case 'js':
-                $this->construct['document'] = $request_path_part;
                 break;
             case 'json':
                 break;

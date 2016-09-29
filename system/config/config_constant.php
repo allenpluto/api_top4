@@ -10,14 +10,14 @@ define('FOLDER_JS', 'js');
 define('FOLDER_JSON', 'json');
 
 // URI
-define('URI_SITE_BASE',URI_BASE.'/'.FOLDER_SITE_BASE.'/');
+define('URI_SITE_BASE',URI_BASE.FOLDER_SITE_BASE.'/');
 
-define('URI_ASSET', URI_SITE_BASE . FOLDER_ASSET. '/');
+define('URI_ASSET', URI_SITE_BASE);
 define('URI_CSS', URI_ASSET . FOLDER_CSS . '/');
 define('URI_IMAGE', URI_ASSET . FOLDER_IMAGE . '/');
 define('URI_JS', URI_ASSET . FOLDER_JS . '/');
 
-define('URI_CONTENT', URI_SITE_BASE . FOLDER_ASSET. '/');
+define('URI_CONTENT', URI_SITE_BASE . FOLDER_CONTENT. '/');
 define('URI_CONTENT_CSS', URI_CONTENT . FOLDER_CSS . '/');
 define('URI_CONTENT_IMAGE', URI_CONTENT . FOLDER_IMAGE . '/');
 define('URI_CONTENT_JS', URI_CONTENT . FOLDER_JS . '/');
@@ -81,7 +81,8 @@ $global_preference->image = array(
         'm'=>300,
         'l'=>480,
         'xl'=>800,
-        'xxl'=>1200
+        'xxl'=>1200,
+        ''=>1600
     )
 );
 
