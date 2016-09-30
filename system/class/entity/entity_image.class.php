@@ -22,6 +22,43 @@ class entity_image extends entity
         return $this;
     }
 
+    function get($parameter = array())
+    {
+        $format = format::get_obj();
+        $preference = preference::get_instance();
+        if(parent::get($parameter) === false) return false;
+
+        if (!empty($this->row))
+        {
+            foreach($this->row as $record_index=>&$record)
+            {
+                $record['document'] = $format->file_name((!empty($record['friendly_url'])?$record['friendly_url']:$record['name']).'-'.$record['id']);
+                switch($record['mime'])
+                {
+                    case 'image/gif':
+                        $record['file_type'] = 'gif';
+                        break;
+                    case 'image/png':
+                        $record['file_type'] = 'png';
+                        break;
+                    case 'image/jpeg':
+                    case 'image/pjpeg';
+                    default:
+                        $record['file_type'] = 'jpg';
+                }
+                $record['sub_path'] = [];
+                $sub_path_index = floor($record['id'] / 1000);
+                while($sub_path_index > 0)
+                {
+                    $sub_path_remain = $sub_path_index % 1000;
+                    $sub_path_index = floor($sub_path_index / 1000);
+                    $record['sub_path'][] = $sub_path_remain;
+                }
+            }
+        }
+    }
+
+
     function set($parameter = array())
     {
         if (isset($parameter['row']))
@@ -64,6 +101,8 @@ class entity_image extends entity
         if (!empty($this->row))
         {
             $format = format::get_obj();
+            $preference = preference::get_instance();
+
             foreach($this->row as $record_index=>$record)
             {
                 if (isset($record['data']))

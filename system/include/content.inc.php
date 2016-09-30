@@ -39,7 +39,7 @@ class content {
                     $source_image_size = getimagesize($source_image_path);
                     if ($source_image_size === false)
                     {
-                        // TODO: Error Handling,fail to get source image size
+                        // TODO: Error Handling, fail to get source image size
                         break;
                     }
                     switch ($source_image_size['mime']) {
@@ -66,13 +66,11 @@ class content {
                 {
                     $default_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
                     // Check whether image file with same name exists in content folder
-                    if (file_exists(PATH_CONTENT_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type']))
-                    {
-                        $source_image_path = PATH_CONTENT_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
+                    if (file_exists(PATH_CONTENT_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'])) {
+                        $source_image_path = PATH_CONTENT_IMAGE . implode(DIRECTORY_SEPARATOR, $this->construct['sub_path']) . DIRECTORY_SEPARATOR . $this->construct['document'] . '.' . $this->construct['file_type'];
                         $source_image_size = getimagesize($source_image_path);
-                        if ($source_image_size === false)
-                        {
-                            // TODO: Error Handling,fail to get source image size
+                        if ($source_image_size === false) {
+                            // TODO: Error Handling, fail to get source image size
                             break;
                         }
                         switch ($source_image_size['mime']) {
@@ -89,78 +87,95 @@ class content {
                             default:
                                 $source_image = imagecreatefromstring($source_image_path);
                         }
-
-
-
-                        if ($source_image_size !== false)
-                        {
-                            $max_image_width = max($preference['image']['size']);
-                            if ($source_image_size[0] > $max_image_width)
-                            {
-                                switch($source_image_size['mime'])
-                                {
-                                    case 'image/png':
-                                        $source_image = imagecreatefrompng($source_image_path);
-                                        break;
-                                    case 'image/gif':
-                                        $source_image = imagecreatefromgif($source_image_path);
-                                        break;
-                                    case 'image/jpg':
-                                    case 'image/jpeg':
-                                        $source_image = imagecreatefromjpeg($source_image_path);
-                                        break;
-                                    default:
-                                        $source_image = imagecreatefromstring($source_image_path);
-                                }
-                                if ($source_image === FALSE)
-                                {
-                                    // TODO: Error Handling, fail to create image
-                                    header('Location: '.URI_SITE_BASE.'/content/image/img_listing_default_280_280.jpg');
-                                    exit();
-                                }
-
-                                $file_name = $format->file_name((!empty($record['friendly_url'])?$record['friendly_url']:$record['name']).'-'.$record['id']);
-                                switch($source_image_size['mime'])
-                                {
-                                    case 'image/gif':
-                                        $file_name .= '.gif';
-                                        break;
-                                    case 'image/png':
-                                        $file_name .= '.png';
-                                        break;
-                                    case 'image/jpeg':
-                                    case 'image/pjpeg';
-                                    default:
-                                        $file_name .= '.jpg';
-                                }
-
-
-                            }
-                            else
-                            {
-                                copy($source_image_path, $default_image_path);
-                            }
-                            $parameter['row'][$record_index]['width'] = $image_size[0];
-                            $parameter['row'][$record_index]['height'] = $image_size[1];
+                        if ($source_image === FALSE) {
+                            // TODO: Error Handling, fail to create image
+                            header('Location: ' . URI_SITE_BASE . '/content/image/img_listing_default_280_280.jpg');
+                            exit();
                         }
-
                     }
                     else
                     {
-                        $document_name_part = explode('-',$this->construct['name']);
-                        if (is_numeric(end($document_name_part)))
+                        // If file does not exist in content folder either, check if it is stored in database
+                        $document_name_part = explode('_',$this->construct['document']);
+                        $document_id = end($document_name_part);
+                        unset($document_name_part);
+                        if (!is_numeric($document_id))
                         {
-                            $entity_image_obj = new entity_image(end($document_name_part));
-                            if (empty($entity_image_obj->id_group))
-                            {
-                                // TODO: Error handling, image does not exist
-                                break;
-                            }
-                            //$entity_image_obj->get();
-                            $entity_image_obj->generate_cache_file();
+                            // TODO: Error Handling, fail to get source image from database, file name does not end with image id
+                            break;
                         }
+                        $entity_image_obj = new entity_image($document_id);
+                        unset($document_id);
+                        if (empty($entity_image_obj->id_group))
+                        {
+                            // TODO: Error Handling, fail to get source image from database, id does not exist or database error
+                            break;
+                        }
+                        $entity_image_obj->get();
+                        if (empty($entity_image_obj->row[0]['data']))
+                        {
+                            // TODO: Error Handling, fail to get source image from database, image row exists but image data are not saved in database
+                            break;
+                        }
+                        $entity_image_default_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$entity_image_obj->row[0]['sub_path']).DIRECTORY_SEPARATOR.$entity_image_obj->row[0]['document'].'.'.$entity_image_obj->row[0]['file_type'];
+                        if ($entity_image_default_image_path != $default_image_path)
+                        {
+                            // TODO: Error Handling, source image retrieved from database, but default path is different, (the image might have been renamed)
+                            break;
+                        }
+                        $source_image = imagecreatefromstring($entity_image_obj->row[0]['data']);
+                        $source_image_size = array(
+                            $entity_image_obj->row[0]['width'],
+                            $entity_image_obj->row[0]['height'],
+                            'mime'=>$entity_image_obj->row[0]['mime']
+                        );
                     }
                 }
+
+                if (empty($source_image))
+                {
+                    // TODO: Error Handling, source image can not be located or fail to create php image resource object
+                    break;
+                }
+
+                if (isset($default_image_path))
+                {
+                    // If default size image does not exist, create default image cache first
+                    if ($source_image_size[0] > end($preference->image['size']))
+                    {
+                        // if source image is too big, resize it before save as default image cache
+                        $default_image_size = array(
+                            end($preference->image['size']),
+                            round($source_image_size[1] / $source_image_size[0] * end($preference->image['size']))
+                        );
+                        $default_image = imagecreatetruecolor($default_image_size[0], $default_image_size[1]);
+                        imagecopyresampled($default_image,$source_image,0,0,0,0,$default_image_size[0], $default_image_size[1],$source_image_size[0],$source_image_size[1]);
+
+                        // default image generate with the best quality
+                        switch($source_image_size['mime'])
+                        {
+                            case 'image/png':
+                                imagepng($default_image, $default_image_path, 0, PNG_NO_FILTER);
+                                break;
+                            case 'image/gif':
+                                imagegif($default_image, $default_image_path);
+                                break;
+                            case 'image/jpg':
+                            case 'image/jpeg':
+                            default:
+                                imagejpeg($default_image, $default_image_path, 100);
+                        }
+                        unset($default_image);
+                        unset($default_image_size);
+                    }
+                    else
+                    {
+                        // If source image is in proper size, directly copy the file, php resize might lose quality and make the file size bigger
+                        copy($source_image_path,$default_image_path);
+                    }
+                }
+
+                $this->construct['size']
 
 
 
