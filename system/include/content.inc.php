@@ -29,6 +29,22 @@ class content {
         switch($this->construct['data_type'])
         {
             case 'css':
+                $file_path = $this->construct['document'];
+                if (!empty($this->construct['sub_path'])) $file_path = explode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$file_name;
+                if (!file_exists(PATH_CSS)) mkdir(PATH_CSS, 0755, true);
+                exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar '.PATH_CONTENT_CSS.$file_path.'.'.$this->construct['extension'].' -o '.PATH_CSS.$file_path.'.min.'.$this->construct['extension'], $result);
+                // further minify css, remove comments
+                if (file_exists(PATH_CSS.$file_path.'.'.$file_version.'.min.css'))
+                {
+                    $min_file = $format->minify_css(file_get_contents(PATH_CSS.$file_path.'.'.$file_version.'.min.css'));
+                    // replace all relative path to absolute path in css as file location changes
+                    $min_file = str_replace('../',URI_CONTENT,$min_file);
+                    // update min file
+                    file_put_contents(PATH_CACHE_CSS.$file_path.'.'.$file_version.'.min.css',$min_file);
+                    // release memory from the temp file
+                    unset($min_file);
+                }
+
                 break;
             case 'image':
                 // Try to locate the source image
@@ -120,7 +136,7 @@ class content {
                         $entity_image_default_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$entity_image_obj->row[0]['sub_path']).DIRECTORY_SEPARATOR.$entity_image_obj->row[0]['document'].'.'.$entity_image_obj->row[0]['file_type'];
                         if ($entity_image_default_image_path != $default_image_path)
                         {
-                            // TODO: Error Handling, source image retrieved from database, but default path is different, (the image might have been renamed)
+                            // TODO: Error Handling, source image retrieved from database, but default path is different, (the image might have been renamed), 301 redirect or 403 Error Image
                             break;
                         }
                         $source_image = imagecreatefromstring($entity_image_obj->row[0]['data']);
@@ -165,7 +181,6 @@ class content {
                             default:
                                 imagejpeg($default_image, $default_image_path, 100);
                         }
-                        unset($default_image);
                         unset($default_image_size);
                     }
                     else
@@ -175,132 +190,45 @@ class content {
                     }
                 }
 
-                $this->construct['size']
-
-
-
-
-                if (!file_exists(PATH_IMAGE . $this->parameter['image_size'] . '/' . $this->parameter['image_file']))
+                if (isset($this->construct['size']))
                 {
-                    if (empty($this->parameter['image_size']))
+                    $target_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
+                    if (!in_array($this->construct['size'],array_keys($preference->image['size'])))
                     {
-                        header('Location: '.URI_IMAGE.'default/'.$this->parameter['image_file']);
-                        exit();
+                        // TODO: Error Handling, image size is not defined in global preference
+                        break;
                     }
-                    if ($this->parameter['image_size'] == 'default')
+                    $target_image_size = array(
+                        $preference->image['size'][$this->construct['size']],
+                        round($source_image_size[1] / $source_image_size[0] * $preference->image['size'][$this->construct['size']])
+                    );
+                    $target_image = imagecreatetruecolor($target_image_size[0], $target_image_size[1]);
+                    imagecopyresampled($target_image,$source_image,0,0,0,0,$target_image_size[0], $target_image_size[1],$source_image_size[0],$source_image_size[1]);
+
+                    imageinterlace($target_image,true);
+                    // default image generate with the best quality
+                    switch($source_image_size['mime'])
                     {
-                        $source_image_path = URI_IMAGE_EXTERNAL.$this->parameter['image_file'];
-                        unset($target_width);
+                        case 'image/png':
+                            imagepng($target_image, $target_image_path, 9, PNG_ALL_FILTERS);
+                            break;
+                        case 'image/gif':
+                            imagegif($target_image, $target_image_path);
+                            break;
+                        case 'image/jpg':
+                        case 'image/jpeg':
+                        default:
+                            imagejpeg($target_image, $target_image_path, 75);
                     }
-                    else
-                    {
-                        $default_image_path = PATH_IMAGE . 'default/' . $this->parameter['image_file'];
-                        if (file_exists($default_image_path))
-                        {
-                            $source_image_path = $default_image_path;
-                            $default_image_exists = true;
-                        }
-                        else
-                        {
-                            $source_image_path = URI_IMAGE_EXTERNAL.$this->parameter['image_file'];
-                            $default_image_exists = false;
-                        }
-                        $target_width = $this->parameter['image_width'];
-                    }
-                    if (isset($this->parameter['image_source'])) $source_image_path = $this->parameter['image_source'];
-
-                    $source_image_size = getimagesize($source_image_path);
-
-                    if (!empty($source_image_size[0]))
-                    {
-                        switch($source_image_size['mime'])
-                        {
-                            case 'image/png':
-                                $source_image = imagecreatefrompng($source_image_path);
-                                break;
-                            case 'image/gif':
-                                $source_image = imagecreatefromgif($source_image_path);
-                                break;
-                            case 'image/jpg':
-                            case 'image/jpeg':
-                                $source_image = imagecreatefromjpeg($source_image_path);
-                                break;
-                            default:
-                                $source_image = imagecreatefromstring($source_image_path);
-                        }
-
-                        if ($source_image === FALSE)
-                        {
-                            header('Location: '.URI_SITE_BASE.'/content/image/img_listing_default_280_280.jpg');
-                            exit();
-                        }
-
-
-                        if (!isset($target_width)) $target_width = min($source_image_size[0],  $GLOBALS['global_preference']->image_size_xxl);
-                        $target_height = $source_image_size[1] / $source_image_size[0] *  $target_width;
-                        $target_image = imagecreatetruecolor($target_width, $target_height);
-
-                        imagecopyresized($target_image, $source_image,0,0,0,0,$target_width, $target_height,$source_image_size[0], $source_image_size[1]);
-
-                        if (!$default_image_exists)
-                        {
-                            $default_image_width = min($source_image_size[0],  $GLOBALS['global_preference']->image_size_xxl);
-                            $default_image_height = $source_image_size[1] / $source_image_size[0] *  $default_image_width;
-                            $default_image = imagecreatetruecolor($default_image_width, $default_image_height);
-
-                            imagecopyresized($default_image, $source_image,0,0,0,0,$default_image_width, $default_image_height,$source_image_size[0], $source_image_size[1]);
-                        }
-
-                        if (!file_exists(PATH_IMAGE. $this->parameter['image_size'] . '/'))
-                        {
-                            mkdir(PATH_IMAGE. $this->parameter['image_size'] . '/', 0755, true);
-                        }
-                        if (!file_exists(PATH_IMAGE. 'default/'))
-                        {
-                            mkdir(PATH_IMAGE. 'default/', 0755, true);
-                        }
-
-                        if (!isset($source_image_size['mime'])) $source_image_size['mime'] = 'image/jpeg';
-                        $target_image_path = PATH_IMAGE. $this->parameter['image_size'] . '/' . $this->parameter['image_file'];
-                        switch($source_image_size['mime'])
-                        {
-                            case 'image/png':
-                                if (!$default_image_exists)
-                                {
-                                    imagepng($default_image, $default_image_path, 0, PNG_NO_FILTER);
-                                }
-                                imageinterlace($target_image,true);
-                                imagepng($target_image, $target_image_path, 9, PNG_ALL_FILTERS);
-                                break;
-                            case 'image/gif':
-                                if (!$default_image_exists)
-                                {
-                                    imagegif($default_image, $default_image_path);
-                                }
-                                imageinterlace($target_image,true);
-                                imagegif($target_image, $target_image_path);
-                                break;
-                            case 'image/jpg':
-                            case 'image/jpeg':
-                            default:
-                                if (!$default_image_exists)
-                                {
-                                    imagejpeg($default_image, $default_image_path, 100);
-                                }
-                                imageinterlace($target_image,true);
-                                imagejpeg($target_image, $target_image_path, 75);
-                        }
-                        imagedestroy($source_image);
-                        imagedestroy($target_image);
-                        if (!$default_image_exists)
-                        {
-                            imagedestroy($default_image);
-                        }
-                        header('Content-type: '.$source_image_size['mime']);
-                        header('Content-Length: '.filesize($target_image_path));
-                        readfile($target_image_path);
-                    }
+                    unset($target_image_size);
                 }
+                else
+                {
+                    $target_image_path = $default_image_path?$default_image_path:$source_image_path;
+                }
+                header('Content-type: '.$source_image_size['mime']);
+                header('Content-Length: '.filesize($target_image_path));
+                readfile($target_image_path);
 
                 break;
             case 'js':
