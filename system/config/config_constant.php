@@ -83,6 +83,28 @@ $global_preference->image = array(
         'xl'=>800,
         'xxl'=>1200,
         ''=>1600
+    ),
+    'quality'=>array(
+        // Minimize file size, for pre generated thumbnail
+        'min'=>array(
+            'image/jpeg'=>40,
+            'image/png'=>array(9,PNG_ALL_FILTERS)
+        ),
+        // Small file size, with relatively high generate speed and good quality, default option for pre generated images
+        'opt'=>array(
+            'image/jpeg'=>80,
+            'image/png'=>array(5,PNG_FILTER_PAETH)
+        ),
+        // Best Quality, default option for source images
+        'max'=>array(
+            'image/jpeg'=>100,
+            'image/png'=>array(1,PNG_NO_FILTER)
+        ),
+        // Fast generate speed, with relatively small file size and good quality, default option for real time rendering images
+        'spd'=>array(
+            'image/jpeg'=>80,
+            'image/png'=>array(1,PNG_FILTER_UP)
+        )
     )
 );
 

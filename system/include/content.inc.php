@@ -29,8 +29,32 @@ class content {
         switch($this->construct['data_type'])
         {
             case 'css':
+                $file_header = @get_headers($row['file_path']);
+                if (strpos( $file_header[0], '200 OK' ) !== false) {
+                    $file_header_array = array();
+                    foreach ($file_header as $file_header_index => $file_header_item) {
+                        preg_match('/^(?:\s)*(.+?):(?:\s)*(.+)(?:\s)*$/', $file_header_item, $matches);
+                        if (count($matches) >= 3) {
+                            $file_header_array[trim($matches[1])] = trim($matches[2]);
+                        }
+                    }
+                    unset($file_header);
+                    if (isset($file_header_array['Last-Modified'])) {
+                        $file_version = strtolower(date('dMY', strtotime($file_header_array['Last-Modified'])));
+                    } else {
+                        if (isset($file_header_array['Expires'])) {
+                            $file_version = strtolower(date('dMY', strtotime($file_header_array['Expires'])));
+                        } else {
+                            if (isset($file_header_array['Date'])) $file_version = strtolower(date('dMY', strtotime($file_header_array['Date'])));
+                            else $file_version = strtolower(date('dMY'), strtotime('+1 day'));
+                        }
+
+                    }
+                    unset($file_header_array);
+                }
+                $file_version = strtolower(date('dMY', filemtime(PATH_CONTENT_JS.$row['file_name'].'.js')));
                 $file_path = $this->construct['document'];
-                if (!empty($this->construct['sub_path'])) $file_path = explode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$file_name;
+                if (!empty($this->construct['sub_path'])) $file_path = explode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$file_path;
                 if (!file_exists(PATH_CSS)) mkdir(PATH_CSS, 0755, true);
                 exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar '.PATH_CONTENT_CSS.$file_path.'.'.$this->construct['extension'].' -o '.PATH_CSS.$file_path.'.min.'.$this->construct['extension'], $result);
                 // further minify css, remove comments
@@ -168,19 +192,23 @@ class content {
                         imagecopyresampled($default_image,$source_image,0,0,0,0,$default_image_size[0], $default_image_size[1],$source_image_size[0],$source_image_size[1]);
 
                         // default image generate with the best quality
+                        $image_quality = $preference->image['quality']['max'];
                         switch($source_image_size['mime'])
                         {
                             case 'image/png':
-                                imagepng($default_image, $default_image_path, 0, PNG_NO_FILTER);
+                                imagesavealpha($default_image, true);
+                                imagepng($default_image, $default_image_path, $image_quality['image/png'][0], $image_quality['image/png'][1]);
                                 break;
                             case 'image/gif':
-                                imagegif($default_image, $default_image_path);
-                                break;
+                                // Resampled gif will lose animation, so save it as jpeg
+                                // imagegif($default_image, $default_image_path);
+                                // break;
                             case 'image/jpg':
                             case 'image/jpeg':
                             default:
-                                imagejpeg($default_image, $default_image_path, 100);
+                                imagejpeg($default_image, $default_image_path, $image_quality['image/jpeg']);
                         }
+                        unset($image_quality);
                         unset($default_image_size);
                     }
                     else
@@ -206,19 +234,36 @@ class content {
                     imagecopyresampled($target_image,$source_image,0,0,0,0,$target_image_size[0], $target_image_size[1],$source_image_size[0],$source_image_size[1]);
 
                     imageinterlace($target_image,true);
-                    // default image generate with the best quality
+
+                    // default display image generate with fast speed
+                    $image_quality = $preference->image['quality']['spd'];
+                    if (!empty($this->construct['extension']))
+                    {
+                        if (in_array(end($this->construct['extension']),$preference->image['quality']))
+                        {
+                            $image_quality = $preference->image['quality'][end($this->construct['extension'])];
+                        }
+                    }
+
                     switch($source_image_size['mime'])
                     {
                         case 'image/png':
-                            imagepng($target_image, $target_image_path, 9, PNG_ALL_FILTERS);
+                            imagesavealpha($target_image, true);
+                            imagepng($target_image, $target_image_path, $image_quality['image/png'][0], $image_quality['image/png'][1]);
                             break;
                         case 'image/gif':
-                            imagegif($target_image, $target_image_path);
-                            break;
+                            if ($source_image_size[0] <= $target_image_size[0])
+                            {
+                                copy($source_image_path,$target_image_path);
+                                break;
+                            }
+                            // Resampled gif will lose animation, so save it as jpeg
+                            // imagegif($default_image, $default_image_path);
+                            // break;
                         case 'image/jpg':
                         case 'image/jpeg':
                         default:
-                            imagejpeg($target_image, $target_image_path, 75);
+                            imagejpeg($target_image, $target_image_path, ['image/jpeg']);
                     }
                     unset($target_image_size);
                 }
@@ -228,6 +273,11 @@ class content {
                 }
                 header('Content-type: '.$source_image_size['mime']);
                 header('Content-Length: '.filesize($target_image_path));
+                if (!file_exists($target_image_path))
+                {
+                    // TODO: Error Handling, image file still not exist, probably due to folder not writable
+                    break;
+                }
                 readfile($target_image_path);
 
                 break;
