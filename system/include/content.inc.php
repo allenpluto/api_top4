@@ -29,45 +29,73 @@ class content {
         switch($this->construct['data_type'])
         {
             case 'css':
-                $file_header = @get_headers($row['file_path']);
-                if (strpos( $file_header[0], '200 OK' ) !== false) {
-                    $file_header_array = array();
-                    foreach ($file_header as $file_header_index => $file_header_item) {
-                        preg_match('/^(?:\s)*(.+?):(?:\s)*(.+)(?:\s)*$/', $file_header_item, $matches);
-                        if (count($matches) >= 3) {
-                            $file_header_array[trim($matches[1])] = trim($matches[2]);
-                        }
+            case 'js':
+                $target_file_path = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR;
+                if (!empty($this->construct['sub_path'])) $target_file_path .= explode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR;
+                if (!file_exists($target_file_path)) mkdir($target_file_path, 0755, true);
+
+                if ($this->construct['source_file_type'] == 'remote_file')
+                {
+                    // If source_file is not relative uri and not start with current site uri base, it is an external (cross domain) source file
+                    $this->construct['external_source_file'] = true;
+                    // External source file
+                    $file_header = @get_headers($this->construct['source_file'],true);
+                    if (strpos( $file_header[0], '200 OK' ) === false) {
+                        // TODO: Error Handling, fail to get external source file header
+                        break;
                     }
-                    unset($file_header);
-                    if (isset($file_header_array['Last-Modified'])) {
-                        $file_version = strtolower(date('dMY', strtotime($file_header_array['Last-Modified'])));
+                    if (isset($file_header['Last-Modified'])) {
+                        $file_version = strtolower(date('dMY', strtotime($file_header['Last-Modified'])));
                     } else {
-                        if (isset($file_header_array['Expires'])) {
-                            $file_version = strtolower(date('dMY', strtotime($file_header_array['Expires'])));
+                        if (isset($file_header['Expires'])) {
+                            $file_version = strtolower(date('dMY', strtotime($file_header['Expires'])));
                         } else {
-                            if (isset($file_header_array['Date'])) $file_version = strtolower(date('dMY', strtotime($file_header_array['Date'])));
+                            if (isset($file_header['Date'])) $file_version = strtolower(date('dMY', strtotime($file_header['Date'])));
                             else $file_version = strtolower(date('dMY'), strtotime('+1 day'));
                         }
-
                     }
-                    unset($file_header_array);
+                    if (isset($file_header['Content-Length']))
+                    {
+                        $file_size = $file_header['Content-Length'];
+                    }
+                    $source_file = $target_file_path.'.'.$file_version.'.ori.'.$this->construct['data_type'];
+                    copy($this->construct['source_file'],$source_file);
                 }
-                $file_version = strtolower(date('dMY', filemtime(PATH_CONTENT_JS.$row['file_name'].'.js')));
-                $file_path = $this->construct['document'];
-                if (!empty($this->construct['sub_path'])) $file_path = explode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$file_path;
-                if (!file_exists(PATH_CSS)) mkdir(PATH_CSS, 0755, true);
-                exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar '.PATH_CONTENT_CSS.$file_path.'.'.$this->construct['extension'].' -o '.PATH_CSS.$file_path.'.min.'.$this->construct['extension'], $result);
-                // further minify css, remove comments
-                if (file_exists(PATH_CSS.$file_path.'.'.$file_version.'.min.css'))
+                else
                 {
-                    $min_file = $format->minify_css(file_get_contents(PATH_CSS.$file_path.'.'.$file_version.'.min.css'));
-                    // replace all relative path to absolute path in css as file location changes
-                    $min_file = str_replace('../',URI_CONTENT,$min_file);
-                    // update min file
-                    file_put_contents(PATH_CACHE_CSS.$file_path.'.'.$file_version.'.min.css',$min_file);
-                    // release memory from the temp file
-                    unset($min_file);
+                    $file_version = strtolower(date('dMY', filemtime($this->construct['source_file'])));
+                    $file_size = filesize($this->construct['source_file']);
+
+                    $source_file = $this->construct['source_file'];
                 }
+
+                $target_file = $target_file_path.$this->construct['document'].'.'.$file_version.'.min.'.$this->construct['data_type'];
+                exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar '.$source_file.' -o '.$target_file, $result);
+
+                if (!file_exists($target_file))
+                {
+                    // If fail to generate minimized file, copy the source file
+                    copy($source_file, $target_file);
+                }
+                else
+                {
+                    if (filesize($target_file) > $file_size)
+                    {
+                        // If file getting bigger, original file probably already minimized with better algorithm (e.g. google's js files, just use the original file)
+                        copy($source_file, $target_file);
+                    }
+                    else
+                    {
+                        file_put_contents($target_file,$format->minify_css(file_get_contents($target_file)));
+                    }
+                }
+
+                if ($this->construct['source_file_type'] == 'remote_file')
+                {
+                    unlink($source_file);
+                }
+
+                readfile($target_file);
 
                 break;
             case 'image':
@@ -163,6 +191,9 @@ class content {
                             // TODO: Error Handling, source image retrieved from database, but default path is different, (the image might have been renamed), 301 redirect or 403 Error Image
                             break;
                         }
+                        // consider the image is already optimized before saved into database, directly write the data stream into physical file
+                        file_put_contents($default_image_path, $entity_image_obj->row[0]['data']);
+                        unset($default_image_path);
                         $source_image = imagecreatefromstring($entity_image_obj->row[0]['data']);
                         $source_image_size = array(
                             $entity_image_obj->row[0]['width'],
@@ -180,6 +211,8 @@ class content {
 
                 if (isset($default_image_path))
                 {
+                    if (!file_exists(dirname($default_image_path))) mkdir(dirname($default_image_path), 0755, true);
+
                     // If default size image does not exist, create default image cache first
                     if ($source_image_size[0] > end($preference->image['size']))
                     {
@@ -216,16 +249,19 @@ class content {
                         // If source image is in proper size, directly copy the file, php resize might lose quality and make the file size bigger
                         copy($source_image_path,$default_image_path);
                     }
+                    unset($default_image_path);
                 }
 
                 if (isset($this->construct['size']))
                 {
-                    $target_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
                     if (!in_array($this->construct['size'],array_keys($preference->image['size'])))
                     {
                         // TODO: Error Handling, image size is not defined in global preference
                         break;
                     }
+                    $target_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['size'].DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
+                    if (!file_exists(dirname($target_image_path))) mkdir(dirname($target_image_path), 0755, true);
+
                     $target_image_size = array(
                         $preference->image['size'][$this->construct['size']],
                         round($source_image_size[1] / $source_image_size[0] * $preference->image['size'][$this->construct['size']])
@@ -263,7 +299,7 @@ class content {
                         case 'image/jpg':
                         case 'image/jpeg':
                         default:
-                            imagejpeg($target_image, $target_image_path, ['image/jpeg']);
+                            imagejpeg($target_image, $target_image_path, $image_quality['image/jpeg']);
                     }
                     unset($target_image_size);
                 }
@@ -280,8 +316,6 @@ class content {
                 }
                 readfile($target_image_path);
 
-                break;
-            case 'js':
                 break;
             case 'json':
                 break;
@@ -330,8 +364,8 @@ class content {
         }
 
         //print_r($page_field);
-        print_r($GLOBALS['global_message']->display());
-        exit();
+        //print_r($GLOBALS['global_message']->display());
+        return true;
 
 
 
@@ -996,6 +1030,35 @@ class content {
                 $this->construct['document'] = array_shift($file_part);
                 if (!empty($file_part)) $this->construct['file_type'] = array_pop($file_part);
                 $this->construct['extension'] = $file_part;
+
+                $this->construct['sub_path'] = $request_path;
+
+                if (!isset($this->construct['source_file']))
+                {
+                    if (!empty($this->construct['extension']))
+                    {
+                        // If requiring for processed file, e.g. minimized js or css as .min.js/.min.css, first check if the original version is in the folder
+                        $this->construct['source_file'] = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
+
+                    }
+
+                    $this->construct['source_file'] = PATH_CONTENT.$this->construct['data_type'].DIRECTORY_SEPARATOR.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
+                    $this->construct['source_file_type'] = 'local_file';
+                }
+
+                if (!isset($this->construct['source_file_type']))
+                {
+                    if ((strpos($this->construct['source_file'],URI_SITE_BASE) == FALSE)  AND (preg_match('/^http/',$this->construct['source_file']) == 1))
+                    {
+                        // If source_file is not relative uri and not start with current site uri base, it is an external (cross domain) source file
+                        $this->construct['source_file_type'] = 'remote_file';
+                    }
+                    else
+                    {
+                        $this->construct['source_file_type'] = 'local_file';
+                    }
+                }
+
                 unset($file_name);
                 unset($file_part);
 
