@@ -6,7 +6,7 @@
  * Time: 11:31 AM
  */
 set_time_limit(300);
-$source_image = imagecreatefrompng('icon_social_media.png');
+$source_image = imagecreatefrompng('upload.png');
 
 //$target_image = imagecreatetruecolor(1200,900);
 //imagecopyresampled($target_image, $source_image, 0, 0, 0, 0, 1200, 900, imagesx($source_image),imagesy($source_image));

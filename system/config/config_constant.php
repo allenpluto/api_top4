@@ -93,7 +93,7 @@ $global_preference->image = array(
         // Small file size, with relatively high generate speed and good quality, default option for pre generated images
         'opt'=>array(
             'image/jpeg'=>80,
-            'image/png'=>array(5,PNG_FILTER_PAETH)
+            'image/png'=>array(7,PNG_NO_FILTER)
         ),
         // Best Quality, default option for source images
         'max'=>array(
