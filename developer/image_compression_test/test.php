@@ -6,7 +6,7 @@
  * Time: 11:31 AM
  */
 set_time_limit(300);
-$source_image = imagecreatefrompng('upload.png');
+$source_image = imagecreatefrompng('top4-logo-500x500.png');
 
 //$target_image = imagecreatetruecolor(1200,900);
 //imagecopyresampled($target_image, $source_image, 0, 0, 0, 0, 1200, 900, imagesx($source_image),imagesy($source_image));

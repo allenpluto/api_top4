@@ -127,3 +127,65 @@ $GLOBALS['time_stack']['render variable '.$match_result_key] = microtime(1) - $G
 
     return $rendered_content;
 }
+
+function minify_content($value, $type='html')
+{
+    if (empty($value))
+    {
+        return '';
+    }
+
+    switch($type)
+    {
+        case 'css':
+            // Minify CSS
+            $search = array(
+                '/\/\*(.*?)\*\//s',                  // remove css comments
+                '/([,:;\{\}])[^\S]+/',             // strip whitespaces after , : ; { }
+                '/[^\S]+([,:;\{\}])/',             // strip whitespaces before , : ; { }
+                '/(\s)+/'                            // shorten multiple whitespace sequences
+            );
+            $replace = array(
+                '',
+                '\\1',
+                '\\1',
+                '\\1'
+            );
+            return preg_replace($search, $replace, $value);
+        case 'html':
+            // Minify HTML
+            $search = array(
+                '/<\!--(?!\[if)(.*?)-->/s',       // remove html comments, except IE comments
+                '/\>[^\S ]+/',                      // strip whitespaces after tags, except space
+                '/[^\S ]+\</',                      // strip whitespaces before tags, except space
+                '/(\s)+/'                            // shorten multiple whitespace sequences
+            );
+            $replace = array(
+                '',
+                '>',
+                '<',
+                '\\1'
+            );
+            return preg_replace($search, $replace, $value);
+        case 'js':
+            // Minify JS
+            $search = array(
+                '/\/\*(.*?)\*\//s',                       // remove js comments with /* */
+                '/\/\/(.*?)[\n\r]/s',                     // remove js comments with //
+                '/([\<\>\=\+\-,:;\(\)\{\}])[^\S]+(?=([^\']*\'[^\']*\')*[^\']*$)/',        // strip whitespaces after , : ; { }
+                '/[^\S]+([\<\>\=\+\-,:;\(\)\{\}])(?=([^\']*\'[^\']*\')*[^\']*$)/',        // strip whitespaces before , : ; { }
+                '/^(\s)+/'                                 // strip whitespaces in the start of the file
+            );
+            $replace = array(
+                '',
+                '',
+                '\\1',
+                '\\1',
+                ''
+            );
+            return preg_replace($search, $replace, $value);
+        default:
+            // TODO: Error Handling, minify unknown type
+            return false;
+    }
+}

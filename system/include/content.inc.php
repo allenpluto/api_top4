@@ -31,7 +31,7 @@ class content {
             case 'css':
             case 'js':
                 $target_file_path = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR;
-                if (!empty($this->construct['sub_path'])) $target_file_path .= explode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR;
+                if (!empty($this->construct['sub_path'])) $target_file_path .= implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR;
                 if (!file_exists($target_file_path)) mkdir($target_file_path, 0755, true);
 
                 if ($this->construct['source_file_type'] == 'remote_file')
@@ -45,32 +45,56 @@ class content {
                         break;
                     }
                     if (isset($file_header['Last-Modified'])) {
-                        $file_version = strtolower(date('dMY', strtotime($file_header['Last-Modified'])));
+                        //$file_version = strtolower(date('dMY', strtotime($file_header['Last-Modified'])));
+                        $source_modified_time = strtotime($file_header['Last-Modified']);
                     } else {
                         if (isset($file_header['Expires'])) {
-                            $file_version = strtolower(date('dMY', strtotime($file_header['Expires'])));
+                            //$file_version = strtolower(date('dMY', strtotime($file_header['Expires'])));
+                            $source_modified_time = strtotime($file_header['Expires']);
                         } else {
-                            if (isset($file_header['Date'])) $file_version = strtolower(date('dMY', strtotime($file_header['Date'])));
-                            else $file_version = strtolower(date('dMY'), strtotime('+1 day'));
+                            //if (isset($file_header['Date'])) $file_version = strtolower(date('dMY', strtotime($file_header['Date'])));
+                            //else $file_version = strtolower(date('dMY'), strtotime('+1 day'));
+                            if (isset($file_header['Date'])) $source_modified_time = strtotime($file_header['Date']);
+                            else $source_modified_time = ('+1 day');
                         }
                     }
                     if (isset($file_header['Content-Length']))
                     {
                         $file_size = $file_header['Content-Length'];
                     }
-                    $source_file = $target_file_path.'.'.$file_version.'.ori.'.$this->construct['data_type'];
+                    $source_file = $target_file_path.$this->construct['document'].'.'.$this->construct['file_type'];
                     copy($this->construct['source_file'],$source_file);
                 }
                 else
                 {
-                    $file_version = strtolower(date('dMY', filemtime($this->construct['source_file'])));
+                    //$file_version = strtolower(date('dMY', filemtime($this->construct['source_file'])));
+                    $source_modified_time = filemtime($this->construct['source_file']);
                     $file_size = filesize($this->construct['source_file']);
 
                     $source_file = $this->construct['source_file'];
                 }
 
-                $target_file = $target_file_path.$this->construct['document'].'.'.$file_version.'.min.'.$this->construct['data_type'];
-                exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar '.$source_file.' -o '.$target_file, $result);
+                $target_file = $target_file_path.$this->construct['document'];
+                if (!empty($this->construct['extension'])) $target_file = $target_file.'.'.implode('.',$this->construct['extension']);
+                if (!empty($this->construct['file_type'])) $target_file = $target_file.'.'.$this->construct['file_type'];
+
+                if (file_exists($target_file))
+                {
+                    // Requested file probably already exist due to request uri is different from the target uri
+                    if ($source_modified_time > filemtime($target_file))
+                    {
+                        // TODO: Force regenerate cache file if source file has been updated
+                    }
+                }
+
+                if (end($this->construct['extension']) == 'min')
+                {
+                    // Yuicompressor 2.4.8 does not support output path start with Driver
+                    $start_time = microtime(true);
+                    exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar "'.$source_file.'" -o "'.preg_replace('/^\w:/','',$target_file).'"', $result);
+                    print_r('Yuicompressor Execution Time: '. (microtime(true) - $start_time) . '<br>');
+
+                }
 
                 if (!file_exists($target_file))
                 {
@@ -84,15 +108,29 @@ class content {
                         // If file getting bigger, original file probably already minimized with better algorithm (e.g. google's js files, just use the original file)
                         copy($source_file, $target_file);
                     }
-                    else
-                    {
-                        file_put_contents($target_file,$format->minify_css(file_get_contents($target_file)));
-                    }
+                }
+
+                if (end($this->construct['extension']) == 'min')
+                {
+                    $start_time = microtime(true);
+                    file_put_contents($target_file,minify_content(file_get_contents($target_file),$this->construct['data_type']));
+                    print_r('PHP Minifier Execution Time: '. (microtime(true) - $start_time) . '<br>');
                 }
 
                 if ($this->construct['source_file_type'] == 'remote_file')
                 {
                     unlink($source_file);
+                }
+
+                switch ($this->construct['data_type'])
+                {
+                    case 'css':
+                        header("Content-Type: text/css");
+                        break;
+                    case 'js':
+                        header("Content-Type: application/javascript");
+                        break;
+                    default:
                 }
 
                 readfile($target_file);
@@ -1035,14 +1073,23 @@ class content {
 
                 if (!isset($this->construct['source_file']))
                 {
+                    $source_file = $this->construct['document'].'.'.$this->construct['file_type'];
+                    if (!empty($this->construct['sub_path'])) $source_file = implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$source_file;
                     if (!empty($this->construct['extension']))
                     {
-                        // If requiring for processed file, e.g. minimized js or css as .min.js/.min.css, first check if the original version is in the folder
-                        $this->construct['source_file'] = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
-
+                        // If requiring for file with extension, e.g. minimized js or css as .min.js/.min.css, first check if the original version is in the folder
+                        if (file_exists(PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR.$source_file))
+                        {
+                            $source_file = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR.$source_file;
+                            $this->construct['source_file'] = $source_file;
+                        }
                     }
 
-                    $this->construct['source_file'] = PATH_CONTENT.$this->construct['data_type'].DIRECTORY_SEPARATOR.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
+                    if (!isset($this->construct['source_file']))
+                    {
+                        $this->construct['source_file'] = PATH_CONTENT.$this->construct['data_type'].DIRECTORY_SEPARATOR.$source_file;
+                    }
+
                     $this->construct['source_file_type'] = 'local_file';
                 }
 
@@ -1061,8 +1108,6 @@ class content {
 
                 unset($file_name);
                 unset($file_part);
-
-                $this->construct['sub_path'] = $request_path;
                 break;
             case 'html':
                 $request_path_part = array_shift($request_path);
