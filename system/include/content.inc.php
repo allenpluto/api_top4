@@ -17,11 +17,256 @@ class content {
         // Analyse uri structure and validate input variables
         if ($this->uri_decoder($parameter) === false)
         {
+            // TODO: Error Log, error during reading input uri and parameters
             return false;
+        }
+        if ($this->build_content() === false)
+        {
+            // TODO: Error Log, error during construct data object
+            return false;
+        }
+        return $this->render();
+    }
+
+    private function uri_decoder($value)
+    {
+        if (is_array($value))
+        {
+            if (!empty($value['value']))
+            {
+                extract($value);
+            }
+            else
+            {
+                $option = $value;
+                $value = '';
+            }
+        }
+        if (empty($value))
+        {
+            $value = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        }
+        if (!isset($option)) $option = array();
+
+        if (!empty($_GET))
+        {
+            $option = array_merge($option,$_GET);
+            unset($_GET);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] == 'POST')
+        {
+            // default post request with json format Input and Output
+            $option = array_merge($option,$_POST);
+            if (!isset($option['data_type'])) $option['data_type'] = 'json';
+            unset($_POST);
+        }
+
+        $preference = preference::get_instance();
+        $message = message::get_instance();
+
+        $request_uri = trim(preg_replace('/^[\/]?'.FOLDER_SITE_BASE.'[\/]/','',$value),'/');
+        $request_path = explode('/',$request_uri);
+
+        $type = ['css','image','js','json'];
+        $request_path_part = array_shift($request_path);
+        if (in_array($request_path_part,$type))
+        {
+            $this->construct['data_type'] = $request_path_part;
+        }
+        else
+        {
+            $this->construct['data_type'] = 'html';
+        }
+
+        // HTML Page uri structure decoder
+        switch ($this->construct['data_type'])
+        {
+            case 'css':
+            case 'js':
+                if (empty($request_path))
+                {
+                    // TODO: css/js folder forbid direct access
+                    break;
+                }
+                $file_extension = ['min'];
+                $file_name = array_pop($request_path);
+                $file_part = explode('.',$file_name);
+                $this->construct['document'] = array_shift($file_part);
+                if (!empty($file_part)) $this->construct['file_type'] = array_pop($file_part);
+                $this->construct['extension'] = [];
+                while (in_array(end($file_part),$file_extension))
+                {
+                    $this->construct['extension'][] = array_pop($file_part);
+                }
+                if (!empty($file_part))
+                {
+                    // Put the rest part that is not an extension back to document name, e.g. jquery-1.11.8.min.js
+                    $this->construct['document'] .= '.'.implode('.',$file_part);
+                }
+
+                $this->construct['sub_path'] = $request_path;
+
+                if (!isset($this->construct['source_file']))
+                {
+                    $source_file = $this->construct['document'].'.'.$this->construct['file_type'];
+                    if (!empty($this->construct['sub_path'])) $source_file = implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$source_file;
+                    if (!empty($this->construct['extension']))
+                    {
+                        // If requiring for file with extension, e.g. minimized js or css as .min.js/.min.css, first check if the original version is in the folder
+                        if (file_exists(PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR.$source_file))
+                        {
+                            $source_file = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR.$source_file;
+                            $this->construct['source_file'] = $source_file;
+                        }
+                    }
+
+                    if (!isset($this->construct['source_file']))
+                    {
+                        $this->construct['source_file'] = PATH_CONTENT.$this->construct['data_type'].DIRECTORY_SEPARATOR.$source_file;
+                    }
+
+                    $this->construct['source_file_type'] = 'local_file';
+                }
+
+                if (!isset($this->construct['source_file_type']))
+                {
+                    if ((strpos($this->construct['source_file'],URI_SITE_BASE) == FALSE)  AND (preg_match('/^http/',$this->construct['source_file']) == 1))
+                    {
+                        // If source_file is not relative uri and not start with current site uri base, it is an external (cross domain) source file
+                        $this->construct['source_file_type'] = 'remote_file';
+                    }
+                    else
+                    {
+                        $this->construct['source_file_type'] = 'local_file';
+                    }
+                }
+
+                unset($file_name);
+                unset($file_part);
+                break;
+            case 'html':
+                //$request_path_part = array_shift($request_path);
+                $module = ['listing','business','business-amp'];
+                if (in_array($request_path_part,$module))
+                {
+                    $this->construct['module'] = $request_path_part;
+                    $request_path_part = array_shift($request_path);
+                }
+                else
+                {
+                    $this->construct['module'] = '';
+                }
+
+                switch ($this->construct['module'])
+                {
+                    case 'listing':
+                        $method = ['search','find',''];
+                        if (in_array($request_path_part,$method))
+                        {
+                            $this->construct['method'] = $request_path_part;
+                            $request_path_part = array_shift($request_path);
+                        }
+                        else
+                        {
+                            $this->construct['method'] = end($method);
+                        }
+
+                        switch ($this->construct['method'])
+                        {
+                            case 'search':
+                                $this->construct['option'] = array('keyword'=> $request_path_part);
+                                if (count($request_path)>=2)
+                                {
+                                    $option = ['where','screen','sort'];
+                                    $path_max = floor(count($request_path)/2);
+                                    for ($i=0; $i<$path_max; $i++)
+                                    {
+                                        if (!in_array( $request_path[$i*2],$option))
+                                        {
+                                            $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->construct['data_type'];
+                                            break 2;
+                                        }
+                                        $this->construct['option'][$request_path[$i*2]] = $request_path[$i*2+1];
+                                    }
+                                }
+                                break;
+                            case 'find':
+                                $this->construct['option'] = array('category'=> $request_path_part);
+                                $location = ['state','region','suburb'];
+                                $option = ['keyword','where','screen','sort'];
+                                foreach($request_path as $request_path_part_index=>$request_path_part)
+                                {
+                                    // If it is not option key
+                                    if (in_array($request_path_part,$option))
+                                    {
+                                        $request_path = array_slice($request_path,$request_path_part_index);
+                                        break;
+                                    }
+                                    $this->construct['option'][$location[$request_path_part_index]] = $request_path_part;
+                                }
+                                if (count($request_path)>=2)
+                                {
+                                    $path_max = floor(count($request_path)/2);
+                                    for ($i=0; $i<$path_max; $i++)
+                                    {
+                                        if (!in_array( $request_path[$i*2],$option))
+                                        {
+                                            $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->construct['data_type'];
+                                            break 2;
+                                        }
+                                        $this->construct['option'][$request_path[$i*2]] = $request_path[$i*2+1];
+                                    }
+                                }
+                                break;
+                            default:
+                                //$this->construct['document'] = $request_path_part;
+                        }
+                        break;
+                    default:
+                        $this->construct['document'] = $request_path_part;
+                }
+
+                break;
+            case 'image':
+                $file_name = array_pop($request_path);
+                $file_part = explode('.',$file_name);
+                $this->construct['document'] = array_shift($file_part);
+                if (!empty($file_part)) $this->construct['file_type'] = array_pop($file_part);
+                $this->construct['extension'] = $file_part;
+                unset($file_name);
+                unset($file_part);
+
+                $image_size = array_keys($preference->image['size']);
+
+                if (!empty($request_path))
+                {
+                    if (in_array(end($request_path),$image_size))
+                    {
+                        $this->construct['size'] = array_pop($request_path);
+                    }
+                    $this->construct['sub_path'] = $request_path;
+
+                    // If more uri parts available, do something here
+                    //$this->construct['option'] = $request_path;
+                }
+                break;
+            case 'json':
+                break;
+        }
+
+        $option_preset = ['data_type','module','document','field','template','render'];
+        foreach($option as $key=>$item)
+        {
+            // Options from GET, POST overwrite ones decoded from uri
+            if (in_array($key,$option_preset))
+            {
+                $this->construct[$key] = $item;
+            }
         }
     }
 
-    function build_content()
+    private function build_content()
     {
         $format = format::get_obj();
         $preference = preference::get_instance();
@@ -30,14 +275,8 @@ class content {
         {
             case 'css':
             case 'js':
-                $target_file_path = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR;
-                if (!empty($this->construct['sub_path'])) $target_file_path .= implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR;
-                if (!file_exists($target_file_path)) mkdir($target_file_path, 0755, true);
-
                 if ($this->construct['source_file_type'] == 'remote_file')
                 {
-                    // If source_file is not relative uri and not start with current site uri base, it is an external (cross domain) source file
-                    $this->construct['external_source_file'] = true;
                     // External source file
                     $file_header = @get_headers($this->construct['source_file'],true);
                     if (strpos( $file_header[0], '200 OK' ) === false) {
@@ -46,21 +285,21 @@ class content {
                     }
                     if (isset($file_header['Last-Modified'])) {
                         //$file_version = strtolower(date('dMY', strtotime($file_header['Last-Modified'])));
-                        $source_modified_time = strtotime($file_header['Last-Modified']);
+                        $this->construct['source_file_update'] = strtotime($file_header['Last-Modified']);
                     } else {
                         if (isset($file_header['Expires'])) {
                             //$file_version = strtolower(date('dMY', strtotime($file_header['Expires'])));
-                            $source_modified_time = strtotime($file_header['Expires']);
+                            $this->construct['source_file_update'] = strtotime($file_header['Expires']);
                         } else {
                             //if (isset($file_header['Date'])) $file_version = strtolower(date('dMY', strtotime($file_header['Date'])));
                             //else $file_version = strtolower(date('dMY'), strtotime('+1 day'));
-                            if (isset($file_header['Date'])) $source_modified_time = strtotime($file_header['Date']);
-                            else $source_modified_time = ('+1 day');
+                            if (isset($file_header['Date'])) $this->construct['source_file_update'] = strtotime($file_header['Date']);
+                            else $this->construct['source_file_update'] = ('+1 day');
                         }
                     }
                     if (isset($file_header['Content-Length']))
                     {
-                        $file_size = $file_header['Content-Length'];
+                        $this->construct['source_file_size'] = $file_header['Content-Length'];
                     }
                     $source_file = $target_file_path.$this->construct['document'].'.'.$this->construct['file_type'];
                     copy($this->construct['source_file'],$source_file);
@@ -68,72 +307,23 @@ class content {
                 else
                 {
                     //$file_version = strtolower(date('dMY', filemtime($this->construct['source_file'])));
-                    $source_modified_time = filemtime($this->construct['source_file']);
-                    $file_size = filesize($this->construct['source_file']);
+                    $this->construct['source_file_update'] = filemtime($this->construct['source_file']);
+                    $this->construct['source_file_size'] = filesize($this->construct['source_file']);
 
                     $source_file = $this->construct['source_file'];
                 }
 
-                $target_file = $target_file_path.$this->construct['document'];
-                if (!empty($this->construct['extension'])) $target_file = $target_file.'.'.implode('.',$this->construct['extension']);
-                if (!empty($this->construct['file_type'])) $target_file = $target_file.'.'.$this->construct['file_type'];
+                $target_file = $this->construct['document'];
+                if (!empty($this->construct['extension'])) $target_file .= '.'.implode('.'.$this->construct['data_type']);
+                $target_file .= $this->construct['file_type'];
 
-                if (file_exists($target_file))
-                {
-                    // Requested file probably already exist due to request uri is different from the target uri
-                    if ($source_modified_time > filemtime($target_file))
-                    {
-                        // TODO: Force regenerate cache file if source file has been updated
-                    }
-                }
+                $this->construct['file_path'] = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR;
+                if (!empty($this->construct['sub_path'])) $this->construct['file_path'] .= implode(DIRECTORY_SEPARATOR,$this->construct['file_path']).DIRECTORY_SEPARATOR;
+                $this->construct['file_path'] .= $target_file;
 
-                if (end($this->construct['extension']) == 'min')
-                {
-                    // Yuicompressor 2.4.8 does not support output path start with Driver
-                    $start_time = microtime(true);
-                    exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar "'.$source_file.'" -o "'.preg_replace('/^\w:/','',$target_file).'"', $result);
-                    print_r('Yuicompressor Execution Time: '. (microtime(true) - $start_time) . '<br>');
-
-                }
-
-                if (!file_exists($target_file))
-                {
-                    // If fail to generate minimized file, copy the source file
-                    copy($source_file, $target_file);
-                }
-                else
-                {
-                    if (filesize($target_file) > $file_size)
-                    {
-                        // If file getting bigger, original file probably already minimized with better algorithm (e.g. google's js files, just use the original file)
-                        copy($source_file, $target_file);
-                    }
-                }
-
-                if (end($this->construct['extension']) == 'min')
-                {
-                    $start_time = microtime(true);
-                    file_put_contents($target_file,minify_content(file_get_contents($target_file),$this->construct['data_type']));
-                    print_r('PHP Minifier Execution Time: '. (microtime(true) - $start_time) . '<br>');
-                }
-
-                if ($this->construct['source_file_type'] == 'remote_file')
-                {
-                    unlink($source_file);
-                }
-
-                switch ($this->construct['data_type'])
-                {
-                    case 'css':
-                        header("Content-Type: text/css");
-                        break;
-                    case 'js':
-                        header("Content-Type: application/javascript");
-                        break;
-                    default:
-                }
-
-                readfile($target_file);
+                $this->construct['file_uri'] = URI_ASSET.$this->construct['data_type'].'/';
+                if (!empty($this->construct['sub_path'])) $this->construct['file_uri'] .= implode('/',$this->construct['file_path']).'/';
+                $this->construct['file_uri'] .= $target_file;
 
                 break;
             case 'image':
@@ -359,8 +549,21 @@ class content {
                 break;
             case 'html':
             default:
-                $this->content['script'][] = array('type'=>'local_file', 'file_name'=>'jquery-1.11.3');
-                $this->content['script'][] = array('type'=>'local_file', 'file_name'=>'default');
+                $resources_loader = [];
+                $resources_loader[] = ['value'=>'/js/jquery-1.11.3.min.js','option'=>['source_file_type'=>'local_file','render'=>'source_uri']];
+                $resources_loader[] = ['value'=>'/js/default.min.js','option'=>['source_file_type'=>'local_file','render'=>'source_uri']];
+                $resource_render = [];
+                foreach($resources_loader as $resource_index=>$resource)
+                {
+                    $resource_render[] = new content($resource);
+                }
+                print_r($resource_render);
+
+
+
+                //$this->content['script'][] = array('type'=>'local_file', 'file_name'=>'jquery-1.11.3');
+                //$this->content['script'][] = array('type'=>'local_file', 'file_name'=>'default');
+
                 switch($this->construct['module'])
                 {
                     case 'listing':
@@ -390,12 +593,13 @@ class content {
                         {
                             // SQL Error? Page id doesn't exist in database any more?
                             $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): unknown error cannot load desired page';
-                            $page_fetched_value = array();
+                            // TODO: Error Handling, cannot fetch page content
+                            include(PATH_SITE_BASE.'404.php');
                         }
                         else
                         {
-                            $field = $page_fetched_value[0];
-                            print_r(render_html($field,'page_default'));
+                            $this->construct['field'] = $page_fetched_value[0];
+                            $this->construct['template'] = 'page_default';
                         }
 
                 }
@@ -1004,219 +1208,103 @@ class content {
         }
     }
 
-    private function uri_decoder($value)
+    function render($parameter = array())
     {
-        if (is_array($value))
-        {
-            if (!empty($value['value']))
-            {
-                extract($value);
-            }
-            else
-            {
-                $option = $value;
-                $value = '';
-            }
-        }
-        if (empty($value))
-        {
-            $value = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        }
-        if (!isset($option)) $option = array();
-
-        if (!empty($_GET))
-        {
-            $option = array_merge($option,$_GET);
-        }
-
-        if ($_SERVER['REQUEST_METHOD'] == 'POST')
-        {
-            // default post request with json format Input and Output
-            $option = array_merge($option,$_POST);
-            if (!isset($option['data_type'])) $option['data_type'] = 'json';
-        }
-
+        $format = format::get_obj();
         $preference = preference::get_instance();
-        $message = message::get_instance();
 
-        $request_uri = trim(preg_replace('/^[\/]?'.FOLDER_SITE_BASE.'[\/]/','',$value),'/');
-        $request_path = explode('/',$request_uri);
+        if (!isset($this->construct['render'])) $this->construct['render'] = 'default';
 
-        $type = ['css','image','js','json','html'];
-        $request_path_part = array_shift($request_path);
-        if (in_array($request_path_part,$type))
-        {
-            $this->construct['data_type'] = $request_path_part;
-        }
-        else
-        {
-            $this->construct['data_type'] = end($type);
-        }
-
-        // HTML Page uri structure decoder
-        switch ($this->construct['data_type'])
+        switch($this->construct['data_type'])
         {
             case 'css':
             case 'js':
-                if (empty($request_path))
+                switch ($this->construct['render'])
                 {
-                    // TODO: css/js folder forbid direct access
-                    break;
-                }
-                $file_name = array_pop($request_path);
-                $file_part = explode('.',$file_name);
-                $this->construct['document'] = array_shift($file_part);
-                if (!empty($file_part)) $this->construct['file_type'] = array_pop($file_part);
-                $this->construct['extension'] = $file_part;
-
-                $this->construct['sub_path'] = $request_path;
-
-                if (!isset($this->construct['source_file']))
-                {
-                    $source_file = $this->construct['document'].'.'.$this->construct['file_type'];
-                    if (!empty($this->construct['sub_path'])) $source_file = implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$source_file;
-                    if (!empty($this->construct['extension']))
-                    {
-                        // If requiring for file with extension, e.g. minimized js or css as .min.js/.min.css, first check if the original version is in the folder
-                        if (file_exists(PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR.$source_file))
+                    case 'source_uri':
+                        return $this->construct['file_uri'];
+                        break;
+                    default:
+                        $target_file_path = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR;
+                        if (!empty($this->construct['sub_path'])) $target_file_path .= implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR;
+                        if (!file_exists($target_file_path)) mkdir($target_file_path, 0755, true);
+                        if ($this->construct['source_file_type'] == 'remote_file')
                         {
-                            $source_file = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR.$source_file;
-                            $this->construct['source_file'] = $source_file;
-                        }
-                    }
-
-                    if (!isset($this->construct['source_file']))
-                    {
-                        $this->construct['source_file'] = PATH_CONTENT.$this->construct['data_type'].DIRECTORY_SEPARATOR.$source_file;
-                    }
-
-                    $this->construct['source_file_type'] = 'local_file';
-                }
-
-                if (!isset($this->construct['source_file_type']))
-                {
-                    if ((strpos($this->construct['source_file'],URI_SITE_BASE) == FALSE)  AND (preg_match('/^http/',$this->construct['source_file']) == 1))
-                    {
-                        // If source_file is not relative uri and not start with current site uri base, it is an external (cross domain) source file
-                        $this->construct['source_file_type'] = 'remote_file';
-                    }
-                    else
-                    {
-                        $this->construct['source_file_type'] = 'local_file';
-                    }
-                }
-
-                unset($file_name);
-                unset($file_part);
-                break;
-            case 'html':
-                $request_path_part = array_shift($request_path);
-                $module = ['listing','business','business-amp',''];
-                if (in_array($request_path_part,$module))
-                {
-                    $this->construct['module'] = $request_path_part;
-                    $request_path_part = array_shift($request_path);
-                }
-                else
-                {
-                    $this->construct['module'] = end($module);
-                }
-
-                switch ($this->construct['module'])
-                {
-                    case 'listing':
-                        $method = ['search','find',''];
-                        if (in_array($request_path_part,$method))
-                        {
-                            $this->construct['method'] = $request_path_part;
-                            $request_path_part = array_shift($request_path);
+                            $source_file = $target_file_path.$this->construct['document'].'.'.$this->construct['file_type'];
+                            copy($this->construct['source_file'],$source_file);
                         }
                         else
                         {
-                            $this->construct['method'] = end($method);
+                            $source_file = $this->construct['source_file'];
                         }
 
-                        switch ($this->construct['method'])
+                        $target_file = $target_file_path.$this->construct['document'];
+                        if (!empty($this->construct['extension'])) $target_file = $target_file.'.'.implode('.',$this->construct['extension']);
+                        if (!empty($this->construct['file_type'])) $target_file = $target_file.'.'.$this->construct['file_type'];
+
+                        if (file_exists($target_file))
                         {
-                            case 'search':
-                                $this->construct['option'] = array('keyword'=> $request_path_part);
-                                if (count($request_path)>=2)
-                                {
-                                    $option = ['where','screen','sort'];
-                                    $path_max = floor(count($request_path)/2);
-                                    for ($i=0; $i<$path_max; $i++)
-                                    {
-                                        if (!in_array( $request_path[$i*2],$option))
-                                        {
-                                            $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->construct['data_type'];
-                                            break 2;
-                                        }
-                                        $this->construct['option'][$request_path[$i*2]] = $request_path[$i*2+1];
-                                    }
-                                }
+                            // Requested file probably already exist due to request uri is different from the target uri
+                            if ($this->construct['source_file_update'] > filemtime($target_file))
+                            {
+                                // TODO: Force regenerate cache file if source file has been updated
+                            }
+                        }
+
+                        if (in_array('min',$this->construct['extension']))
+                        {
+                            // Yuicompressor 2.4.8 does not support output as Windows absolute path start with Driver
+                            $start_time = microtime(true);
+                            exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar "'.$source_file.'" -o "'.preg_replace('/^\w:/','',$target_file).'"', $result);
+                            print_r('Yuicompressor Execution Time: '. (microtime(true) - $start_time) . '<br>');
+
+                        }
+
+                        if (!file_exists($target_file))
+                        {
+                            // If fail to generate minimized file, copy the source file
+                            copy($source_file, $target_file);
+                        }
+                        else
+                        {
+                            if (filesize($target_file) > $this->construct['source_file_size'])
+                            {
+                                // If file getting bigger, original file probably already minimized with better algorithm (e.g. google's js files, just use the original file)
+                                copy($source_file, $target_file);
+                            }
+                        }
+
+                        if (end($this->construct['extension']) == 'min')
+                        {
+                            $start_time = microtime(true);
+                            file_put_contents($target_file,minify_content(file_get_contents($target_file),$this->construct['data_type']));
+                            print_r('PHP Minifier Execution Time: '. (microtime(true) - $start_time) . '<br>');
+                        }
+
+                        if ($this->construct['source_file_type'] == 'remote_file')
+                        {
+                            // remove the copied remote file
+                            unlink($source_file);
+                        }
+
+                        // TODO: On Direct Rendering from HTTP REQUEST, if request_uri is different from target file_uri, do 301 redirect
+                        switch ($this->construct['data_type'])
+                        {
+                            case 'css':
+                                header("Content-Type: text/css");
                                 break;
-                            case 'find':
-                                $this->construct['option'] = array('category'=> $request_path_part);
-                                $location = ['state','region','suburb'];
-                                $option = ['keyword','where','screen','sort'];
-                                foreach($request_path as $request_path_part_index=>$request_path_part)
-                                {
-                                    // If it is not option key
-                                    if (in_array($request_path_part,$option))
-                                    {
-                                        $request_path = array_slice($request_path,$request_path_part_index);
-                                        break;
-                                    }
-                                    $this->construct['option'][$location[$request_path_part_index]] = $request_path_part;
-                                }
-                                if (count($request_path)>=2)
-                                {
-                                    $path_max = floor(count($request_path)/2);
-                                    for ($i=0; $i<$path_max; $i++)
-                                    {
-                                        if (!in_array( $request_path[$i*2],$option))
-                                        {
-                                            $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->construct['data_type'];
-                                            break 2;
-                                        }
-                                        $this->construct['option'][$request_path[$i*2]] = $request_path[$i*2+1];
-                                    }
-                                }
+                            case 'js':
+                                header("Content-Type: application/javascript");
                                 break;
                             default:
-                                //$this->construct['document'] = $request_path_part;
                         }
-                        break;
-                    default:
-                        $this->construct['document'] = $request_path_part;
-                }
 
-                break;
-            case 'image':
-                $file_name = array_pop($request_path);
-                $file_part = explode('.',$file_name);
-                $this->construct['document'] = array_shift($file_part);
-                if (!empty($file_part)) $this->construct['file_type'] = array_pop($file_part);
-                $this->construct['extension'] = $file_part;
-                unset($file_name);
-                unset($file_part);
-
-                $image_size = array_keys($preference->image['size']);
-
-                if (!empty($request_path))
-                {
-                    if (in_array(end($request_path),$image_size))
-                    {
-                        $this->construct['size'] = array_pop($request_path);
-                    }
-                    $this->construct['sub_path'] = $request_path;
-
-                    // If more uri parts available, do something here
-                    //$this->construct['option'] = $request_path;
+                        readfile($this->construct['file_path']);
                 }
                 break;
-            case 'json':
-                break;
+            case 'html':
+                print_r(render_html($this->construct['field'],$this->construct['template']));
+
         }
     }
 
@@ -1270,7 +1358,8 @@ class content {
         }
     }
 
-    function render($parameter = array())
+
+    function render_old($parameter = array())
     {
         header('Content-Type: text/html; charset=utf-8');
 
