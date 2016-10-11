@@ -97,7 +97,7 @@ $global_preference->image = array(
         ),
         // Best Quality, default option for source images
         'max'=>array(
-            'image/jpeg'=>100,
+            'image/jpeg'=>95,
             'image/png'=>array(1,PNG_NO_FILTER)
         ),
         // Fast generate speed, with relatively small file size and good quality, default option for real time rendering images

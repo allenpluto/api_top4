@@ -6,29 +6,29 @@
 // Render template, create html page view...
 
 class content {
-    protected $construct = array();
+    protected $request = array();
     protected $cache = 0;
     public $parameter = array();
     public $content = array();
 
     function __construct($parameter = array())
     {
-        $this->construct = array();
+        $this->request = array();
         // Analyse uri structure and validate input variables
-        if ($this->uri_decoder($parameter) === false)
+        if ($this->request_decoder($parameter) === false)
         {
             // TODO: Error Log, error during reading input uri and parameters
             return false;
         }
         if ($this->build_content() === false)
         {
-            // TODO: Error Log, error during construct data object
+            // TODO: Error Log, error during building data object
             return false;
         }
         return $this->render();
     }
 
-    private function uri_decoder($value)
+    private function request_decoder($value)
     {
         if (is_array($value))
         {
@@ -72,15 +72,18 @@ class content {
         $request_path_part = array_shift($request_path);
         if (in_array($request_path_part,$type))
         {
-            $this->construct['data_type'] = $request_path_part;
+            $this->request['data_type'] = $request_path_part;
+            $this->request['file_uri'] = URI_ASSET.$this->request['data_type'].'/';
         }
         else
         {
-            $this->construct['data_type'] = 'html';
+            $this->request['data_type'] = 'html';
+            $this->request['file_uri'] = URI_SITE_BASE;
         }
+        $this->request['file_path'] = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR;
 
         // HTML Page uri structure decoder
-        switch ($this->construct['data_type'])
+        switch ($this->request['data_type'])
         {
             case 'css':
             case 'js':
@@ -92,90 +95,100 @@ class content {
                 $file_extension = ['min'];
                 $file_name = array_pop($request_path);
                 $file_part = explode('.',$file_name);
-                $this->construct['document'] = array_shift($file_part);
-                if (!empty($file_part)) $this->construct['file_type'] = array_pop($file_part);
-                $this->construct['extension'] = [];
+                $this->request['document'] = array_shift($file_part);
+                if (!empty($file_part)) $this->request['file_type'] = array_pop($file_part);
+                $this->request['extension'] = [];
                 while (in_array(end($file_part),$file_extension))
                 {
-                    $this->construct['extension'][] = array_pop($file_part);
+                    $this->request['extension'][] = array_pop($file_part);
                 }
+                asort($this->request['extension']);
                 if (!empty($file_part))
                 {
                     // Put the rest part that is not an extension back to document name, e.g. jquery-1.11.8.min.js
-                    $this->construct['document'] .= '.'.implode('.',$file_part);
+                    $this->request['document'] .= '.'.implode('.',$file_part);
                 }
+                unset($file_part);
 
-                $this->construct['sub_path'] = $request_path;
+                $this->request['sub_path'] = $request_path;
 
-                if (!isset($this->construct['source_file']))
+                if (!empty($this->request['sub_path']))
                 {
-                    $source_file = $this->construct['document'].'.'.$this->construct['file_type'];
-                    if (!empty($this->construct['sub_path'])) $source_file = implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$source_file;
-                    if (!empty($this->construct['extension']))
+                    $this->request['file_path'] .= implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR;
+                    $this->request['file_uri'] .= implode('/',$this->request['sub_path']).'/';
+                }
+                $this->request['file_path'] .= $file_name;
+                $this->request['file_uri'] .= $file_name;
+
+                if (!isset($this->request['source_file']))
+                {
+                    $source_file = $this->request['document'].'.'.$this->request['file_type'];
+                    if (!empty($this->request['sub_path'])) $source_file = implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$source_file;
+                    if (!empty($this->request['extension']))
                     {
-                        // If requiring for file with extension, e.g. minimized js or css as .min.js/.min.css, first check if the original version is in the folder
-                        if (file_exists(PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR.$source_file))
+                        // If requiring for file with extension, e.g. minimized js or css as .min.js/.min.css, first check if the original version is in the cache folder
+                        if (file_exists(PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file))
                         {
-                            $source_file = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR.$source_file;
-                            $this->construct['source_file'] = $source_file;
+                            $source_file = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file;
+                            $this->request['source_file'] = $source_file;
                         }
                     }
 
-                    if (!isset($this->construct['source_file']))
+                    if (!isset($this->request['source_file']))
                     {
-                        $this->construct['source_file'] = PATH_CONTENT.$this->construct['data_type'].DIRECTORY_SEPARATOR.$source_file;
+                        $this->request['source_file'] = PATH_CONTENT.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file;
                     }
 
-                    $this->construct['source_file_type'] = 'local_file';
+                    $this->request['source_file_type'] = 'local_file';
                 }
 
-                if (!isset($this->construct['source_file_type']))
+                if (!isset($this->request['source_file_type']))
                 {
-                    if ((strpos($this->construct['source_file'],URI_SITE_BASE) == FALSE)  AND (preg_match('/^http/',$this->construct['source_file']) == 1))
+                    if ((strpos($this->request['source_file'],URI_SITE_BASE) == FALSE)  AND (preg_match('/^http/',$this->request['source_file']) == 1))
                     {
                         // If source_file is not relative uri and not start with current site uri base, it is an external (cross domain) source file
-                        $this->construct['source_file_type'] = 'remote_file';
+                        $this->request['source_file_type'] = 'remote_file';
                     }
                     else
                     {
-                        $this->construct['source_file_type'] = 'local_file';
+                        $this->request['source_file'] = str_replace(URI_SITE_BASE,PATH_SITE_BASE,$this->request['source_file']);
+                        $this->request['source_file_type'] = 'local_file';
                     }
                 }
 
                 unset($file_name);
-                unset($file_part);
                 break;
             case 'html':
                 //$request_path_part = array_shift($request_path);
                 $module = ['listing','business','business-amp'];
                 if (in_array($request_path_part,$module))
                 {
-                    $this->construct['module'] = $request_path_part;
+                    $this->request['module'] = $request_path_part;
                     $request_path_part = array_shift($request_path);
                 }
                 else
                 {
-                    $this->construct['module'] = '';
+                    $this->request['module'] = '';
                 }
 
-                switch ($this->construct['module'])
+                switch ($this->request['module'])
                 {
                     case 'listing':
                         $method = ['search','find',''];
                         if (in_array($request_path_part,$method))
                         {
-                            $this->construct['method'] = $request_path_part;
+                            $this->request['method'] = $request_path_part;
                             $request_path_part = array_shift($request_path);
                         }
                         else
                         {
-                            $this->construct['method'] = end($method);
+                            $this->request['method'] = end($method);
                         }
 
-                        switch ($this->construct['method'])
+                        switch ($this->request['method'])
                         {
                             case 'search':
-                                $this->construct['option'] = array('keyword'=> $request_path_part);
+                                $this->request['option'] = array('keyword'=> $request_path_part);
                                 if (count($request_path)>=2)
                                 {
                                     $option = ['where','screen','sort'];
@@ -184,15 +197,15 @@ class content {
                                     {
                                         if (!in_array( $request_path[$i*2],$option))
                                         {
-                                            $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->construct['data_type'];
+                                            $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->request['data_type'];
                                             break 2;
                                         }
-                                        $this->construct['option'][$request_path[$i*2]] = $request_path[$i*2+1];
+                                        $this->request['option'][$request_path[$i*2]] = $request_path[$i*2+1];
                                     }
                                 }
                                 break;
                             case 'find':
-                                $this->construct['option'] = array('category'=> $request_path_part);
+                                $this->request['option'] = array('category'=> $request_path_part);
                                 $location = ['state','region','suburb'];
                                 $option = ['keyword','where','screen','sort'];
                                 foreach($request_path as $request_path_part_index=>$request_path_part)
@@ -203,7 +216,7 @@ class content {
                                         $request_path = array_slice($request_path,$request_path_part_index);
                                         break;
                                     }
-                                    $this->construct['option'][$location[$request_path_part_index]] = $request_path_part;
+                                    $this->request['option'][$location[$request_path_part_index]] = $request_path_part;
                                 }
                                 if (count($request_path)>=2)
                                 {
@@ -212,43 +225,92 @@ class content {
                                     {
                                         if (!in_array( $request_path[$i*2],$option))
                                         {
-                                            $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->construct['data_type'];
+                                            $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->request['data_type'];
                                             break 2;
                                         }
-                                        $this->construct['option'][$request_path[$i*2]] = $request_path[$i*2+1];
+                                        $this->request['option'][$request_path[$i*2]] = $request_path[$i*2+1];
                                     }
                                 }
                                 break;
                             default:
-                                //$this->construct['document'] = $request_path_part;
+                                //$this->request['document'] = $request_path_part;
                         }
                         break;
                     default:
-                        $this->construct['document'] = $request_path_part;
+                        $this->request['document'] = $request_path_part;
                 }
 
                 break;
             case 'image':
+                if (empty($request_path))
+                {
+                    // TODO: image folder forbid direct access
+                    break;
+                }
+                $file_extension = array_keys($preference->image['size']);;
                 $file_name = array_pop($request_path);
                 $file_part = explode('.',$file_name);
-                $this->construct['document'] = array_shift($file_part);
-                if (!empty($file_part)) $this->construct['file_type'] = array_pop($file_part);
-                $this->construct['extension'] = $file_part;
-                unset($file_name);
+                $this->request['document'] = array_shift($file_part);
+                if (!empty($file_part)) $this->request['file_type'] = array_pop($file_part);
+                $this->request['extension'] = [];
+                if (in_array(end($file_part),$file_extension))
+                {
+                    $this->request['extension'][] = array_pop($file_part);
+                }
+                if (!empty($file_part))
+                {
+                    // Put the rest part that is not an extension back to document name, e.g. jquery-1.11.8.min.js
+                    $this->request['document'] .= '.'.implode('.',$file_part);
+                }
                 unset($file_part);
-
-                $image_size = array_keys($preference->image['size']);
 
                 if (!empty($request_path))
                 {
-                    if (in_array(end($request_path),$image_size))
-                    {
-                        $this->construct['size'] = array_pop($request_path);
-                    }
-                    $this->construct['sub_path'] = $request_path;
+                    $this->request['file_path'] .= implode(DIRECTORY_SEPARATOR,$request_path).DIRECTORY_SEPARATOR;
+                    $this->request['file_uri'] .= implode('/',$request_path).'/';
 
-                    // If more uri parts available, do something here
-                    //$this->construct['option'] = $request_path;
+                    $this->request['sub_path'] = $request_path;
+                }
+
+                $this->request['file_path'] .= $file_name;
+                $this->request['file_uri'] .= $file_name;
+
+
+                if (!isset($this->request['source_file']))
+                {
+                    // If source file not set, try to find default source_file
+                    $source_file = $this->request['document'].'.'.$this->request['file_type'];
+                    if (!empty($this->request['sub_path'])) $source_file = implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$source_file;
+                    if (!empty($this->request['extension']))
+                    {
+                        // First check in cache folder, is there a default version of the requested image
+                        if (file_exists(PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file))
+                        {
+                            $source_file = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file;
+                            $this->request['source_file'] = $source_file;
+                        }
+                    }
+
+                    if (!isset($this->request['source_file']))
+                    {
+                        $this->request['source_file'] = PATH_CONTENT.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file;
+                    }
+
+                    $this->request['source_file_type'] = 'local_file';
+                }
+
+                if (!isset($this->request['source_file_type']))
+                {
+                    if ((strpos($this->request['source_file'],URI_SITE_BASE) == FALSE)  AND (preg_match('/^http/',$this->request['source_file']) == 1))
+                    {
+                        // If source_file is not relative uri and not start with current site uri base, it is an external (cross domain) source file
+                        $this->request['source_file_type'] = 'remote_file';
+                    }
+                    else
+                    {
+                        $this->request['source_file'] = str_replace(URI_SITE_BASE,PATH_SITE_BASE,$this->request['source_file']);
+                        $this->request['source_file_type'] = 'local_file';
+                    }
                 }
                 break;
             case 'json':
@@ -261,9 +323,11 @@ class content {
             // Options from GET, POST overwrite ones decoded from uri
             if (in_array($key,$option_preset))
             {
-                $this->construct[$key] = $item;
+                $this->request[$key] = $item;
+                unset($option[$key]);
             }
         }
+        $this->request['option'] = $option;
     }
 
     private function build_content()
@@ -271,67 +335,67 @@ class content {
         $format = format::get_obj();
         $preference = preference::get_instance();
 
-        switch($this->construct['data_type'])
+        switch($this->request['data_type'])
         {
             case 'css':
             case 'js':
-                if ($this->construct['source_file_type'] == 'remote_file')
+                if ($this->request['source_file_type'] == 'remote_file')
                 {
                     // External source file
-                    $file_header = @get_headers($this->construct['source_file'],true);
+                    $file_header = @get_headers($this->request['source_file'],true);
                     if (strpos( $file_header[0], '200 OK' ) === false) {
                         // TODO: Error Handling, fail to get external source file header
                         break;
                     }
                     if (isset($file_header['Last-Modified'])) {
                         //$file_version = strtolower(date('dMY', strtotime($file_header['Last-Modified'])));
-                        $this->construct['source_file_update'] = strtotime($file_header['Last-Modified']);
+                        $this->request['source_file_update'] = strtotime($file_header['Last-Modified']);
                     } else {
                         if (isset($file_header['Expires'])) {
                             //$file_version = strtolower(date('dMY', strtotime($file_header['Expires'])));
-                            $this->construct['source_file_update'] = strtotime($file_header['Expires']);
+                            $this->request['source_file_update'] = strtotime($file_header['Expires']);
                         } else {
                             //if (isset($file_header['Date'])) $file_version = strtolower(date('dMY', strtotime($file_header['Date'])));
                             //else $file_version = strtolower(date('dMY'), strtotime('+1 day'));
-                            if (isset($file_header['Date'])) $this->construct['source_file_update'] = strtotime($file_header['Date']);
-                            else $this->construct['source_file_update'] = ('+1 day');
+                            if (isset($file_header['Date'])) $this->request['source_file_update'] = strtotime($file_header['Date']);
+                            else $this->request['source_file_update'] = ('+1 day');
                         }
                     }
                     if (isset($file_header['Content-Length']))
                     {
-                        $this->construct['source_file_size'] = $file_header['Content-Length'];
+                        $this->request['source_file_size'] = $file_header['Content-Length'];
                     }
-                    $source_file = $target_file_path.$this->construct['document'].'.'.$this->construct['file_type'];
-                    copy($this->construct['source_file'],$source_file);
+                    $source_file = $target_file_path.$this->request['document'].'.'.$this->request['file_type'];
+                    copy($this->request['source_file'],$source_file);
                 }
                 else
                 {
-                    //$file_version = strtolower(date('dMY', filemtime($this->construct['source_file'])));
-                    $this->construct['source_file_update'] = filemtime($this->construct['source_file']);
-                    $this->construct['source_file_size'] = filesize($this->construct['source_file']);
+                    //$file_version = strtolower(date('dMY', filemtime($this->request['source_file'])));
+                    $this->request['source_file_update'] = filemtime($this->request['source_file']);
+                    $this->request['source_file_size'] = filesize($this->request['source_file']);
 
-                    $source_file = $this->construct['source_file'];
+                    $source_file = $this->request['source_file'];
                 }
 
-                $target_file = $this->construct['document'];
-                if (!empty($this->construct['extension'])) $target_file .= '.'.implode('.'.$this->construct['data_type']);
-                $target_file .= $this->construct['file_type'];
+                $target_file = $this->request['document'];
+                if (!empty($this->request['extension'])) $target_file .= '.'.implode('.',$this->request['extension']);
+                $target_file .= $this->request['file_type'];
 
-                $this->construct['file_path'] = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR;
-                if (!empty($this->construct['sub_path'])) $this->construct['file_path'] .= implode(DIRECTORY_SEPARATOR,$this->construct['file_path']).DIRECTORY_SEPARATOR;
-                $this->construct['file_path'] .= $target_file;
+                $this->request['file_path'] = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR;
+                if (!empty($this->request['sub_path'])) $this->request['file_path'] .= implode(DIRECTORY_SEPARATOR,$this->request['file_path']).DIRECTORY_SEPARATOR;
+                $this->request['file_path'] .= $target_file;
 
-                $this->construct['file_uri'] = URI_ASSET.$this->construct['data_type'].'/';
-                if (!empty($this->construct['sub_path'])) $this->construct['file_uri'] .= implode('/',$this->construct['file_path']).'/';
-                $this->construct['file_uri'] .= $target_file;
+                $this->request['file_uri'] = URI_ASSET.$this->request['data_type'].'/';
+                if (!empty($this->request['sub_path'])) $this->request['file_uri'] .= implode('/',$this->request['file_path']).'/';
+                $this->request['file_uri'] .= $target_file;
 
                 break;
             case 'image':
                 // Try to locate the source image
                 // Check whether image file with original size exists in cache folder
-                if (file_exists(PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type']))
+                if (file_exists(PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type']))
                 {
-                    $source_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
+                    $source_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'];
                     $source_image_size = getimagesize($source_image_path);
                     if ($source_image_size === false)
                     {
@@ -360,10 +424,10 @@ class content {
                 }
                 else
                 {
-                    $default_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
+                    $default_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'];
                     // Check whether image file with same name exists in content folder
-                    if (file_exists(PATH_CONTENT_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'])) {
-                        $source_image_path = PATH_CONTENT_IMAGE . implode(DIRECTORY_SEPARATOR, $this->construct['sub_path']) . DIRECTORY_SEPARATOR . $this->construct['document'] . '.' . $this->construct['file_type'];
+                    if (file_exists(PATH_CONTENT_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'])) {
+                        $source_image_path = PATH_CONTENT_IMAGE . implode(DIRECTORY_SEPARATOR, $this->request['sub_path']) . DIRECTORY_SEPARATOR . $this->request['document'] . '.' . $this->request['file_type'];
                         $source_image_size = getimagesize($source_image_path);
                         if ($source_image_size === false) {
                             // TODO: Error Handling, fail to get source image size
@@ -392,7 +456,7 @@ class content {
                     else
                     {
                         // If file does not exist in content folder either, check if it is stored in database
-                        $document_name_part = explode('_',$this->construct['document']);
+                        $document_name_part = explode('_',$this->request['document']);
                         $document_id = end($document_name_part);
                         unset($document_name_part);
                         if (!is_numeric($document_id))
@@ -480,19 +544,19 @@ class content {
                     unset($default_image_path);
                 }
 
-                if (isset($this->construct['size']))
+                if (isset($this->request['size']))
                 {
-                    if (!in_array($this->construct['size'],array_keys($preference->image['size'])))
+                    if (!in_array($this->request['size'],array_keys($preference->image['size'])))
                     {
                         // TODO: Error Handling, image size is not defined in global preference
                         break;
                     }
-                    $target_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR.$this->construct['size'].DIRECTORY_SEPARATOR.$this->construct['document'].'.'.$this->construct['file_type'];
+                    $target_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['size'].DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'];
                     if (!file_exists(dirname($target_image_path))) mkdir(dirname($target_image_path), 0755, true);
 
                     $target_image_size = array(
-                        $preference->image['size'][$this->construct['size']],
-                        round($source_image_size[1] / $source_image_size[0] * $preference->image['size'][$this->construct['size']])
+                        $preference->image['size'][$this->request['size']],
+                        round($source_image_size[1] / $source_image_size[0] * $preference->image['size'][$this->request['size']])
                     );
                     $target_image = imagecreatetruecolor($target_image_size[0], $target_image_size[1]);
                     imagecopyresampled($target_image,$source_image,0,0,0,0,$target_image_size[0], $target_image_size[1],$source_image_size[0],$source_image_size[1]);
@@ -501,11 +565,11 @@ class content {
 
                     // default display image generate with fast speed
                     $image_quality = $preference->image['quality']['spd'];
-                    if (!empty($this->construct['extension']))
+                    if (!empty($this->request['extension']))
                     {
-                        if (in_array(end($this->construct['extension']),$preference->image['quality']))
+                        if (in_array(end($this->request['extension']),$preference->image['quality']))
                         {
-                            $image_quality = $preference->image['quality'][end($this->construct['extension'])];
+                            $image_quality = $preference->image['quality'][end($this->request['extension'])];
                         }
                     }
 
@@ -564,19 +628,19 @@ class content {
                 //$this->content['script'][] = array('type'=>'local_file', 'file_name'=>'jquery-1.11.3');
                 //$this->content['script'][] = array('type'=>'local_file', 'file_name'=>'default');
 
-                switch($this->construct['module'])
+                switch($this->request['module'])
                 {
                     case 'listing':
                         break;
                     case '':
                     default:
-                        if (!isset($this->construct['document']))
+                        if (!isset($this->request['document']))
                         {
                             include(PATH_SITE_BASE.'404.php');
                             //header("HTTP/1.0 404 Not Found");
                             //header('Location: '.URI_SITE_BASE.'404.php');
                         }
-                        $page_obj = new view_web_page($this->construct['document']);
+                        $page_obj = new view_web_page($this->request['document']);
                         if (empty($page_obj->id_group))
                         {
                             include(PATH_SITE_BASE.'404.php');
@@ -598,8 +662,8 @@ class content {
                         }
                         else
                         {
-                            $this->construct['field'] = $page_fetched_value[0];
-                            $this->construct['template'] = 'page_default';
+                            $this->request['field'] = $page_fetched_value[0];
+                            $this->request['template'] = 'page_default';
                         }
 
                 }
@@ -1213,45 +1277,45 @@ class content {
         $format = format::get_obj();
         $preference = preference::get_instance();
 
-        if (!isset($this->construct['render'])) $this->construct['render'] = 'default';
+        if (!isset($this->request['render'])) $this->request['render'] = 'default';
 
-        switch($this->construct['data_type'])
+        switch($this->request['data_type'])
         {
             case 'css':
             case 'js':
-                switch ($this->construct['render'])
+                switch ($this->request['render'])
                 {
                     case 'source_uri':
-                        return $this->construct['file_uri'];
+                        return $this->request['file_uri'];
                         break;
                     default:
-                        $target_file_path = PATH_ASSET.$this->construct['data_type'].DIRECTORY_SEPARATOR;
-                        if (!empty($this->construct['sub_path'])) $target_file_path .= implode(DIRECTORY_SEPARATOR,$this->construct['sub_path']).DIRECTORY_SEPARATOR;
+                        $target_file_path = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR;
+                        if (!empty($this->request['sub_path'])) $target_file_path .= implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR;
                         if (!file_exists($target_file_path)) mkdir($target_file_path, 0755, true);
-                        if ($this->construct['source_file_type'] == 'remote_file')
+                        if ($this->request['source_file_type'] == 'remote_file')
                         {
-                            $source_file = $target_file_path.$this->construct['document'].'.'.$this->construct['file_type'];
-                            copy($this->construct['source_file'],$source_file);
+                            $source_file = $target_file_path.$this->request['document'].'.'.$this->request['file_type'];
+                            copy($this->request['source_file'],$source_file);
                         }
                         else
                         {
-                            $source_file = $this->construct['source_file'];
+                            $source_file = $this->request['source_file'];
                         }
 
-                        $target_file = $target_file_path.$this->construct['document'];
-                        if (!empty($this->construct['extension'])) $target_file = $target_file.'.'.implode('.',$this->construct['extension']);
-                        if (!empty($this->construct['file_type'])) $target_file = $target_file.'.'.$this->construct['file_type'];
+                        $target_file = $target_file_path.$this->request['document'];
+                        if (!empty($this->request['extension'])) $target_file = $target_file.'.'.implode('.',$this->request['extension']);
+                        if (!empty($this->request['file_type'])) $target_file = $target_file.'.'.$this->request['file_type'];
 
                         if (file_exists($target_file))
                         {
                             // Requested file probably already exist due to request uri is different from the target uri
-                            if ($this->construct['source_file_update'] > filemtime($target_file))
+                            if ($this->request['source_file_update'] > filemtime($target_file))
                             {
                                 // TODO: Force regenerate cache file if source file has been updated
                             }
                         }
 
-                        if (in_array('min',$this->construct['extension']))
+                        if (in_array('min',$this->request['extension']))
                         {
                             // Yuicompressor 2.4.8 does not support output as Windows absolute path start with Driver
                             $start_time = microtime(true);
@@ -1267,28 +1331,28 @@ class content {
                         }
                         else
                         {
-                            if (filesize($target_file) > $this->construct['source_file_size'])
+                            if (filesize($target_file) > $this->request['source_file_size'])
                             {
                                 // If file getting bigger, original file probably already minimized with better algorithm (e.g. google's js files, just use the original file)
                                 copy($source_file, $target_file);
                             }
                         }
 
-                        if (end($this->construct['extension']) == 'min')
+                        if (end($this->request['extension']) == 'min')
                         {
                             $start_time = microtime(true);
-                            file_put_contents($target_file,minify_content(file_get_contents($target_file),$this->construct['data_type']));
+                            file_put_contents($target_file,minify_content(file_get_contents($target_file),$this->request['data_type']));
                             print_r('PHP Minifier Execution Time: '. (microtime(true) - $start_time) . '<br>');
                         }
 
-                        if ($this->construct['source_file_type'] == 'remote_file')
+                        if ($this->request['source_file_type'] == 'remote_file')
                         {
                             // remove the copied remote file
                             unlink($source_file);
                         }
 
                         // TODO: On Direct Rendering from HTTP REQUEST, if request_uri is different from target file_uri, do 301 redirect
-                        switch ($this->construct['data_type'])
+                        switch ($this->request['data_type'])
                         {
                             case 'css':
                                 header("Content-Type: text/css");
@@ -1299,11 +1363,11 @@ class content {
                             default:
                         }
 
-                        readfile($this->construct['file_path']);
+                        readfile($this->request['file_path']);
                 }
                 break;
             case 'html':
-                print_r(render_html($this->construct['field'],$this->construct['template']));
+                print_r(render_html($this->request['field'],$this->request['template']));
 
         }
     }
