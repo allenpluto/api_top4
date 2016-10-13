@@ -71,6 +71,12 @@ class entity
             }
         }
 
+        // some relations (mostly multiple to multiple relations) are not saved in any entity tables, they are stored in relational tables
+        if (!isset($this->parameter['relational_fields']))
+        {
+            $this->parameter['relational_fields'] = array();
+        }
+
         if (!is_null($value))
         {
             $format = format::get_obj();
@@ -98,11 +104,7 @@ class entity
             }
         }
 
-        // some relations (mostly multiple to multiple relations) are not saved in any entity tables, they are stored in relational tables
-        if (!isset($this->parameter['relational_fields']))
-        {
-            $this->parameter['relational_fields'] = array();
-        }
+
         $this->parameter['relational_fields'] = $this->construct_relational_fields($this->parameter['relational_fields']);
 
         return true;

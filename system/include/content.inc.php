@@ -7,24 +7,46 @@
 
 class content {
     protected $request = array();
-    protected $cache = 0;
-    public $parameter = array();
-    public $content = array();
+    protected $content = array();
+
+    public $message;
+    public $format;
+    public $preference;
+
+
+    //protected $cache = 0;
+    //public $parameter = array();
+    //public $content = array();
 
     function __construct($parameter = array())
     {
         $this->request = array();
-        // Analyse uri structure and validate input variables
+        $this->message = message::get_instance();
+        $this->format = format::get_obj();
+        $this->preference = preference::get_instance();
+
+        // Analyse uri structure and validate input variables, store separate input parts into $request
         if ($this->request_decoder($parameter) === false)
         {
             // TODO: Error Log, error during reading input uri and parameters
             return false;
         }
+print_r('request_decoder: <br>');
+print_r($this);
+
+        // Generate the necessary components for the content, store separate component parts into $content
+        // Read data from database (if applicable), only generate raw data from db
+        // If any further complicate process required, leave it to render
         if ($this->build_content() === false)
         {
             // TODO: Error Log, error during building data object
             return false;
         }
+print_r('build_content: <br>');
+print_r($this);
+
+        // Processing file, database and etc (basically whatever time consuming, process it here)
+        // As some rendering methods may only need the raw data without going through all the file copy, modify, generate processes
         return $this->render();
     }
 
@@ -90,7 +112,7 @@ class content {
                 if (empty($request_path))
                 {
                     // TODO: css/js folder forbid direct access
-                    break;
+                    return false;
                 }
                 $file_extension = ['min'];
                 $file_name = array_pop($request_path);
@@ -120,41 +142,6 @@ class content {
                 $this->request['file_path'] .= $file_name;
                 $this->request['file_uri'] .= $file_name;
 
-                if (!isset($this->request['source_file']))
-                {
-                    $source_file = $this->request['document'].'.'.$this->request['file_type'];
-                    if (!empty($this->request['sub_path'])) $source_file = implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$source_file;
-                    if (!empty($this->request['extension']))
-                    {
-                        // If requiring for file with extension, e.g. minimized js or css as .min.js/.min.css, first check if the original version is in the cache folder
-                        if (file_exists(PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file))
-                        {
-                            $source_file = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file;
-                            $this->request['source_file'] = $source_file;
-                        }
-                    }
-
-                    if (!isset($this->request['source_file']))
-                    {
-                        $this->request['source_file'] = PATH_CONTENT.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file;
-                    }
-
-                    $this->request['source_file_type'] = 'local_file';
-                }
-
-                if (!isset($this->request['source_file_type']))
-                {
-                    if ((strpos($this->request['source_file'],URI_SITE_BASE) == FALSE)  AND (preg_match('/^http/',$this->request['source_file']) == 1))
-                    {
-                        // If source_file is not relative uri and not start with current site uri base, it is an external (cross domain) source file
-                        $this->request['source_file_type'] = 'remote_file';
-                    }
-                    else
-                    {
-                        $this->request['source_file'] = str_replace(URI_SITE_BASE,PATH_SITE_BASE,$this->request['source_file']);
-                        $this->request['source_file_type'] = 'local_file';
-                    }
-                }
 
                 unset($file_name);
                 break;
@@ -245,17 +232,17 @@ class content {
                 if (empty($request_path))
                 {
                     // TODO: image folder forbid direct access
-                    break;
+                    return false;
                 }
-                $file_extension = array_keys($preference->image['size']);;
+                $image_size = array_keys($this->preference->image['size']);;
                 $file_name = array_pop($request_path);
                 $file_part = explode('.',$file_name);
                 $this->request['document'] = array_shift($file_part);
                 if (!empty($file_part)) $this->request['file_type'] = array_pop($file_part);
                 $this->request['extension'] = [];
-                if (in_array(end($file_part),$file_extension))
+                if (in_array(end($file_part),$image_size))
                 {
-                    $this->request['extension'][] = array_pop($file_part);
+                    $this->request['image_size'] = array_pop($file_part);
                 }
                 if (!empty($file_part))
                 {
@@ -274,44 +261,6 @@ class content {
 
                 $this->request['file_path'] .= $file_name;
                 $this->request['file_uri'] .= $file_name;
-
-
-                if (!isset($this->request['source_file']))
-                {
-                    // If source file not set, try to find default source_file
-                    $source_file = $this->request['document'].'.'.$this->request['file_type'];
-                    if (!empty($this->request['sub_path'])) $source_file = implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$source_file;
-                    if (!empty($this->request['extension']))
-                    {
-                        // First check in cache folder, is there a default version of the requested image
-                        if (file_exists(PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file))
-                        {
-                            $source_file = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file;
-                            $this->request['source_file'] = $source_file;
-                        }
-                    }
-
-                    if (!isset($this->request['source_file']))
-                    {
-                        $this->request['source_file'] = PATH_CONTENT.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file;
-                    }
-
-                    $this->request['source_file_type'] = 'local_file';
-                }
-
-                if (!isset($this->request['source_file_type']))
-                {
-                    if ((strpos($this->request['source_file'],URI_SITE_BASE) == FALSE)  AND (preg_match('/^http/',$this->request['source_file']) == 1))
-                    {
-                        // If source_file is not relative uri and not start with current site uri base, it is an external (cross domain) source file
-                        $this->request['source_file_type'] = 'remote_file';
-                    }
-                    else
-                    {
-                        $this->request['source_file'] = str_replace(URI_SITE_BASE,PATH_SITE_BASE,$this->request['source_file']);
-                        $this->request['source_file_type'] = 'local_file';
-                    }
-                }
                 break;
             case 'json':
                 break;
@@ -327,6 +276,7 @@ class content {
                 unset($option[$key]);
             }
         }
+        // dump the rest custom/unrecognized input variables into $request['option']
         $this->request['option'] = $option;
     }
 
@@ -335,279 +285,142 @@ class content {
         $format = format::get_obj();
         $preference = preference::get_instance();
 
+        if (!isset($this->request['format'])) $this->content['format'] = 'default';
+        else $this->content['format'] = $this->request['format'];
+
         switch($this->request['data_type'])
         {
             case 'css':
             case 'js':
-                if ($this->request['source_file_type'] == 'remote_file')
+                if (isset($this->request['source_file']))
                 {
-                    // External source file
-                    $file_header = @get_headers($this->request['source_file'],true);
-                    if (strpos( $file_header[0], '200 OK' ) === false) {
-                        // TODO: Error Handling, fail to get external source file header
-                        break;
-                    }
-                    if (isset($file_header['Last-Modified'])) {
-                        //$file_version = strtolower(date('dMY', strtotime($file_header['Last-Modified'])));
-                        $this->request['source_file_update'] = strtotime($file_header['Last-Modified']);
-                    } else {
-                        if (isset($file_header['Expires'])) {
-                            //$file_version = strtolower(date('dMY', strtotime($file_header['Expires'])));
-                            $this->request['source_file_update'] = strtotime($file_header['Expires']);
-                        } else {
-                            //if (isset($file_header['Date'])) $file_version = strtolower(date('dMY', strtotime($file_header['Date'])));
-                            //else $file_version = strtolower(date('dMY'), strtotime('+1 day'));
-                            if (isset($file_header['Date'])) $this->request['source_file_update'] = strtotime($file_header['Date']);
-                            else $this->request['source_file_update'] = ('+1 day');
-                        }
-                    }
-                    if (isset($file_header['Content-Length']))
-                    {
-                        $this->request['source_file_size'] = $file_header['Content-Length'];
-                    }
-                    $source_file = $target_file_path.$this->request['document'].'.'.$this->request['file_type'];
-                    copy($this->request['source_file'],$source_file);
+                    $this->content['source_file'] = ['file'=>$this->request['source_file']];
                 }
                 else
                 {
-                    //$file_version = strtolower(date('dMY', filemtime($this->request['source_file'])));
-                    $this->request['source_file_update'] = filemtime($this->request['source_file']);
-                    $this->request['source_file_size'] = filesize($this->request['source_file']);
+                    $source_file = $this->request['document'].'.'.$this->request['file_type'];
+                    if (!empty($this->request['sub_path'])) $source_file = implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$source_file;
+                    if (!empty($this->request['extension']))
+                    {
+                        // If requiring for file with extension, e.g. minimized js or css as .min.js/.min.css, first check if the original version is in the cache folder
+                        if (file_exists(PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file))
+                        {
+                            $source_file = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file;
+                            $this->content['source_file'] = ['file'=>$source_file];
+                        }
+                    }
 
-                    $source_file = $this->request['source_file'];
+                    if (!isset($this->content['source_file']))
+                    {
+                        $this->content['source_file'] = ['file'=>PATH_CONTENT.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file];
+                        if (!file_exists($this->content['source_file']['file']))
+                        {
+                            // TODO: Error Handling, last ditch failed, source file does not exist in content folder either
+                            return false;
+                        }
+                    }
+
+                    $this->content['source_file']['source'] = 'local_file';
                 }
 
-                $target_file = $this->request['document'];
-                if (!empty($this->request['extension'])) $target_file .= '.'.implode('.',$this->request['extension']);
-                $target_file .= $this->request['file_type'];
-
-                $this->request['file_path'] = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR;
-                if (!empty($this->request['sub_path'])) $this->request['file_path'] .= implode(DIRECTORY_SEPARATOR,$this->request['file_path']).DIRECTORY_SEPARATOR;
-                $this->request['file_path'] .= $target_file;
-
-                $this->request['file_uri'] = URI_ASSET.$this->request['data_type'].'/';
-                if (!empty($this->request['sub_path'])) $this->request['file_uri'] .= implode('/',$this->request['file_path']).'/';
-                $this->request['file_uri'] .= $target_file;
+                if (isset($this->request['source_file_type']))
+                {
+                    $this->content['source_file']['source'] = $this->request['source_file_type'];
+                }
+                else
+                {
+                    if ((strpos($this->content['source_file']['file'],URI_SITE_BASE) == FALSE)  AND (preg_match('/^http/',$this->content['source_file']['file']) == 1))
+                    {
+                        // If source_file is not relative uri and not start with current site uri base, it is an external (cross domain) source file
+                        $this->content['source_file']['source'] = 'remote_file';
+                    }
+                    else
+                    {
+                        $this->request['source_file']['file'] = str_replace(URI_SITE_BASE,PATH_SITE_BASE,$this->request['source_file']['file']);
+                        $this->content['source_file']['source'] = 'local_file';
+                    }
+                }
 
                 break;
             case 'image':
-                // Try to locate the source image
-                // Check whether image file with original size exists in cache folder
-                if (file_exists(PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type']))
+                $default_file = $this->request['document'];
+                if (!empty($this->request['sub_path'])) $default_file = implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$default_file;
+                if (isset($this->request['image_size']))
                 {
-                    $source_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'];
-                    $source_image_size = getimagesize($source_image_path);
-                    if ($source_image_size === false)
-                    {
-                        // TODO: Error Handling, fail to get source image size
-                        break;
-                    }
-                    switch ($source_image_size['mime']) {
-                        case 'image/png':
-                            $source_image = imagecreatefrompng($source_image_path);
-                            break;
-                        case 'image/gif':
-                            $source_image = imagecreatefromgif($source_image_path);
-                            break;
-                        case 'image/jpg':
-                        case 'image/jpeg':
-                            $source_image = imagecreatefromjpeg($source_image_path);
-                            break;
-                        default:
-                            $source_image = imagecreatefromstring($source_image_path);
-                    }
-                    if ($source_image === FALSE) {
-                        // TODO: Error Handling, fail to create image
-                        header('Location: ' . URI_SITE_BASE . '/content/image/img_listing_default_280_280.jpg');
-                        exit();
-                    }
+                    $this->content['target_file'] = [
+                        'path'=>PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$default_file.'.'.$this->request['image_size'].'.'.$this->request['file_type']
+                    ];
+                }
+                $this->content['default_file'] = [
+                    'path'=>PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$default_file.'.'.$this->request['file_type']
+                ];
+                $this->content['source_file'] = [];
+
+                if (file_exists($this->content['default_file']['path']))
+                {
+                    // If default version exists in cache folder, ignore the rest of analysis, set default_file as source_file
+                    $this->content['source_file'] = [
+                        'source'=>'local_file',
+                        'path'=>$this->content['default_file']['path']
+                    ];
                 }
                 else
                 {
-                    $default_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'];
-                    // Check whether image file with same name exists in content folder
-                    if (file_exists(PATH_CONTENT_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'])) {
-                        $source_image_path = PATH_CONTENT_IMAGE . implode(DIRECTORY_SEPARATOR, $this->request['sub_path']) . DIRECTORY_SEPARATOR . $this->request['document'] . '.' . $this->request['file_type'];
-                        $source_image_size = getimagesize($source_image_path);
-                        if ($source_image_size === false) {
-                            // TODO: Error Handling, fail to get source image size
-                            break;
-                        }
-                        switch ($source_image_size['mime']) {
-                            case 'image/png':
-                                $source_image = imagecreatefrompng($source_image_path);
-                                break;
-                            case 'image/gif':
-                                $source_image = imagecreatefromgif($source_image_path);
-                                break;
-                            case 'image/jpg':
-                            case 'image/jpeg':
-                                $source_image = imagecreatefromjpeg($source_image_path);
-                                break;
-                            default:
-                                $source_image = imagecreatefromstring($source_image_path);
-                        }
-                        if ($source_image === FALSE) {
-                            // TODO: Error Handling, fail to create image
-                            header('Location: ' . URI_SITE_BASE . '/content/image/img_listing_default_280_280.jpg');
-                            exit();
-                        }
-                    }
-                    else
+                    // Try to locate the source image
+                    if (isset($this->request['source_file']))
                     {
-                        // If file does not exist in content folder either, check if it is stored in database
-                        $document_name_part = explode('_',$this->request['document']);
-                        $document_id = end($document_name_part);
-                        unset($document_name_part);
-                        if (!is_numeric($document_id))
+                        // Set source_file if it is directly provided through request, normally for server side request or ajax request
+                        if (preg_match('/^http/',$this->request['source_file']) == 1)
                         {
-                            // TODO: Error Handling, fail to get source image from database, file name does not end with image id
-                            break;
-                        }
-                        $entity_image_obj = new entity_image($document_id);
-                        unset($document_id);
-                        if (empty($entity_image_obj->id_group))
-                        {
-                            // TODO: Error Handling, fail to get source image from database, id does not exist or database error
-                            break;
-                        }
-                        $entity_image_obj->get();
-                        if (empty($entity_image_obj->row[0]['data']))
-                        {
-                            // TODO: Error Handling, fail to get source image from database, image row exists but image data are not saved in database
-                            break;
-                        }
-                        $entity_image_default_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$entity_image_obj->row[0]['sub_path']).DIRECTORY_SEPARATOR.$entity_image_obj->row[0]['document'].'.'.$entity_image_obj->row[0]['file_type'];
-                        if ($entity_image_default_image_path != $default_image_path)
-                        {
-                            // TODO: Error Handling, source image retrieved from database, but default path is different, (the image might have been renamed), 301 redirect or 403 Error Image
-                            break;
-                        }
-                        // consider the image is already optimized before saved into database, directly write the data stream into physical file
-                        file_put_contents($default_image_path, $entity_image_obj->row[0]['data']);
-                        unset($default_image_path);
-                        $source_image = imagecreatefromstring($entity_image_obj->row[0]['data']);
-                        $source_image_size = array(
-                            $entity_image_obj->row[0]['width'],
-                            $entity_image_obj->row[0]['height'],
-                            'mime'=>$entity_image_obj->row[0]['mime']
-                        );
-                    }
-                }
-
-                if (empty($source_image))
-                {
-                    // TODO: Error Handling, source image can not be located or fail to create php image resource object
-                    break;
-                }
-
-                if (isset($default_image_path))
-                {
-                    if (!file_exists(dirname($default_image_path))) mkdir(dirname($default_image_path), 0755, true);
-
-                    // If default size image does not exist, create default image cache first
-                    if ($source_image_size[0] > end($preference->image['size']))
-                    {
-                        // if source image is too big, resize it before save as default image cache
-                        $default_image_size = array(
-                            end($preference->image['size']),
-                            round($source_image_size[1] / $source_image_size[0] * end($preference->image['size']))
-                        );
-                        $default_image = imagecreatetruecolor($default_image_size[0], $default_image_size[1]);
-                        imagecopyresampled($default_image,$source_image,0,0,0,0,$default_image_size[0], $default_image_size[1],$source_image_size[0],$source_image_size[1]);
-
-                        // default image generate with the best quality
-                        $image_quality = $preference->image['quality']['max'];
-                        switch($source_image_size['mime'])
-                        {
-                            case 'image/png':
-                                imagesavealpha($default_image, true);
-                                imagepng($default_image, $default_image_path, $image_quality['image/png'][0], $image_quality['image/png'][1]);
-                                break;
-                            case 'image/gif':
-                                // Resampled gif will lose animation, so save it as jpeg
-                                // imagegif($default_image, $default_image_path);
-                                // break;
-                            case 'image/jpg':
-                            case 'image/jpeg':
-                            default:
-                                imagejpeg($default_image, $default_image_path, $image_quality['image/jpeg']);
-                        }
-                        unset($image_quality);
-                        unset($default_image_size);
-                    }
-                    else
-                    {
-                        // If source image is in proper size, directly copy the file, php resize might lose quality and make the file size bigger
-                        copy($source_image_path,$default_image_path);
-                    }
-                    unset($default_image_path);
-                }
-
-                if (isset($this->request['size']))
-                {
-                    if (!in_array($this->request['size'],array_keys($preference->image['size'])))
-                    {
-                        // TODO: Error Handling, image size is not defined in global preference
-                        break;
-                    }
-                    $target_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['size'].DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'];
-                    if (!file_exists(dirname($target_image_path))) mkdir(dirname($target_image_path), 0755, true);
-
-                    $target_image_size = array(
-                        $preference->image['size'][$this->request['size']],
-                        round($source_image_size[1] / $source_image_size[0] * $preference->image['size'][$this->request['size']])
-                    );
-                    $target_image = imagecreatetruecolor($target_image_size[0], $target_image_size[1]);
-                    imagecopyresampled($target_image,$source_image,0,0,0,0,$target_image_size[0], $target_image_size[1],$source_image_size[0],$source_image_size[1]);
-
-                    imageinterlace($target_image,true);
-
-                    // default display image generate with fast speed
-                    $image_quality = $preference->image['quality']['spd'];
-                    if (!empty($this->request['extension']))
-                    {
-                        if (in_array(end($this->request['extension']),$preference->image['quality']))
-                        {
-                            $image_quality = $preference->image['quality'][end($this->request['extension'])];
-                        }
-                    }
-
-                    switch($source_image_size['mime'])
-                    {
-                        case 'image/png':
-                            imagesavealpha($target_image, true);
-                            imagepng($target_image, $target_image_path, $image_quality['image/png'][0], $image_quality['image/png'][1]);
-                            break;
-                        case 'image/gif':
-                            if ($source_image_size[0] <= $target_image_size[0])
+                            $this->content['source_file']['uri'] = $this->request['source_file'];
+                            if (strpos($this->request['source_file']['file'],URI_SITE_BASE) == FALSE)
                             {
-                                copy($source_image_path,$target_image_path);
-                                break;
+                                $this->content['source_file']['source'] = 'remote_file';
+                                $this->content['source_file']['path'] = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$this->request['document'].'.src.'.$this->request['file_type'];;
                             }
-                            // Resampled gif will lose animation, so save it as jpeg
-                            // imagegif($default_image, $default_image_path);
-                            // break;
-                        case 'image/jpg':
-                        case 'image/jpeg':
-                        default:
-                            imagejpeg($target_image, $target_image_path, $image_quality['image/jpeg']);
+                            else
+                            {
+                                // Request local file through URI, change it to absolute path
+                                $this->content['source_file']['source'] = 'local_file';
+                                $this->content['source_file']['path'] = str_replace(URI_SITE_BASE,PATH_SITE_BASE,$this->content['source_file']['uri']);
+                            }
+                        }
                     }
-                    unset($target_image_size);
+                    else
+                    {
+                        // Nothing is set, have to guess source_file here, start with local file in content folder
+                        $content_folder_path = PATH_CONTENT.$this->request['data_type'].DIRECTORY_SEPARATOR;
+                        if (!empty($this->request['sub_path'])) $content_folder_path .= implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR;
+                        if (file_exists($content_folder_path.$this->request['document'].'.'.$this->request['file_type']))
+                        {
+                            $this->content['source_file'] = [
+                                'source'=>'local_file',
+                                'path'=>$content_folder_path.$this->request['document'].'.'.$this->request['file_type']
+                            ];
+                        }
+                        else
+                        {
+                            // If image doesn't exist in content folder, try database
+                            $this->content['source_file']['source'] = 'local_data';
+                            $document_name_part = explode('-',$this->request['document']);
+                            $document_id = end($document_name_part);
+                            if (empty($document_id) OR !is_numeric($document_id))
+                            {
+                                // TODO: Error Handling, fail to get source file from database, last part of file name is not a valid id
+                                return false;
+                            }
+                            print_r($document_id);
+                            $entity_image_obj = new entity_image($document_id);
+                            if (empty($entity_image_obj->row))
+                            {
+                                // TODO: Error Handling, fail to get source file from database, cannot find matched record
+                                return false;
+                            }
+                            //$entity_image_obj->generate_cache_file();
+                            $this->content['source_file']['object'] = &$entity_image_obj;
+                        }
+                    }
                 }
-                else
-                {
-                    $target_image_path = $default_image_path?$default_image_path:$source_image_path;
-                }
-                header('Content-type: '.$source_image_size['mime']);
-                header('Content-Length: '.filesize($target_image_path));
-                if (!file_exists($target_image_path))
-                {
-                    // TODO: Error Handling, image file still not exist, probably due to folder not writable
-                    break;
-                }
-                readfile($target_image_path);
-
                 break;
             case 'json':
                 break;
@@ -1277,8 +1090,6 @@ class content {
         $format = format::get_obj();
         $preference = preference::get_instance();
 
-        if (!isset($this->request['render'])) $this->request['render'] = 'default';
-
         switch($this->request['data_type'])
         {
             case 'css':
@@ -1289,18 +1100,51 @@ class content {
                         return $this->request['file_uri'];
                         break;
                     default:
-                        $target_file_path = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR;
-                        if (!empty($this->request['sub_path'])) $target_file_path .= implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR;
-                        if (!file_exists($target_file_path)) mkdir($target_file_path, 0755, true);
                         if ($this->request['source_file_type'] == 'remote_file')
                         {
-                            $source_file = $target_file_path.$this->request['document'].'.'.$this->request['file_type'];
-                            copy($this->request['source_file'],$source_file);
+                            // External source file
+                            $file_header = @get_headers($this->request['source_file'],true);
+                            if (strpos( $file_header[0], '200 OK' ) === false) {
+                                // TODO: Error Handling, fail to get external source file header
+                                return false;
+                            }
+                            if (isset($file_header['Last-Modified'])) {
+                                $this->request['source_file_update'] = strtotime($file_header['Last-Modified']);
+                            } else {
+                                if (isset($file_header['Expires'])) {
+                                    $this->request['source_file_update'] = strtotime($file_header['Expires']);
+                                } else {
+                                    if (isset($file_header['Date'])) $this->request['source_file_update'] = strtotime($file_header['Date']);
+                                    else $this->request['source_file_update'] = ('+1 day');
+                                }
+                            }
+                            if (isset($file_header['Content-Length']))
+                            {
+                                $this->request['source_file_size'] = $file_header['Content-Length'];
+                                if ($this->request['source_file_size'] > 10485760)
+                                {
+                                    // TODO: Error Handling, source file too big
+                                    return false;
+                                }
+                            }
                         }
                         else
                         {
-                            $source_file = $this->request['source_file'];
+                            if (!file_exists($this->request['source_file']))
+                            {
+                                // TODO: Error Handling, fail to get local source file
+                                return false;
+                            }
+                            $this->request['source_file_update'] = filemtime($this->request['source_file']);
+                            $this->request['source_file_size'] = filesize($this->request['source_file']);
                         }
+
+                        $target_file_path = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR;
+                        if (!empty($this->request['sub_path'])) $target_file_path .= implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR;
+                        if (!file_exists($target_file_path)) mkdir($target_file_path, 0755, true);
+
+                        $source_file = $target_file_path.$this->request['document'].'.src.'.$this->request['file_type'];
+                        copy($this->request['source_file'],$source_file);
 
                         $target_file = $target_file_path.$this->request['document'];
                         if (!empty($this->request['extension'])) $target_file = $target_file.'.'.implode('.',$this->request['extension']);
@@ -1345,13 +1189,14 @@ class content {
                             print_r('PHP Minifier Execution Time: '. (microtime(true) - $start_time) . '<br>');
                         }
 
-                        if ($this->request['source_file_type'] == 'remote_file')
-                        {
-                            // remove the copied remote file
-                            unlink($source_file);
-                        }
+                        // remove the copied source file
+                        unlink($source_file);
 
                         // TODO: On Direct Rendering from HTTP REQUEST, if request_uri is different from target file_uri, do 301 redirect
+
+                        header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
+                        header('Content-Length: '.filesize($this->request['file_path']));
+
                         switch ($this->request['data_type'])
                         {
                             case 'css':
@@ -1368,6 +1213,407 @@ class content {
                 break;
             case 'html':
                 print_r(render_html($this->request['field'],$this->request['template']));
+                break;
+            case 'image':
+                switch ($this->content['format'])
+                {
+                    case 'source_uri':
+                        return $this->request['file_uri'];
+                        break;
+                    default:
+                        // default to request for image file
+                        switch($this->content['source_file']['type'])
+                        {
+                            case 'local_file':
+                                if (!isset($this->content['source_file']['path']) OR !file_exists($this->content['source']['path']))
+                                {
+                                    // TODO: Error Handling, fail to get local source file on rendering
+                                    $this->message->error = 'Rendering: Local Source File path not set or file does not exist';
+                                    return false;
+                                }
+                                $this->content['source_file']['update'] = filemtime($this->content['source']['path']);
+                                $this->content['source_file']['size'] = filesize($this->content['source']['path']);
+                                $source_image_size = getimagesize($this->content['source']['path']);
+                                $this->content['source_file']['width'] = $source_image_size[0];
+                                $this->content['source_file']['height'] = $source_image_size[1];
+                                if (isset($source_image_size['mime'])) $this->content['source_file']['mime'] = $source_image_size['mime'];
+                                break;
+                            case 'remote_file':
+                                // External source file
+                                if (!isset($this->content['source_file']['uri']))
+                                {
+                                    // TODO: Error Handling, fail to get remote source file on rendering
+                                    $this->message->error = 'Rendering: Remote Source File uri not set';
+                                    return false;
+                                }
+                                $file_header = @get_headers($this->content['source_file']['uri'],true);
+                                if (strpos( $file_header[0], '200 OK' ) === false) {
+                                    // TODO: Error Handling, fail to get remote source file on rendering
+                                    $this->message->error = 'Rendering: Fail to retrieve remote file ['.$file_header[0].']';
+                                    return false;
+                                }
+                                if (isset($file_header['Last-Modified'])) {
+                                    $this->content['source_file']['update'] = strtotime($file_header['Last-Modified']);
+                                } else {
+                                    if (isset($file_header['Expires'])) {
+                                        $this->content['source_file']['update'] = strtotime($file_header['Expires']);
+                                    } else {
+                                        if (isset($file_header['Date'])) $this->content['source_file']['update'] = strtotime($file_header['Date']);
+                                        else $this->content['source_file']['update'] = date('+1 day');
+                                    }
+                                }
+                                if (isset($file_header['Content-Length']))
+                                {
+                                    $this->content['source_file']['size'] = $file_header['Content-Length'];
+                                    if ($this->content['source_file']['size'] > 10485760)
+                                    {
+                                        // TODO: Error Handling, source file too big
+                                        $this->message->error = 'Rendering: Fail to retrieve remote file, remote file size too big ['.$this->content['source_file']['size'].']';
+                                        return false;
+                                    }
+                                }
+                                if (isset($file_header['Content-Type']))
+                                {
+                                    $this->content['source_file']['mime'] = strtolower($file_header['Content-Type']);
+                                    $image_mime_type = ['image/png','image/gif','image/jpg','image/jpeg'];
+                                    if (!in_array($this->content['source_file']['mime'],$image_mime_type))
+                                    {
+                                        // TODO: Error Handling, source file type not acceptable
+                                        $this->message->error = 'Rendering: Fail to retrieve remote file, remote file type not acceptable ['.$this->content['source_file']['mime'].']';
+                                        return false;
+                                    }
+                                }
+                                copy($this->content['source_file']['uri'],$this->content['source_file']['path']);
+                                if (!isset($this->content['source_file']['size'])) $this->content['source_file']['size'] = filesize($this->content['source_file']['path']);
+                                $source_image_size = getimagesize($this->content['source']['path']);
+                                $this->content['source_file']['width'] = $source_image_size[0];
+                                $this->content['source_file']['height'] = $source_image_size[1];
+                                if (!isset($this->content['source_file']['mime']) AND isset($source_image_size['mime'])) $this->content['source_file']['mime'] = $source_image_size['mime'];
+
+                                break;
+                            case 'local_data':
+                                if (!isset($this->content['source_file']['entity']))
+                                {
+                                    // TODO: Error Handling, fail to get file from database on rendering
+                                    $this->message->error = 'Rendering: Local Database Source File entity not set';
+                                    return false;
+                                }
+                                $entity_image_obj = &$this->content['source_file']['entity'];
+                                if (empty($entity_image_obj->row))
+                                {
+                                    // TODO: Error Handling, fail to get source file from database, cannot find matched record
+                                    $this->message->error = 'Rendering: Local Database Source File entity set, but data row is not set in entity';
+                                    return false;
+                                }
+                                // Generate default image from db data
+                                $entity_image_obj->generate_cache_file();
+
+                                if ($this->content['default_file']['path'] != $entity_image_obj->row[0]['file'])
+                                {
+                                    // TODO: Error Handling, request file_path is not consistent with entity_image file_path
+                                    $this->message->notice = 'Rendering: Local Database generate image path is different from request image path [Request:'.$this->content['default_file']['path'].';Generated:'.$entity_image_obj->row[0]['file'].']';
+                                    $this->content['default_file']['path'] = $entity_image_obj->row[0]['file'];
+                                }
+
+                                if (!file_exists($this->content['default_file']['path']))
+                                {
+                                    // TODO: Error Handling, fail to get local default file from db
+                                    $this->message->error = 'Rendering: Local Database fail to generate default size image ['.$this->content['default_file']['path'].']';
+                                    return false;
+                                }
+
+                                $this->content['source_file']['path'] = $this->content['default_file']['path'];
+                                $this->content['source_file']['size'] = filesize($this->request['source_file']['path']);
+                                $this->content['source_file']['update'] = $entity_image_obj->row[0]['update_time'];
+                                $this->content['source_file']['width'] = $entity_image_obj->row[0]['width'];
+                                $this->content['source_file']['height'] = $entity_image_obj->row[0]['height'];
+                                $this->content['source_file']['mime'] = $entity_image_obj->row[0]['mime'];
+                                break;
+                            default:
+                        }
+
+                        switch ($this->content['source_file']['mime']) {
+                            case 'image/png':
+                                $source_image = imagecreatefrompng($this->content['source_file']['path']);
+                                break;
+                            case 'image/gif':
+                                $source_image = imagecreatefromgif($this->content['source_file']['path']);
+                                break;
+                            case 'image/jpg':
+                            case 'image/jpeg':
+                                $source_image = imagecreatefromjpeg($this->content['source_file']['path']);
+                                break;
+                            default:
+                                $source_image = imagecreatefromstring($this->content['source_file']['path']);
+                        }
+                        if ($source_image === FALSE) {
+                            // TODO: Error Handling, fail to create image
+                            return false;
+                        }
+
+                        if ($this->content['source_file']['type'] == 'remote_file')
+                        {
+                            // Create local default from remote file first
+                            if ($this->content['source_file']['width'] > max($this->preference->image['size']))
+                            {
+                                // If source image too large, try to resize it before save to default
+                                $this->content['default_file']['width'] = max($this->preference->image['size']);
+                                $this->content['default_file']['height'] = $this->content['source_file']['height'] / $this->content['source_file']['width'] * $this->content['default_file']['width'];
+                                $default_image = imagecreatetruecolor($this->content['default_file']['width'],  $this->content['default_file']['height']);
+                                imagecopyresampled($default_image,$source_image,0,0,0,0,$this->content['default_file']['width'], $this->content['default_file']['height'],$this->content['source_file']['width'],$this->content['source_file']['height']);
+                            }
+                            else
+                            {
+                                $default_image = $source_image;
+                                $this->content['default_file']['width'] = $this->content['source_file']['width'];
+                                $this->content['default_file']['height'] = $this->content['source_file']['height'];
+                            }
+                            // Save Default Image with Max Quality Set
+                            $image_quality = $this->preference->image['quality']['max'];
+                            switch($this->content['source_file']['mime'])
+                            {
+                                case 'image/png':
+                                    imagesavealpha($default_image, true);
+                                    imagepng($default_image, $this->content['default_file']['path'], $image_quality['image/png'][0], $image_quality['image/png'][1]);
+                                    break;
+                                case 'image/gif':
+                                    // Resampled gif will lose animation, so save it as jpeg instead
+                                    // imagegif($default_image, $default_image_path);
+                                    // break;
+                                case 'image/jpg':
+                                case 'image/jpeg':
+                                default:
+                                    imagejpeg($default_image, $this->content['default_file']['path'], $image_quality['image/jpeg']);
+                            }
+                            $this->content['default_file']['size'] = filesize($this->request['default_file']['path']);
+                            if ($this->content['default_file']['size'] > $this->content['source_file']['size'])
+                            {
+                                // If somehow resized image getting bigger in size, just overwrite it with original file
+                                copy($this->request['source_file']['path'],$this->request['default_file']['path']);
+                            }
+                            unlink($this->request['source_file']['path']);
+                        }
+
+
+                        if (file_exists(PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type']))
+                        {
+                            $source_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'];
+                            $source_image_size = getimagesize($source_image_path);
+                            if ($source_image_size === false)
+                            {
+                                // TODO: Error Handling, fail to get source image size
+                                return false;
+                            }
+                            switch ($source_image_size['mime']) {
+                                case 'image/png':
+                                    $source_image = imagecreatefrompng($source_image_path);
+                                    break;
+                                case 'image/gif':
+                                    $source_image = imagecreatefromgif($source_image_path);
+                                    break;
+                                case 'image/jpg':
+                                case 'image/jpeg':
+                                    $source_image = imagecreatefromjpeg($source_image_path);
+                                    break;
+                                default:
+                                    $source_image = imagecreatefromstring($source_image_path);
+                            }
+                            if ($source_image === FALSE) {
+                                // TODO: Error Handling, fail to create image
+                                return false;
+                                //header('Location: ' . URI_SITE_BASE . '/content/image/img_listing_default_280_280.jpg');
+                                //exit();
+                            }
+                        }
+                        else
+                        {
+                            $default_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'];
+                            // Check whether image file with same name exists in content folder
+                            if (file_exists(PATH_CONTENT_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'])) {
+                                $source_image_path = PATH_CONTENT_IMAGE . implode(DIRECTORY_SEPARATOR, $this->request['sub_path']) . DIRECTORY_SEPARATOR . $this->request['document'] . '.' . $this->request['file_type'];
+                                $source_image_size = getimagesize($source_image_path);
+                                if ($source_image_size === false) {
+                                    // TODO: Error Handling, fail to get source image size
+                                    break;
+                                }
+                                switch ($source_image_size['mime']) {
+                                    case 'image/png':
+                                        $source_image = imagecreatefrompng($source_image_path);
+                                        break;
+                                    case 'image/gif':
+                                        $source_image = imagecreatefromgif($source_image_path);
+                                        break;
+                                    case 'image/jpg':
+                                    case 'image/jpeg':
+                                        $source_image = imagecreatefromjpeg($source_image_path);
+                                        break;
+                                    default:
+                                        $source_image = imagecreatefromstring($source_image_path);
+                                }
+                                if ($source_image === FALSE) {
+                                    // TODO: Error Handling, fail to create image
+                                    header('Location: ' . URI_SITE_BASE . '/content/image/img_listing_default_280_280.jpg');
+                                    exit();
+                                }
+                            }
+                            else
+                            {
+                                // If file does not exist in content folder either, check if it is stored in database
+                                $document_name_part = explode('_',$this->request['document']);
+                                $document_id = end($document_name_part);
+                                unset($document_name_part);
+                                if (!is_numeric($document_id))
+                                {
+                                    // TODO: Error Handling, fail to get source image from database, file name does not end with image id
+                                    break;
+                                }
+                                $entity_image_obj = new entity_image($document_id);
+                                unset($document_id);
+                                if (empty($entity_image_obj->id_group))
+                                {
+                                    // TODO: Error Handling, fail to get source image from database, id does not exist or database error
+                                    break;
+                                }
+                                $entity_image_obj->get();
+                                if (empty($entity_image_obj->row[0]['data']))
+                                {
+                                    // TODO: Error Handling, fail to get source image from database, image row exists but image data are not saved in database
+                                    break;
+                                }
+                                $entity_image_default_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$entity_image_obj->row[0]['sub_path']).DIRECTORY_SEPARATOR.$entity_image_obj->row[0]['document'].'.'.$entity_image_obj->row[0]['file_type'];
+                                if ($entity_image_default_image_path != $default_image_path)
+                                {
+                                    // TODO: Error Handling, source image retrieved from database, but default path is different, (the image might have been renamed), 301 redirect or 403 Error Image
+                                    break;
+                                }
+                                // consider the image is already optimized before saved into database, directly write the data stream into physical file
+                                file_put_contents($default_image_path, $entity_image_obj->row[0]['data']);
+                                unset($default_image_path);
+                                $source_image = imagecreatefromstring($entity_image_obj->row[0]['data']);
+                                $source_image_size = array(
+                                    $entity_image_obj->row[0]['width'],
+                                    $entity_image_obj->row[0]['height'],
+                                    'mime'=>$entity_image_obj->row[0]['mime']
+                                );
+                            }
+                        }
+
+                        if (empty($source_image))
+                        {
+                            // TODO: Error Handling, source image can not be located or fail to create php image resource object
+                            break;
+                        }
+
+                        if (isset($default_image_path))
+                        {
+                            if (!file_exists(dirname($default_image_path))) mkdir(dirname($default_image_path), 0755, true);
+
+                            // If default size image does not exist, create default image cache first
+                            if ($source_image_size[0] > end($preference->image['size']))
+                            {
+                                // if source image is too big, resize it before save as default image cache
+                                $default_image_size = array(
+                                    end($preference->image['size']),
+                                    round($source_image_size[1] / $source_image_size[0] * end($preference->image['size']))
+                                );
+                                $default_image = imagecreatetruecolor($default_image_size[0], $default_image_size[1]);
+                                imagecopyresampled($default_image,$source_image,0,0,0,0,$default_image_size[0], $default_image_size[1],$source_image_size[0],$source_image_size[1]);
+
+                                // default image generate with the best quality
+                                $image_quality = $preference->image['quality']['max'];
+                                switch($source_image_size['mime'])
+                                {
+                                    case 'image/png':
+                                        imagesavealpha($default_image, true);
+                                        imagepng($default_image, $default_image_path, $image_quality['image/png'][0], $image_quality['image/png'][1]);
+                                        break;
+                                    case 'image/gif':
+                                        // Resampled gif will lose animation, so save it as jpeg
+                                        // imagegif($default_image, $default_image_path);
+                                        // break;
+                                    case 'image/jpg':
+                                    case 'image/jpeg':
+                                    default:
+                                        imagejpeg($default_image, $default_image_path, $image_quality['image/jpeg']);
+                                }
+                                unset($image_quality);
+                                unset($default_image_size);
+                            }
+                            else
+                            {
+                                // If source image is in proper size, directly copy the file, php resize might lose quality and make the file size bigger
+                                copy($source_image_path,$default_image_path);
+                            }
+                            unset($default_image_path);
+                        }
+
+                        if (isset($this->request['size']))
+                        {
+                            if (!in_array($this->request['size'],array_keys($preference->image['size'])))
+                            {
+                                // TODO: Error Handling, image size is not defined in global preference
+                                break;
+                            }
+                            $target_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['size'].DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'];
+                            if (!file_exists(dirname($target_image_path))) mkdir(dirname($target_image_path), 0755, true);
+
+                            $target_image_size = array(
+                                $preference->image['size'][$this->request['size']],
+                                round($source_image_size[1] / $source_image_size[0] * $preference->image['size'][$this->request['size']])
+                            );
+                            $target_image = imagecreatetruecolor($target_image_size[0], $target_image_size[1]);
+                            imagecopyresampled($target_image,$source_image,0,0,0,0,$target_image_size[0], $target_image_size[1],$source_image_size[0],$source_image_size[1]);
+
+                            imageinterlace($target_image,true);
+
+                            // default display image generate with fast speed
+                            $image_quality = $preference->image['quality']['spd'];
+                            if (!empty($this->request['extension']))
+                            {
+                                if (in_array(end($this->request['extension']),$preference->image['quality']))
+                                {
+                                    $image_quality = $preference->image['quality'][end($this->request['extension'])];
+                                }
+                            }
+
+                            switch($source_image_size['mime'])
+                            {
+                                case 'image/png':
+                                    imagesavealpha($target_image, true);
+                                    imagepng($target_image, $target_image_path, $image_quality['image/png'][0], $image_quality['image/png'][1]);
+                                    break;
+                                case 'image/gif':
+                                    if ($source_image_size[0] <= $target_image_size[0])
+                                    {
+                                        copy($source_image_path,$target_image_path);
+                                        break;
+                                    }
+                                // Resampled gif will lose animation, so save it as jpeg
+                                // imagegif($default_image, $default_image_path);
+                                // break;
+                                case 'image/jpg':
+                                case 'image/jpeg':
+                                default:
+                                    imagejpeg($target_image, $target_image_path, $image_quality['image/jpeg']);
+                            }
+                            unset($target_image_size);
+                        }
+                        else
+                        {
+                            $target_image_path = $default_image_path?$default_image_path:$source_image_path;
+                        }
+                        header('Content-type: '.$source_image_size['mime']);
+                        header('Content-Length: '.filesize($target_image_path));
+                        if (!file_exists($target_image_path))
+                        {
+                            // TODO: Error Handling, image file still not exist, probably due to folder not writable
+                            break;
+                        }
+                        readfile($target_image_path);
+
+                }
+
+                break;
 
         }
     }

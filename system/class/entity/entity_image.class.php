@@ -103,11 +103,13 @@ class entity_image extends entity
             $format = format::get_obj();
             $preference = preference::get_instance();
 
-            foreach($this->row as $record_index=>$record)
+            foreach($this->row as $record_index=>&$record)
             {
                 if (isset($record['data']))
                 {
                     $file_name = $format->file_name((!empty($record['friendly_url'])?$record['friendly_url']:$record['name']).'-'.$record['id']);
+                    // TODO: Generate re-sized thumbnail
+                    // if (!empty($parameter['size'])) $file_name .= '.'.$parameter['size'];
                     switch($record['mime'])
                     {
                         case 'image/gif':
@@ -121,6 +123,7 @@ class entity_image extends entity
                         default:
                             $file_name .= '.jpg';
                     }
+                    // Create sub path in "Little Endian" structure
                     $sub_path = '';
                     $sub_path_index = floor($record['id'] / 1000);
                     while($sub_path_index > 0)
@@ -129,9 +132,12 @@ class entity_image extends entity
                         $sub_path_index = floor($sub_path_index / 1000);
                         $sub_path .= $sub_path_remain.DIRECTORY_SEPARATOR;
                     }
-                    if (!empty($parameter['size'])) $sub_path .= $parameter['size'].DIRECTORY_SEPARATOR;
-                    if (!file_exists(PATH_IMAGE.$sub_path)) mkdir(PATH_IMAGE.$sub_path, 0755, true);
-                    file_put_contents(PATH_IMAGE.$sub_path.$file_name,  $record['data']);
+                    $record['file_path'] = PATH_IMAGE.$sub_path;
+                    $record['file_name'] = $file_name;
+                    $record['file'] = $record['file_path'].$record['file_name'];
+
+                    if (!file_exists(PATH_IMAGE.$sub_path)) mkdir($record['file_path'], 0755, true);
+                    file_put_contents($record['file'],  $record['data']);
                 }
             }
         }
