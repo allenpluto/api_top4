@@ -6,6 +6,8 @@
 // Render template, create html page view...
 
 class content {
+    public $status;
+
     protected $request = array();
     protected $content = array();
 
@@ -29,10 +31,12 @@ class content {
         if ($this->request_decoder($parameter) === false)
         {
             // TODO: Error Log, error during reading input uri and parameters
-            return false;
+            $this->message->error = 'Fail: Error during request_decoder';
+            $this->status = 'fail';
+            return $this;
         }
-print_r('request_decoder: <br>');
-print_r($this);
+//print_r('request_decoder: <br>');
+//print_r($this);
 
         // Generate the necessary components for the content, store separate component parts into $content
         // Read data from database (if applicable), only generate raw data from db
@@ -40,17 +44,27 @@ print_r($this);
         if ($this->build_content() === false)
         {
             // TODO: Error Log, error during building data object
-            return false;
+            $this->message->error = 'Fail: Error during build_content';
+            $this->status = 'fail';
+            return $this;
         }
-print_r('build_content: <br>');
-print_r($this);
+//print_r('build_content: <br>');
+//print_r($this);
 
         // Processing file, database and etc (basically whatever time consuming, process it here)
         // As some rendering methods may only need the raw data without going through all the file copy, modify, generate processes
-        return $this->render();
+        if ($this->render() === false)
+        {
+            // TODO: Error Log, error during rendering
+            $this->message->error = 'Fail: Error during render';
+            $this->status = 'fail';
+            return $this;
+        }
+
+        $this->status = 'OK';
     }
 
-    private function request_decoder($value)
+    private function request_decoder($value = '')
     {
         if (is_array($value))
         {
@@ -84,9 +98,6 @@ print_r($this);
             unset($_POST);
         }
 
-        $preference = preference::get_instance();
-        $message = message::get_instance();
-
         $request_uri = trim(preg_replace('/^[\/]?'.FOLDER_SITE_BASE.'[\/]/','',$value),'/');
         $request_path = explode('/',$request_uri);
 
@@ -114,17 +125,18 @@ print_r($this);
                     // TODO: css/js folder forbid direct access
                     return false;
                 }
-                $file_extension = ['min'];
+
                 $file_name = array_pop($request_path);
                 $file_part = explode('.',$file_name);
                 $this->request['document'] = array_shift($file_part);
                 if (!empty($file_part)) $this->request['file_type'] = array_pop($file_part);
                 $this->request['extension'] = [];
-                while (in_array(end($file_part),$file_extension))
+                $file_extension = ['min'];
+                if (in_array(end($file_part),$file_extension))
                 {
-                    $this->request['extension'][] = array_pop($file_part);
+                    $this->request['extension']['minify'] = array_pop($file_part);
                 }
-                asort($this->request['extension']);
+                //asort($this->request['extension']);
                 if (!empty($file_part))
                 {
                     // Put the rest part that is not an extension back to document name, e.g. jquery-1.11.8.min.js
@@ -184,7 +196,7 @@ print_r($this);
                                     {
                                         if (!in_array( $request_path[$i*2],$option))
                                         {
-                                            $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->request['data_type'];
+                                            $this->message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->request['data_type'];
                                             break 2;
                                         }
                                         $this->request['option'][$request_path[$i*2]] = $request_path[$i*2+1];
@@ -212,7 +224,7 @@ print_r($this);
                                     {
                                         if (!in_array( $request_path[$i*2],$option))
                                         {
-                                            $message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->request['data_type'];
+                                            $this->message->error = __FILE__.'(line '.__LINE__.'): Construction Fail, unknown option ['.$request_path[$i*2].'] for '.$this->request['data_type'];
                                             break 2;
                                         }
                                         $this->request['option'][$request_path[$i*2]] = $request_path[$i*2+1];
@@ -242,7 +254,7 @@ print_r($this);
                 $this->request['extension'] = [];
                 if (in_array(end($file_part),$image_size))
                 {
-                    $this->request['image_size'] = array_pop($file_part);
+                    $this->request['extension']['image_size'] = array_pop($file_part);
                 }
                 if (!empty($file_part))
                 {
@@ -266,7 +278,7 @@ print_r($this);
                 break;
         }
 
-        $option_preset = ['data_type','module','document','field','template','render'];
+        $option_preset = ['data_type','document','file_type','extension','module','template','render'];
         foreach($option as $key=>$item)
         {
             // Options from GET, POST overwrite ones decoded from uri
@@ -282,9 +294,6 @@ print_r($this);
 
     private function build_content()
     {
-        $format = format::get_obj();
-        $preference = preference::get_instance();
-
         if (!isset($this->request['format'])) $this->content['format'] = 'default';
         else $this->content['format'] = $this->request['format'];
 
@@ -294,7 +303,9 @@ print_r($this);
             case 'js':
                 if (isset($this->request['source_file']))
                 {
-                    $this->content['source_file'] = ['file'=>$this->request['source_file']];
+                    $this->content['source_file'] = [
+                        'file'=>$this->request['source_file']
+                    ];
                 }
                 else
                 {
@@ -306,13 +317,17 @@ print_r($this);
                         if (file_exists(PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file))
                         {
                             $source_file = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file;
-                            $this->content['source_file'] = ['file'=>$source_file];
+                            $this->content['source_file'] = [
+                                'file'=>$source_file
+                            ];
                         }
                     }
 
                     if (!isset($this->content['source_file']))
                     {
-                        $this->content['source_file'] = ['file'=>PATH_CONTENT.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file];
+                        $this->content['source_file'] = [
+                            'file'=>PATH_CONTENT.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file
+                        ];
                         if (!file_exists($this->content['source_file']['file']))
                         {
                             // TODO: Error Handling, last ditch failed, source file does not exist in content folder either
@@ -336,7 +351,7 @@ print_r($this);
                     }
                     else
                     {
-                        $this->request['source_file']['file'] = str_replace(URI_SITE_BASE,PATH_SITE_BASE,$this->request['source_file']['file']);
+                        $this->content['source_file']['file'] = str_replace(URI_SITE_BASE,PATH_SITE_BASE,$this->content['source_file']['file']);
                         $this->content['source_file']['source'] = 'local_file';
                     }
                 }
@@ -345,15 +360,32 @@ print_r($this);
             case 'image':
                 $default_file = $this->request['document'];
                 if (!empty($this->request['sub_path'])) $default_file = implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$default_file;
-                if (isset($this->request['image_size']))
-                {
-                    $this->content['target_file'] = [
-                        'path'=>PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$default_file.'.'.$this->request['image_size'].'.'.$this->request['file_type']
-                    ];
-                }
                 $this->content['default_file'] = [
                     'path'=>PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$default_file.'.'.$this->request['file_type']
                 ];
+                if (count($this->request['extension']) > 0)
+                {
+                    $this->content['target_file'] = [
+                        'path'=>PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$default_file.'.'.implode('.',$this->request['extension']).'.'.$this->request['file_type'],
+                    ];
+                    if (isset($this->request['extension']['image_size']))
+                    {
+                        if (!in_array($this->request['extension']['image_size'],array_keys($this->preference->image['size'])))
+                        {
+                            // TODO: Error Handling, image size is not defined in global preference
+                            break;
+                        }
+
+                        $this->content['target_file']['width'] = $this->preference->image['size'][$this->request['extension']['image_size']];
+                    }
+                }
+                else
+                {
+                    $this->content['target_file'] = [
+                        'path'=>$this->content['default_file']['path']
+                    ];
+
+                }
                 $this->content['source_file'] = [];
 
                 if (file_exists($this->content['default_file']['path']))
@@ -409,7 +441,6 @@ print_r($this);
                                 // TODO: Error Handling, fail to get source file from database, last part of file name is not a valid id
                                 return false;
                             }
-                            print_r($document_id);
                             $entity_image_obj = new entity_image($document_id);
                             if (empty($entity_image_obj->row))
                             {
@@ -485,611 +516,10 @@ print_r($this);
         //print_r($page_field);
         //print_r($GLOBALS['global_message']->display());
         return true;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        $this->content['script'][] = array('type'=>'local_file', 'file_name'=>'jquery-1.11.3');
-        $this->content['script'][] = array('type'=>'local_file', 'file_name'=>'default');
-        // Google Analytics Tracking
-        if ($GLOBALS['global_preference']->ga_tracking_id)
-        {
-            $this->content['script'][] = array('type'=>'remote_file', 'file_path'=>'http://www.google-analytics.com/analytics.js','file_name'=>'analytics');
-            $this->content['script'][] = array('type'=>'text_content', 'content'=>'window[\'GoogleAnalyticsObject\'] = \'ga\';window[\'ga\'] = window[\'ga\'] || function() {(window[\'ga\'].q = window[\'ga\'].q || []).push(arguments)}, window[\'ga\'].l = 1 * new Date();ga(\'create\', \''.$GLOBALS['global_preference']->ga_tracking_id.'\', \'auto\');ga(\'send\', \'pageview\');');
-        }
-        // Google Map Service
-        if ($GLOBALS['global_preference']->google_api_credential_browser)
-        {
-            $this->content['script'][] = array('type'=>'local_file', 'file_name'=>'google-map-api-handler');
-            $this->content['script'][] = array('type'=>'remote_file', 'file_path'=>'https://maps.googleapis.com/maps/api/js?key='.$GLOBALS['global_preference']->google_api_credential_browser.'&libraries=places&callback=google_map_api_callback','file_name'=>'google-map-api');
-        }
-
-        $this->content['style'][] = array('type'=>'local_file', 'file_name'=>'default');
-
-        switch ($this->parameter['namespace'])
-        {
-            case 'asset':
-                $this->content['script'] = array();
-                $this->content['style'] = array();
-                switch ($this->parameter['instance'])
-                {
-                    case 'image':
-                        if (!file_exists(PATH_IMAGE . $this->parameter['image_size'] . '/' . $this->parameter['image_file']))
-                        {
-                            if (empty($this->parameter['image_size']))
-                            {
-                                header('Location: '.URI_IMAGE.'default/'.$this->parameter['image_file']);
-                                exit();
-                            }
-                            if ($this->parameter['image_size'] == 'default')
-                            {
-                                $source_image_path = URI_IMAGE_EXTERNAL.$this->parameter['image_file'];
-                                unset($target_width);
-                            }
-                            else
-                            {
-                                $default_image_path = PATH_IMAGE . 'default/' . $this->parameter['image_file'];
-                                if (file_exists($default_image_path))
-                                {
-                                    $source_image_path = $default_image_path;
-                                    $default_image_exists = true;
-                                }
-                                else
-                                {
-                                    $source_image_path = URI_IMAGE_EXTERNAL.$this->parameter['image_file'];
-                                    $default_image_exists = false;
-                                }
-                                $target_width = $this->parameter['image_width'];
-                            }
-                            if (isset($this->parameter['image_source'])) $source_image_path = $this->parameter['image_source'];
-
-                            $source_image_size = getimagesize($source_image_path);
-
-                            if (!empty($source_image_size[0]))
-                            {
-                                switch($source_image_size['mime'])
-                                {
-                                    case 'image/png':
-                                        $source_image = imagecreatefrompng($source_image_path);
-                                        break;
-                                    case 'image/gif':
-                                        $source_image = imagecreatefromgif($source_image_path);
-                                        break;
-                                    case 'image/jpg':
-                                    case 'image/jpeg':
-                                        $source_image = imagecreatefromjpeg($source_image_path);
-                                        break;
-                                    default:
-                                        $source_image = imagecreatefromstring($source_image_path);
-                                }
-
-                                if ($source_image === FALSE)
-                                {
-                                    header('Location: '.URI_SITE_BASE.'/content/image/img_listing_default_280_280.jpg');
-                                    exit();
-                                }
-
-
-                                if (!isset($target_width)) $target_width = min($source_image_size[0],  $GLOBALS['global_preference']->image_size_xxl);
-                                $target_height = $source_image_size[1] / $source_image_size[0] *  $target_width;
-                                $target_image = imagecreatetruecolor($target_width, $target_height);
-
-                                imagecopyresized($target_image, $source_image,0,0,0,0,$target_width, $target_height,$source_image_size[0], $source_image_size[1]);
-
-                                if (!$default_image_exists)
-                                {
-                                    $default_image_width = min($source_image_size[0],  $GLOBALS['global_preference']->image_size_xxl);
-                                    $default_image_height = $source_image_size[1] / $source_image_size[0] *  $default_image_width;
-                                    $default_image = imagecreatetruecolor($default_image_width, $default_image_height);
-
-                                    imagecopyresized($default_image, $source_image,0,0,0,0,$default_image_width, $default_image_height,$source_image_size[0], $source_image_size[1]);
-                                }
-
-                                if (!file_exists(PATH_IMAGE. $this->parameter['image_size'] . '/'))
-                                {
-                                    mkdir(PATH_IMAGE. $this->parameter['image_size'] . '/', 0755, true);
-                                }
-                                if (!file_exists(PATH_IMAGE. 'default/'))
-                                {
-                                    mkdir(PATH_IMAGE. 'default/', 0755, true);
-                                }
-
-                                if (!isset($source_image_size['mime'])) $source_image_size['mime'] = 'image/jpeg';
-                                $target_image_path = PATH_IMAGE. $this->parameter['image_size'] . '/' . $this->parameter['image_file'];
-                                switch($source_image_size['mime'])
-                                {
-                                    case 'image/png':
-                                        if (!$default_image_exists)
-                                        {
-                                            imagepng($default_image, $default_image_path, 0, PNG_NO_FILTER);
-                                        }
-                                        imageinterlace($target_image,true);
-                                        imagepng($target_image, $target_image_path, 9, PNG_ALL_FILTERS);
-                                        break;
-                                    case 'image/gif':
-                                        if (!$default_image_exists)
-                                        {
-                                            imagegif($default_image, $default_image_path);
-                                        }
-                                        imageinterlace($target_image,true);
-                                        imagegif($target_image, $target_image_path);
-                                        break;
-                                    case 'image/jpg':
-                                    case 'image/jpeg':
-                                    default:
-                                        if (!$default_image_exists)
-                                        {
-                                            imagejpeg($default_image, $default_image_path, 100);
-                                        }
-                                        imageinterlace($target_image,true);
-                                        imagejpeg($target_image, $target_image_path, 75);
-                                }
-                                imagedestroy($source_image);
-                                imagedestroy($target_image);
-                                if (!$default_image_exists)
-                                {
-                                    imagedestroy($default_image);
-                                }
-                                header('Content-type: '.$source_image_size['mime']);
-                                header('Content-Length: '.filesize($target_image_path));
-                                readfile($target_image_path);
-                            }
-                        }
-                        break;
-                }
-                break;
-            case 'business':
-                $this->cache = 3;
-                $view_business_detail_obj = new view_business_detail($this->parameter['instance']);
-                $view_business_detail_value = $view_business_detail_obj->fetch_value();
-
-                if (count($view_business_detail_value) == 0) header('Location: '.URI_SITE_BASE.'404');
-                if ($view_business_detail_value[0]['friendly_url'] != $this->parameter['instance'])
-                {
-                    header('Location: '.URI_SITE_BASE.$this->parameter['namespace'].'/'.$view_business_detail_value[0]['friendly_url']);
-                }
-
-                $render_parameter = array(
-                    'build_from_content'=>array(
-                        array(
-                            'name'=>htmlspecialchars($view_business_detail_value[0]['name']),
-                            'description'=>htmlspecialchars($view_business_detail_value[0]['description']),
-                            'amp_uri'=>URI_SITE_BASE.'business-amp/'.$this->parameter['instance'],
-                            'robots'=>'index, nofollow',
-                            'body'=>$view_business_detail_obj
-                        )
-                    )
-                );
-                $render_parameter = array_merge($this->parameter, $render_parameter);
-                $view_web_page_obj = new view_web_page(null, $render_parameter);
-                $this->content['html'] = $view_web_page_obj->render();
-                break;
-            case 'business-amp':
-                $this->cache = 3;
-
-                $this->content['style'] = [];
-                $this->content['style'][] = array('type'=>'local_file', 'file_name'=>'amp');
-                $this->content['script'] = [];
-
-                $view_business_detail_obj = new view_business_amp_detail($this->parameter['instance']);
-                $view_business_detail_value = $view_business_detail_obj->fetch_value();
-
-                if (count($view_business_detail_value) == 0) header('Location: '.URI_SITE_BASE.'404');
-                if ($view_business_detail_value[0]['friendly_url'] != $this->parameter['instance'])
-                {
-                    header('Location: '.URI_SITE_BASE.$this->parameter['namespace'].'/'.$view_business_detail_value[0]['friendly_url']);
-                }
-
-                $render_parameter = array(
-                    'build_from_content'=>array(
-                        array(
-                            'name'=>htmlspecialchars($view_business_detail_value[0]['name']),
-                            'description'=>htmlspecialchars($view_business_detail_value[0]['description']),
-                            'default_uri'=>URI_SITE_BASE.'business/'.$this->parameter['instance'],
-                            'body'=>$view_business_detail_obj
-                        )
-                    )
-                );
-                $this->content['script'][] = array('type'=>'json-ld','content'=>['@id'=>URI_SITE_BASE.'business/'.$this->parameter['instance'],'url'=>URI_SITE_BASE.'business/'.$this->parameter['instance']]);
-                $render_parameter = array_merge($this->parameter, $render_parameter);
-                $view_web_page_obj = new view_web_page(null, $render_parameter);
-                $this->content['html'] = $view_web_page_obj->render();
-                break;
-            case 'listing':
-                $page_parameter = $format->pagination_param($this->parameter);
-                if ($page_parameter === false) $page_parameter = array();
-                switch ($this->parameter['instance'])
-                {
-                    case '':
-                        $this->cache = 1;
-                        $index_category_obj = new index_category();
-                        $index_category_obj->filter_by_active();
-                        $index_category_obj->filter_by_listing_count();
-                        $view_category_obj = new view_category($index_category_obj->id_group);
-
-                        $inline_script = json_encode(array('object_type'=>'business_category','data_encode_type'=>$GLOBALS['global_preference']->ajax_data_encode,'id_group'=>array_values($view_category_obj->id_group),'page_size'=>$view_category_obj->parameter['page_size'],'page_number'=>$view_category_obj->parameter['page_number'],'page_count'=>$view_category_obj->parameter['page_count']));
-                        if ($GLOBALS['global_preference']->ajax_data_encode == 'base64')
-                        {
-                            $inline_script = '$.parseJSON(atob(\'' . base64_encode($inline_script) . '\'))';
-                        }
-                        $this->content['script'][] = array('type'=>'text_content', 'content'=>'$(document).ready(function(){$(\'.ajax_loader_container\').ajax_loader('.$inline_script.');});');
-                        unset($inline_script);
-
-                        $view_web_page_element_obj_body = new view_web_page_element(null, array(
-                            'template'=>'element_body_section',
-                            'build_from_content'=>array(
-                                array(
-                                    'id'=>'category_container',
-                                    'class_extra'=>' category_block_wrapper',
-                                    'title'=>'<h1>Popular Categories</h1>',
-                                    'content'=>'<div class="column_container ajax_loader_container">'.$view_category_obj->render().'<div class="clear"></div></div>'
-                                ),
-                            )
-                        ));
-                        $render_parameter = array(
-                            'build_from_content'=>array(
-                                array(
-                                    'name'=>'Top4 Businesses Australian Local Listings',
-                                    'description'=>'Find restaurants, hotels, plumbers, accountants and all kinds of local businesses with The New Australian Social Media Top4 Business and Brand Directory.',
-                                    'meta_keywords'=>'business category, local services, social directory, top4',
-                                    'body'=>$view_web_page_element_obj_body
-                                )
-                            )
-                        );
-                        $render_parameter = array_merge($this->parameter, $render_parameter);
-                        $view_web_page_obj = new view_web_page(null,$render_parameter);
-                        $this->content['html'] = $view_web_page_obj->render();
-
-                        break;
-                    case 'ajax-load':
-                        $this->content['script'] = array();
-                        $this->content['style'] = array();
-                        if (!isset($_POST['object_type']))
-                        {
-                            $_POST['object_type'] = 'business';
-                        }
-                        if (!isset($_POST['id_group']))
-                        {
-                            $this->content['html'] = '';
-                            break;
-                        }
-                        if (isset($_POST['system_debug']))
-                        {
-                            $this->parameter['debug_mode'] = $_POST['system_debug']?true:false;
-                        }
-
-                        switch($_POST['object_type'])
-                        {
-                            case 'business_category':
-                                $view_category_obj = new view_category($_POST['id_group'],array('page_size'=>$_POST['page_size'],'page_number'=>$_POST['page_number']));
-                                $this->content['html'] = $view_category_obj->render();
-                                break;
-                            case 'business':
-                                $view_business_summary_obj = new view_business_summary($_POST['id_group'],array('page_size'=>$_POST['page_size'],'page_number'=>$_POST['page_number']));
-                                $this->content['html'] = $view_business_summary_obj->render();
-                                break;
-                            default:
-                                // unknown object type
-                                $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): '.$this->parameter['namespace'].' '.$this->parameter['instance'].' unknown type';
-
-                        }
-
-                        break;
-                    case 'find':
-                        $this->cache = 1;
-                        $index_organization_obj = new index_organization();
-                        if (empty($this->parameter['category']))
-                        {
-                            header('Location: /'.URI_SITE_PATH.$this->parameter['namespace'].'/');
-                            exit();
-                        }
-
-                        $view_category_obj = new view_category($this->parameter['category']);
-                        if (count($view_category_obj->id_group) == 0)
-                        {
-                            header('Location: /'.URI_SITE_PATH.$this->parameter['namespace'].'/');
-                            exit();
-                        }
-                        $index_organization_obj->filter_by_category($view_category_obj->id_group);
-
-                        if (!empty($this->parameter['state']))
-                        {
-                            $index_location_obj = new index_location();
-                            $index_location_obj->filter_by_location_parameter($this->parameter);
-                            if (count($index_location_obj->id_group) == 1)
-                            {
-                                $index_service_area_organization_obj = new index_organization($index_organization_obj->id_group);
-                                $service_area_organization_id_group = $index_service_area_organization_obj->filter_by_service_area(['postcode_suburb_id'=>$index_location_obj->id_group]);
-                                unset($index_service_area_organization_obj);
-                            }
-
-                            $index_organization_obj->filter_by_suburb($index_location_obj->id_group);
-                        }
-                        if (!empty($service_area_organization_id_group))
-                        {
-                            $index_organization_obj->id_group = array_merge($service_area_organization_id_group,$index_organization_obj->id_group);
-                        }
-                        $view_business_summary_obj = new view_business_summary($index_organization_obj->id_group, $page_parameter);
-                        if (count($view_business_summary_obj->id_group) > 0)
-                        {
-                            $content = '<div id="search_result_listing_block_wrapper" class="listing_block_wrapper block_wrapper ajax_loader_container">'.$view_business_summary_obj->render().'<div class="clear"></div></div>';
-
-                            $inline_script = json_encode(array('data_encode_type'=>$GLOBALS['global_preference']->ajax_data_encode,'id_group'=>array_values($view_business_summary_obj->id_group),'page_size'=>$view_business_summary_obj->parameter['page_size'],'page_number'=>$view_business_summary_obj->parameter['page_number'],'page_count'=>$view_business_summary_obj->parameter['page_count']));
-                            if ($GLOBALS['global_preference']->ajax_data_encode == 'base64')
-                            {
-                                $inline_script = '$.parseJSON(atob(\'' . base64_encode($inline_script) . '\'))';
-                            }
-                            $this->content['script'][] = array('type'=>'text_content', 'content'=>'$(document).ready(function(){$(\'#search_result_listing_block_wrapper\').ajax_loader('.$inline_script.');});');
-                            unset($inline_script);
-                        }
-                        else
-                        {
-                            $content = '<div class="section_container container article_container"><div class="section_title"><h2>Here\'s how we can help you find what you\'re looking for:</h2></div><div class="section_content"><ul><li>Check the spelling and try again.</li><li>Try a different suburb or region.</li><li>Try a more general search.</li></ul></div></div>';
-                        }
-
-                        $category_row = $view_category_obj->fetch_value();
-                        $long_title = htmlspecialchars('Top 4 '.$category_row[0]['page_title']);
-
-                        $view_web_page_element_obj_body = new view_web_page_element(null, array(
-                            'template'=>'element_body_section',
-                            'build_from_content'=>array(
-                                array(
-                                    'id'=>'listing_search_result_container',
-                                    'title'=>'<h1>'.$long_title.'</h1>',
-                                    'content'=>$content
-                                )
-                            )
-                        ));
-
-                        $render_parameter = array(
-                            'template'=>PREFIX_TEMPLATE_PAGE.'default',
-                            'build_from_content'=>array(
-                                array(
-                                    'name'=>$long_title,
-                                    'description'=>$long_title,
-                                    'body'=>$view_web_page_element_obj_body
-                                )
-                            )
-                        );
-                        $render_parameter = array_merge($this->parameter, $render_parameter);
-                        $view_web_page_obj = new view_web_page(null,$render_parameter);
-                        $this->content['html'] = $view_web_page_obj->render();
-
-                        break;
-                    case 'search':
-                        $index_organization_obj = new index_organization();
-                        if (!isset($this->parameter['extra_parameter']))
-                        {
-                            $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): '.get_class($this).' URL pointing to search without search terms';
-                            header('Location: /'.URI_SITE_PATH.$this->parameter['namespace'].'/');
-                            exit();
-                        }
-                        $ulr_part = $format->split_uri($this->parameter['extra_parameter']);
-
-                        if (empty($ulr_part[0]) OR $ulr_part[0] == 'empty')
-                        {
-                            $GLOBALS['global_message']->error = __FILE__.'(line '.__LINE__.'): '.get_class($this).' illegal search term';
-                            header('Location: /'.URI_SITE_PATH.$this->parameter['namespace'].'/');
-                            exit();
-                        }
-                        $what =  trim(html_entity_decode(strtolower($ulr_part[0])));
-                        $score = $index_organization_obj->filter_by_keyword($ulr_part[0]);
-                        $where = '';
-                        $content = '';
-                        if (isset($ulr_part[2]))
-                        {
-                            $where = trim(html_entity_decode(strtolower($ulr_part[2])));
-                            if (strtolower($ulr_part[1]) == 'where' AND $where != 'empty')
-                            {
-                                $index_place_suburb = new index_place_suburb();
-                                $suburb_search_result = $index_place_suburb->filter_by_location_text($where);
-                                switch ($suburb_search_result['status'])
-                                {
-                                    case 'exact_match':
-                                        $index_organization_obj->filter_by_suburb($index_place_suburb->id_group);
-                                        break;
-                                    case 'text_match':
-                                        $high_relevance_score = 0.9;
-                                        $high_relevance_suburb = array();
-                                        foreach($suburb_search_result['score'] as $suburb_id=>$score)
-                                        {
-                                            if ($score <= $high_relevance_score)
-                                            {
-                                                break;
-                                            }
-                                            $high_relevance_suburb[] = $suburb_id;
-                                        }
-                                        if (count($high_relevance_suburb) == 1)
-                                        {
-                                            $index_organization_obj->filter_by_suburb($index_place_suburb->id_group);
-                                            break;
-                                        }
-                                        if (count($high_relevance_suburb) > 1)
-                                        {
-                                            // TODO: Multiple matched results, suggest "Search instead for"
-                                            $view_place_suburb = new view_place_suburb($index_place_suburb->id_group);
-                                            $view_place_suburb->fetch_value(['table_fields'=>['id'=>'id','formatted_address'=>'formatted_address'],'page_size'=>$GLOBALS['global_preference']->max_relevant_suburb]);
-                                            $view_place_suburb->parameter['base_uri'] = URI_SITE_BASE;
-                                            $view_place_suburb->parameter['search_what'] = $what;
-                                            $content .= '<div class="section_container container article_container"><div class="section_title"><h2>Ambiguous Location Results</h2></div><div class="section_content"><p>Search Instead For: </p><ul>';
-                                            $content .= $view_place_suburb->render(['template'=>'view_place_suburb_ambiguous']);
-                                            $content .= '</ul></div></div>';
-
-                                            $index_organization_obj->filter_by_suburb($index_place_suburb->id_group);
-                                        }
-                                        else
-                                        {
-                                            $view_place_suburb = new view_place_suburb([$high_relevance_suburb[0]]);
-                                            $view_place_suburb->fetch_value(['table_fields'=>['id'=>'id','formatted_address'=>'formatted_address']]);
-                                            $view_place_suburb->parameter['base_uri'] = URI_SITE_BASE;
-                                            $view_place_suburb->parameter['search_what'] = $what;
-                                            $content .= '<div class="section_container container article_container"><div class="section_title"><h2>Similar Location Results Found</h2></div><div class="section_content">';
-                                            $content .= '<p>Showing Results for </p><ul>'.$view_place_suburb->render(['template'=>'view_place_suburb_ambiguous']).'</ul><p>Search Instead For: </p><ul>';
-                                            $view_place_suburb->id_group = array_slice($index_place_suburb->id_group,1,$GLOBALS['global_preference']->max_relevant_suburb);
-                                            $view_place_suburb->fetch_value(['table_fields'=>['id'=>'id','formatted_address'=>'formatted_address']]);
-                                            $content .= $view_place_suburb->render(['template'=>'view_place_suburb_ambiguous']);
-                                            $content .= '</ul></div></div>';
-
-                                            $index_organization_obj->filter_by_suburb([$high_relevance_suburb[0]]);
-                                        }
-                                        break;
-                                    case 'fail':
-                                    default:
-                                        $content .= '<div class="section_container container article_container"><div class="section_title"><h2>Here\'s how we can help you find what you\'re looking for:</h2></div><div class="section_content"><ul><li>Check the spelling and try again.</li><li>Try a different suburb or region.</li><li>Try a more general search.</li></ul></div></div>';
-                                }
-                                echo '<pre>';
-                                print_r($suburb_search_result);
-                                $view_place_suburb = new view_place_suburb($index_place_suburb->id_group);
-                                $view_place_suburb->fetch_value();
-                                print_r($view_place_suburb);
-                                exit();
-                            }
-                        }
-                        $view_business_summary_obj = new view_business_summary($index_organization_obj->id_group, $page_parameter);
-                        if (count($view_business_summary_obj->id_group) > 0)
-                        {
-                            $content .= '<div id="search_result_listing_block_wrapper" class="listing_block_wrapper block_wrapper ajax_loader_container">'.$view_business_summary_obj->render().'<div class="clear"></div></div>';
-
-                            $inline_script = json_encode(array('data_encode_type'=>$GLOBALS['global_preference']->ajax_data_encode,'id_group'=>array_values($view_business_summary_obj->id_group),'page_size'=>$view_business_summary_obj->parameter['page_size'],'page_number'=>$view_business_summary_obj->parameter['page_number'],'page_count'=>$view_business_summary_obj->parameter['page_count']));
-                            if ($GLOBALS['global_preference']->ajax_data_encode == 'base64')
-                            {
-                                $inline_script = '$.parseJSON(atob(\'' . base64_encode($inline_script) . '\'))';
-                            }
-                            $this->content['script'][] = array('type'=>'text_content', 'content'=>'$(document).ready(function(){$(\'.ajax_loader_container\').ajax_loader('.$inline_script.');});');
-                            unset($inline_script);
-                        }
-                        else
-                        {
-                            $content .= '<div class="section_container container article_container"><div class="section_title"><h2>Here\'s how we can help you find what you\'re looking for:</h2></div><div class="section_content"><ul><li>Check the spelling and try again.</li><li>Try a different suburb or region.</li><li>Try a more general search.</li></ul></div></div>';
-                        }
-
-
-                        $long_title = htmlspecialchars('Search '.($what?html_entity_decode($what):'Business').' in '.($where?$where:'Australia'));
-                        $this->parameter['search_what'] = $what;
-                        $this->parameter['search_where'] = $where;
-
-                        $view_web_page_element_obj_body = new view_web_page_element(null, array(
-                            'template'=>'element_body_section',
-                            'build_from_content'=>array(
-                                array(
-                                    'id'=>'listing_search_result_container',
-                                    'title'=>'<h1>'.$long_title.'</h1>',
-                                    'content'=>$content
-                                )
-                            )
-                        ));
-
-                        $render_parameter = array(
-                            'template'=>PREFIX_TEMPLATE_PAGE.'default',
-                            'build_from_content'=>array(
-                                array(
-                                    'name'=>$long_title,
-                                    'description'=>$long_title,
-                                    'robots'=>'noindex, follow',
-                                    'body'=>$view_web_page_element_obj_body
-                                )
-                            ),
-                            'parameter'=>array(
-                                'search_what'=>$what,
-                                'search_where'=>$where
-                            )
-
-                        );
-                        $render_parameter = array_merge($this->parameter, $render_parameter);
-                        $view_web_page_obj = new view_web_page(null,$render_parameter);
-                        $this->content['html'] = $view_web_page_obj->render();
-
-                        break;
-                    default:
-                        header('Location: /'.URI_SITE_PATH.$this->parameter['namespace'].'/');
-                }
-                break;
-            case 'member':
-                session_start();
-                switch ($this->parameter['instance'])
-                {
-
-
-                }
-                break;
-            default:
-                switch ($this->parameter['instance'])
-                {
-                    case 'home':
-                        $this->cache = 1;
-                        $index_organization_obj = new index_organization();
-                        $view_business_summary_obj = new view_business_summary($index_organization_obj->filter_by_featured(),array('page_size'=>4,'order'=>'RAND()'));
-                        $inline_script = json_encode(array('data_encode_type'=>$GLOBALS['global_preference']->ajax_data_encode,'id_group'=>array_values($view_business_summary_obj->id_group),'page_size'=>$view_business_summary_obj->parameter['page_size'],'page_number'=>$view_business_summary_obj->parameter['page_number'],'page_count'=>$view_business_summary_obj->parameter['page_count']));
-                        if ($GLOBALS['global_preference']->ajax_data_encode == 'base64')
-                        {
-                            $inline_script = '$.parseJSON(atob(\'' . base64_encode($inline_script) . '\'))';
-                        }
-                        $this->content['script'][] = array('type'=>'text_content', 'content'=>'$(document).ready(function(){$(\'.ajax_loader_container\').ajax_loader('.$inline_script.');});');
-                        unset($inline_script);
-
-                        $view_web_page_element_obj_body = new view_web_page_element(null, array(
-                            'template'=>'element_body_section',
-                            'build_from_content'=>array(
-                                array(
-                                    'id'=>'home_featured_listing_container',
-                                    'title'=>'<h2>Featured</h2>',
-                                    'content'=>'<div class="listing_block_wrapper block_wrapper ajax_loader_container">'.$view_business_summary_obj->render().'<div class="clear"></div></div>'
-                                ),
-                                /*array(
-                                    'id'=>'home_listing_category_container',
-                                    'title'=>'Category',
-                                    'content'=>'Some Category here...'
-                                )*/
-                            )
-                        ));
-
-                        $render_parameter = array(
-                            'build_from_content'=>array(
-                                array(
-                                    'name'=>'Top4 - The New Australian Social Media Business and Brand Directory',
-                                    'description'=>'Top4 is the new Australian Social Media Business and Brand Directory designed to help Australians find and connect with any business, product, brand, job or person nearest their location.',
-                                    'meta_keywords'=>'social directory, australian business brand',
-                                    'body'=>$view_web_page_element_obj_body
-                                )
-                            )
-                        );
-                        $render_parameter = array_merge($this->parameter, $render_parameter);
-                        $view_web_page_obj = new view_web_page(null, $render_parameter);
-                        //$doc = new DOMDocument();
-                        //$doc->loadHTML($view_web_page_obj->render());
-                        $this->content['html'] = $view_web_page_obj->render();
-                        break;
-                    case '404':
-                        header("HTTP/1.0 404 Not Found");
-                        $this->content['html'] = '404 Not Found';
-                        break;
-                    default:
-                        $this->cache = 10;
-                        $view_web_page_obj = new view_web_page($this->parameter['instance'],$this->parameter);
-                        if (count($view_web_page_obj->id_group) == 0)
-                        {
-                            header('Location: '.URI_SITE_BASE.'404');
-                        }
-                        $this->content['html'] = $view_web_page_obj->render();
-                }
-        }
     }
 
-    function render($parameter = array())
+    function render()
     {
-        $format = format::get_obj();
-        $preference = preference::get_instance();
-
         switch($this->request['data_type'])
         {
             case 'css':
@@ -1221,19 +651,21 @@ print_r($this);
                         return $this->request['file_uri'];
                         break;
                     default:
-                        // default to request for image file
-                        switch($this->content['source_file']['type'])
+                        // if content format not provided, default to request for image file
+
+                        // copy/create source/default image files according to source_file type
+                        switch($this->content['source_file']['source'])
                         {
                             case 'local_file':
-                                if (!isset($this->content['source_file']['path']) OR !file_exists($this->content['source']['path']))
+                                if (!isset($this->content['source_file']['path']) OR !file_exists($this->content['source_file']['path']))
                                 {
                                     // TODO: Error Handling, fail to get local source file on rendering
                                     $this->message->error = 'Rendering: Local Source File path not set or file does not exist';
                                     return false;
                                 }
-                                $this->content['source_file']['update'] = filemtime($this->content['source']['path']);
-                                $this->content['source_file']['size'] = filesize($this->content['source']['path']);
-                                $source_image_size = getimagesize($this->content['source']['path']);
+                                $this->content['source_file']['update'] = filemtime($this->content['source_file']['path']);
+                                $this->content['source_file']['size'] = filesize($this->content['source_file']['path']);
+                                $source_image_size = getimagesize($this->content['source_file']['path']);
                                 $this->content['source_file']['width'] = $source_image_size[0];
                                 $this->content['source_file']['height'] = $source_image_size[1];
                                 if (isset($source_image_size['mime'])) $this->content['source_file']['mime'] = $source_image_size['mime'];
@@ -1285,20 +717,20 @@ print_r($this);
                                 }
                                 copy($this->content['source_file']['uri'],$this->content['source_file']['path']);
                                 if (!isset($this->content['source_file']['size'])) $this->content['source_file']['size'] = filesize($this->content['source_file']['path']);
-                                $source_image_size = getimagesize($this->content['source']['path']);
+                                $source_image_size = getimagesize($this->content['source_file']['path']);
                                 $this->content['source_file']['width'] = $source_image_size[0];
                                 $this->content['source_file']['height'] = $source_image_size[1];
                                 if (!isset($this->content['source_file']['mime']) AND isset($source_image_size['mime'])) $this->content['source_file']['mime'] = $source_image_size['mime'];
 
                                 break;
                             case 'local_data':
-                                if (!isset($this->content['source_file']['entity']))
+                                if (!isset($this->content['source_file']['object']))
                                 {
                                     // TODO: Error Handling, fail to get file from database on rendering
                                     $this->message->error = 'Rendering: Local Database Source File entity not set';
                                     return false;
                                 }
-                                $entity_image_obj = &$this->content['source_file']['entity'];
+                                $entity_image_obj = &$this->content['source_file']['object'];
                                 if (empty($entity_image_obj->row))
                                 {
                                     // TODO: Error Handling, fail to get source file from database, cannot find matched record
@@ -1308,11 +740,11 @@ print_r($this);
                                 // Generate default image from db data
                                 $entity_image_obj->generate_cache_file();
 
-                                if ($this->content['default_file']['path'] != $entity_image_obj->row[0]['file'])
+                                if ($this->content['default_file']['path'] != end($entity_image_obj->row)['file'])
                                 {
                                     // TODO: Error Handling, request file_path is not consistent with entity_image file_path
                                     $this->message->notice = 'Rendering: Local Database generate image path is different from request image path [Request:'.$this->content['default_file']['path'].';Generated:'.$entity_image_obj->row[0]['file'].']';
-                                    $this->content['default_file']['path'] = $entity_image_obj->row[0]['file'];
+                                    $this->content['default_file']['path'] = end($entity_image_obj->row)['file'];
                                 }
 
                                 if (!file_exists($this->content['default_file']['path']))
@@ -1321,17 +753,17 @@ print_r($this);
                                     $this->message->error = 'Rendering: Local Database fail to generate default size image ['.$this->content['default_file']['path'].']';
                                     return false;
                                 }
-
-                                $this->content['source_file']['path'] = $this->content['default_file']['path'];
-                                $this->content['source_file']['size'] = filesize($this->request['source_file']['path']);
-                                $this->content['source_file']['update'] = $entity_image_obj->row[0]['update_time'];
-                                $this->content['source_file']['width'] = $entity_image_obj->row[0]['width'];
-                                $this->content['source_file']['height'] = $entity_image_obj->row[0]['height'];
-                                $this->content['source_file']['mime'] = $entity_image_obj->row[0]['mime'];
+                                $this->content['source_file']['path'] = end($entity_image_obj->row)['file'];
+                                $this->content['source_file']['size'] = filesize($this->content['source_file']['path']);
+                                $this->content['source_file']['update'] = strtotime(end($entity_image_obj->row)['update_time']);
+                                $this->content['source_file']['width'] = end($entity_image_obj->row)['width'];
+                                $this->content['source_file']['height'] = end($entity_image_obj->row)['height'];
+                                $this->content['source_file']['mime'] = end($entity_image_obj->row)['mime'];
                                 break;
                             default:
                         }
 
+                        // create source file resource object
                         switch ($this->content['source_file']['mime']) {
                             case 'image/png':
                                 $source_image = imagecreatefrompng($this->content['source_file']['path']);
@@ -1351,9 +783,9 @@ print_r($this);
                             return false;
                         }
 
-                        if ($this->content['source_file']['type'] == 'remote_file')
+                        // If source file is remote (from other domain), Create local default file first
+                        if ($this->content['source_file']['path'] != $this->content['default_file']['path'])
                         {
-                            // Create local default from remote file first
                             if ($this->content['source_file']['width'] > max($this->preference->image['size']))
                             {
                                 // If source image too large, try to resize it before save to default
@@ -1377,651 +809,110 @@ print_r($this);
                                     imagepng($default_image, $this->content['default_file']['path'], $image_quality['image/png'][0], $image_quality['image/png'][1]);
                                     break;
                                 case 'image/gif':
-                                    // Resampled gif will lose animation, so save it as jpeg instead
-                                    // imagegif($default_image, $default_image_path);
-                                    // break;
+                                    imagegif($default_image, $this->content['default_file']['path']);
+                                    break;
                                 case 'image/jpg':
                                 case 'image/jpeg':
                                 default:
                                     imagejpeg($default_image, $this->content['default_file']['path'], $image_quality['image/jpeg']);
                             }
-                            $this->content['default_file']['size'] = filesize($this->request['default_file']['path']);
+                            $this->content['default_file']['size'] = filesize($this->content['default_file']['path']);
                             if ($this->content['default_file']['size'] > $this->content['source_file']['size'])
                             {
                                 // If somehow resized image getting bigger in size, just overwrite it with original file
-                                copy($this->request['source_file']['path'],$this->request['default_file']['path']);
+                                copy($this->content['source_file']['path'],$this->content['default_file']['path']);
                             }
-                            unlink($this->request['source_file']['path']);
-                        }
-
-
-                        if (file_exists(PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type']))
-                        {
-                            $source_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'];
-                            $source_image_size = getimagesize($source_image_path);
-                            if ($source_image_size === false)
-                            {
-                                // TODO: Error Handling, fail to get source image size
-                                return false;
-                            }
-                            switch ($source_image_size['mime']) {
-                                case 'image/png':
-                                    $source_image = imagecreatefrompng($source_image_path);
-                                    break;
-                                case 'image/gif':
-                                    $source_image = imagecreatefromgif($source_image_path);
-                                    break;
-                                case 'image/jpg':
-                                case 'image/jpeg':
-                                    $source_image = imagecreatefromjpeg($source_image_path);
-                                    break;
-                                default:
-                                    $source_image = imagecreatefromstring($source_image_path);
-                            }
-                            if ($source_image === FALSE) {
-                                // TODO: Error Handling, fail to create image
-                                return false;
-                                //header('Location: ' . URI_SITE_BASE . '/content/image/img_listing_default_280_280.jpg');
-                                //exit();
-                            }
+                            // Remove source file unless it was a local file (say high resolution images we keep in content folder)
+                            if ($this->content['source_file']['type'] != 'local_file') unlink($this->content['source_file']['path']);
+                            // Default image create process finish here, unset default file gd object
+                            unset($default_image);
                         }
                         else
                         {
-                            $default_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'];
-                            // Check whether image file with same name exists in content folder
-                            if (file_exists(PATH_CONTENT_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'])) {
-                                $source_image_path = PATH_CONTENT_IMAGE . implode(DIRECTORY_SEPARATOR, $this->request['sub_path']) . DIRECTORY_SEPARATOR . $this->request['document'] . '.' . $this->request['file_type'];
-                                $source_image_size = getimagesize($source_image_path);
-                                if ($source_image_size === false) {
-                                    // TODO: Error Handling, fail to get source image size
-                                    break;
-                                }
-                                switch ($source_image_size['mime']) {
-                                    case 'image/png':
-                                        $source_image = imagecreatefrompng($source_image_path);
-                                        break;
-                                    case 'image/gif':
-                                        $source_image = imagecreatefromgif($source_image_path);
-                                        break;
-                                    case 'image/jpg':
-                                    case 'image/jpeg':
-                                        $source_image = imagecreatefromjpeg($source_image_path);
-                                        break;
-                                    default:
-                                        $source_image = imagecreatefromstring($source_image_path);
-                                }
-                                if ($source_image === FALSE) {
-                                    // TODO: Error Handling, fail to create image
-                                    header('Location: ' . URI_SITE_BASE . '/content/image/img_listing_default_280_280.jpg');
-                                    exit();
-                                }
+                            $this->content['default_file']['width'] = $this->content['source_file']['width'];
+                            $this->content['default_file']['height'] = $this->content['source_file']['height'];
+                        }
+
+                        // At this point, source image gd object and default image file should be generated no matter which source it came from
+                        // If requested file is not the default version, generate thumb according to specifications
+                        if ($this->content['target_file']['path'] != $this->content['default_file']['path'])
+                        {
+
+                            $target_image_folder = dirname($this->content['target_file']['path']);
+                            if (!file_exists($target_image_folder)) mkdir(dirname($target_image_folder), 0755, true);
+
+                            if (empty($this->content['target_file']['width']) AND empty($this->content['target_file']['height']))
+                            {
+                                $this->content['target_file']['width'] = $this->content['default_file']['width'];
+                                $this->content['target_file']['height'] = $this->content['default_file']['height'];
                             }
                             else
                             {
-                                // If file does not exist in content folder either, check if it is stored in database
-                                $document_name_part = explode('_',$this->request['document']);
-                                $document_id = end($document_name_part);
-                                unset($document_name_part);
-                                if (!is_numeric($document_id))
+                                // If only width is set, calculate height from default
+                                if (empty($this->content['target_file']['height']))
                                 {
-                                    // TODO: Error Handling, fail to get source image from database, file name does not end with image id
-                                    break;
+                                    $this->content['target_file']['height'] = round($this->content['default_file']['height'] / $this->content['default_file']['width'] * $this->content['target_file']['width']);
                                 }
-                                $entity_image_obj = new entity_image($document_id);
-                                unset($document_id);
-                                if (empty($entity_image_obj->id_group))
+                                // If only height is set, calculate width from default
+                                if (empty($this->content['target_file']['width']))
                                 {
-                                    // TODO: Error Handling, fail to get source image from database, id does not exist or database error
-                                    break;
+                                    $this->content['target_file']['width'] =  round($this->content['default_file']['width'] / $this->content['default_file']['height'] * $this->content['target_file']['height']);
                                 }
-                                $entity_image_obj->get();
-                                if (empty($entity_image_obj->row[0]['data']))
-                                {
-                                    // TODO: Error Handling, fail to get source image from database, image row exists but image data are not saved in database
-                                    break;
-                                }
-                                $entity_image_default_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$entity_image_obj->row[0]['sub_path']).DIRECTORY_SEPARATOR.$entity_image_obj->row[0]['document'].'.'.$entity_image_obj->row[0]['file_type'];
-                                if ($entity_image_default_image_path != $default_image_path)
-                                {
-                                    // TODO: Error Handling, source image retrieved from database, but default path is different, (the image might have been renamed), 301 redirect or 403 Error Image
-                                    break;
-                                }
-                                // consider the image is already optimized before saved into database, directly write the data stream into physical file
-                                file_put_contents($default_image_path, $entity_image_obj->row[0]['data']);
-                                unset($default_image_path);
-                                $source_image = imagecreatefromstring($entity_image_obj->row[0]['data']);
-                                $source_image_size = array(
-                                    $entity_image_obj->row[0]['width'],
-                                    $entity_image_obj->row[0]['height'],
-                                    'mime'=>$entity_image_obj->row[0]['mime']
-                                );
                             }
-                        }
 
-                        if (empty($source_image))
-                        {
-                            // TODO: Error Handling, source image can not be located or fail to create php image resource object
-                            break;
-                        }
-
-                        if (isset($default_image_path))
-                        {
-                            if (!file_exists(dirname($default_image_path))) mkdir(dirname($default_image_path), 0755, true);
-
-                            // If default size image does not exist, create default image cache first
-                            if ($source_image_size[0] > end($preference->image['size']))
+                            if (empty($this->content['target_file']['quality']))
                             {
-                                // if source image is too big, resize it before save as default image cache
-                                $default_image_size = array(
-                                    end($preference->image['size']),
-                                    round($source_image_size[1] / $source_image_size[0] * end($preference->image['size']))
-                                );
-                                $default_image = imagecreatetruecolor($default_image_size[0], $default_image_size[1]);
-                                imagecopyresampled($default_image,$source_image,0,0,0,0,$default_image_size[0], $default_image_size[1],$source_image_size[0],$source_image_size[1]);
-
-                                // default image generate with the best quality
-                                $image_quality = $preference->image['quality']['max'];
-                                switch($source_image_size['mime'])
-                                {
-                                    case 'image/png':
-                                        imagesavealpha($default_image, true);
-                                        imagepng($default_image, $default_image_path, $image_quality['image/png'][0], $image_quality['image/png'][1]);
-                                        break;
-                                    case 'image/gif':
-                                        // Resampled gif will lose animation, so save it as jpeg
-                                        // imagegif($default_image, $default_image_path);
-                                        // break;
-                                    case 'image/jpg':
-                                    case 'image/jpeg':
-                                    default:
-                                        imagejpeg($default_image, $default_image_path, $image_quality['image/jpeg']);
-                                }
-                                unset($image_quality);
-                                unset($default_image_size);
+                                // default display image generate with fast speed
+                                $this->content['target_file']['quality'] = $this->preference->image['quality']['spd'];
                             }
-                            else
+
+                            if (empty($this->content['target_file']['mime']))
                             {
-                                // If source image is in proper size, directly copy the file, php resize might lose quality and make the file size bigger
-                                copy($source_image_path,$default_image_path);
+                                // Only create thumb as png or jpeg, (gif will lose animation frames during imagecopyresample, so no point to save as gif any more)
+                                if ($this->content['source_file']['mime'] == 'image/png') $this->content['target_file']['mime'] = $this->content['source_file']['mime'];
+                                else $this->content['target_file']['mime'] = 'image/jpeg';
                             }
-                            unset($default_image_path);
-                        }
 
-                        if (isset($this->request['size']))
-                        {
-                            if (!in_array($this->request['size'],array_keys($preference->image['size'])))
+                            if (!isset($this->content['target_file']['quality'][$this->content['target_file']['mime']]))
                             {
-                                // TODO: Error Handling, image size is not defined in global preference
-                                break;
+                                // TODO: Error Handling, quality for thumbnail image type not set
+                                return false;
                             }
-                            $target_image_path = PATH_IMAGE.implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$this->request['size'].DIRECTORY_SEPARATOR.$this->request['document'].'.'.$this->request['file_type'];
-                            if (!file_exists(dirname($target_image_path))) mkdir(dirname($target_image_path), 0755, true);
 
-                            $target_image_size = array(
-                                $preference->image['size'][$this->request['size']],
-                                round($source_image_size[1] / $source_image_size[0] * $preference->image['size'][$this->request['size']])
-                            );
-                            $target_image = imagecreatetruecolor($target_image_size[0], $target_image_size[1]);
-                            imagecopyresampled($target_image,$source_image,0,0,0,0,$target_image_size[0], $target_image_size[1],$source_image_size[0],$source_image_size[1]);
-
+                            $target_image = imagecreatetruecolor($this->content['target_file']['width'],  $this->content['target_file']['height']);
+                            imagecopyresampled($target_image,$source_image,0,0,0,0,$this->content['target_file']['width'], $this->content['target_file']['height'],$this->content['source_file']['width'],$this->content['source_file']['height']);
                             imageinterlace($target_image,true);
 
-                            // default display image generate with fast speed
-                            $image_quality = $preference->image['quality']['spd'];
-                            if (!empty($this->request['extension']))
-                            {
-                                if (in_array(end($this->request['extension']),$preference->image['quality']))
-                                {
-                                    $image_quality = $preference->image['quality'][end($this->request['extension'])];
-                                }
-                            }
-
-                            switch($source_image_size['mime'])
+                            switch ($this->content['target_file']['mime'])
                             {
                                 case 'image/png':
                                     imagesavealpha($target_image, true);
-                                    imagepng($target_image, $target_image_path, $image_quality['image/png'][0], $image_quality['image/png'][1]);
+                                    imagepng($target_image, $this->content['target_file']['path'], $this->content['target_file']['quality'][$this->content['target_file']['mime']][0], $this->content['target_file']['quality'][$this->content['target_file']['mime']][1]);
                                     break;
-                                case 'image/gif':
-                                    if ($source_image_size[0] <= $target_image_size[0])
-                                    {
-                                        copy($source_image_path,$target_image_path);
-                                        break;
-                                    }
-                                // Resampled gif will lose animation, so save it as jpeg
-                                // imagegif($default_image, $default_image_path);
-                                // break;
                                 case 'image/jpg':
                                 case 'image/jpeg':
                                 default:
-                                    imagejpeg($target_image, $target_image_path, $image_quality['image/jpeg']);
+                                    imagejpeg($target_image, $this->content['target_file']['path'], $this->content['target_file']['quality'][$this->content['target_file']['mime']]);
                             }
-                            unset($target_image_size);
+                        }
+
+                        if (isset($this->content['source_file']['update']))
+                        {
+                            $last_modified_time = gmdate('D, d M Y H:i:s',$this->content['source_file']['update']);
                         }
                         else
                         {
-                            $target_image_path = $default_image_path?$default_image_path:$source_image_path;
+                            $last_modified_time = gmdate('D, d M Y H:i:s');
                         }
-                        header('Content-type: '.$source_image_size['mime']);
-                        header('Content-Length: '.filesize($target_image_path));
-                        if (!file_exists($target_image_path))
-                        {
-                            // TODO: Error Handling, image file still not exist, probably due to folder not writable
-                            break;
-                        }
-                        readfile($target_image_path);
 
+                        header('Last-Modified: '.$last_modified_time.' GMT');
+                        header('Content-Length: '.filesize($this->content['target_file']['path']));
+                        header('Content-Type: '.$this->content['target_file']['mime']);
+
+                        readfile($this->content['target_file']['path']);
                 }
-
                 break;
 
-        }
-    }
-
-    function get_cache()
-    {
-        if (file_exists($this->parameter['cache_path'].'/index.html') AND $this->parameter['page_cache'])
-        {
-            $cached_page_content = file_get_contents($this->parameter['cache_path'].'/index.html');
-            preg_match_all('/\<\!\-\-(\{.*\})\-\-\>/', $cached_page_content, $matches, PREG_OFFSET_CAPTURE);
-            $cached_page_parameter = array();
-            foreach($matches[1] as $key=>$value)
-            {
-                $json_decode_result = json_decode($value[0],true);
-                if (is_array($json_decode_result)) $cached_page_parameter = array_merge($cached_page_parameter, $json_decode_result);
-            }
-
-            if (isset($cached_page_parameter['Expire']) AND strtotime($cached_page_parameter['Expire']) >= strtotime('now'))
-            {
-                preg_replace('/\<\!\-\-\{.*\}\-\-\>/', '', $cached_page_content);
-                $this->content['html'] = $cached_page_content;
-                return true;
-            }
-            else
-            {
-                unlink($this->parameter['cache_path'].'/index.html');
-                return false;
-            }
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    function set_cache()
-    {
-        if ($this->cache > 0)
-        {
-            $expire_time = strtotime('+'.$this->cache.' day');
-            $cache_parameter = array('Expire'=>date('d M, Y', $expire_time));
-            if (!file_exists($this->parameter['cache_path']))
-            {
-                mkdir($this->parameter['cache_path'], 0755, true);
-            }
-            $result = file_put_contents($this->parameter['cache_path'].'/index.html',$this->content['html'].'<!--'.json_encode($cache_parameter).'-->');
-            return $result;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-
-    function render_old($parameter = array())
-    {
-        header('Content-Type: text/html; charset=utf-8');
-
-        if (!$this->get_cache())
-        {
-            $this->build_content();
-            $format = format::get_obj();
-
-            // Minify HTML
-            if ($GLOBALS['global_preference']->minify_html)
-            {
-                $this->content['html'] = $format->minify_html($this->content['html']);
-            }
-
-            if (strpos($this->content['html'], '[[+script]]') !== false)
-            {
-                // Minify JS
-                $page_script = '';
-                if ($GLOBALS['global_preference']->minify_js)
-                {
-                    $json_ld = array();
-                    foreach ($this->content['script'] as $row_index=>$row)
-                    {
-                        if (isset($row['type']))
-                        {
-                            switch ($row['type'])
-                            {
-                                case 'local_file':
-                                    if (file_exists(PATH_CONTENT_JS.$row['file_name'].'.js'))
-                                    {
-                                        $file_version = strtolower(date('dMY', filemtime(PATH_CONTENT_JS.$row['file_name'].'.js')));
-                                        if (!file_exists(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js'))
-                                        {
-                                            if (!file_exists(PATH_CACHE_JS)) mkdir(PATH_CACHE_JS, 0755, true);
-                                            exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar '.PATH_CONTENT_JS.$row['file_name'].'.js -o '.PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js', $result);
-                                            // further minify js, remove comments
-                                            if (file_exists(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js'))
-                                            {
-                                                $min_file = $format->minify_js(file_get_contents(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js'));
-                                                file_put_contents(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js',$min_file);
-                                                // release memory from the temp file
-                                                unset($min_file);
-                                            }
-                                        }
-                                        // Double check if min.js is generated successfully
-                                        if (file_exists(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js'))
-                                        {
-                                            $row['content'] = $format->minify_js(file_get_contents(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js'));
-                                        }
-                                        else
-                                        {
-                                            $row['src'] = URI_CONTENT_JS.$row['file_name'].'.js';
-                                            $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): load minified js script ['.PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js] failed';
-                                        }
-                                    }
-                                    else
-                                    {
-                                        $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): load source js script ['.PATH_CONTENT_JS.$row['file_name'].'.js] failed';
-                                    }
-                                    break;
-                                case 'remote_file':
-                                    $file_header = @get_headers($row['file_path']);
-                                    if (strpos( $file_header[0], '200 OK' ) !== false)
-                                    {
-                                        $file_header_array = array();
-                                        foreach($file_header as $file_header_index=>$file_header_item)
-                                        {
-                                            preg_match('/^(?:\s)*(.+?):(?:\s)*(.+)(?:\s)*$/', $file_header_item, $matches);
-                                            if (count($matches) >= 3)
-                                            {
-                                                $file_header_array[trim($matches[1])] = trim($matches[2]);
-                                            }
-                                        }
-                                        unset($file_header);
-                                        if (isset($file_header_array['Last-Modified']))
-                                        {
-                                            $file_version = strtolower(date('dMY', strtotime($file_header_array['Last-Modified'])));
-                                        }
-                                        else
-                                        {
-                                            if (isset($file_header_array['Expires']))
-                                            {
-                                                $file_version = strtolower(date('dMY', strtotime($file_header_array['Expires'])));
-                                            }
-                                            else
-                                            {
-                                                if (isset($file_header_array['Date'])) $file_version = strtolower(date('dMY', strtotime($file_header_array['Date'])));
-                                                else $file_version  = strtolower(date('dMY'), strtotime('+1 day'));
-                                            }
-
-                                        }
-                                        unset($file_header_array);
-                                        if (!file_exists(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.js'))
-                                        {
-                                            if (!file_exists(PATH_CACHE_JS)) mkdir(PATH_CACHE_JS, 0755, true);
-
-                                            copy($row['file_path'], PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.js');
-
-                                            exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar '.PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.js -o '.PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js', $result);
-                                            // further minify js, remove comments
-                                            if (file_exists(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js'))
-                                            {
-                                                $min_file = $format->minify_js(file_get_contents(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js'));
-                                                file_put_contents(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js',$min_file);
-                                                // release memory from the temp file
-                                                unset($min_file);
-                                            }
-                                        }
-                                        // Double check if min.js is generated successfully
-                                        if (file_exists(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js'))
-                                        {
-                                            $row['content'] = $format->minify_js(file_get_contents(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js'));
-                                        }
-                                        else
-                                        {
-                                            $row['src'] = $row['file_path'];
-                                            $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): load minified js script ['.PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js] failed';
-                                        }
-                                    }
-                                    break;
-                                case 'text_content':
-                                    $row['content'] = $format->minify_js($row['content']);
-                                    break;
-                                case 'json-ld':
-                                    $json_ld = array_merge($json_ld, $row['content']);
-                                    unset($row['content']);
-                                default:
-                            }
-                        }
-                        if (isset($row['src'])) $page_script .= '</script><script type="text/javascript" src="'.$row['src'].'">';
-                        if (isset($row['content'])) $page_script .= $row['content'];
-                    }
-                    if (!empty($page_script)) $page_script = '<script type="text/javascript">'.$page_script.'</script>';
-                    $page_script = str_replace('<script type="text/javascript"></script>','',$page_script);
-                    if ($json_ld) $page_script .= '<script type="application/ld+json">'.$format->minify_js(json_encode($json_ld)).'</script>';
-                }
-                else
-                {
-                    $json_ld = array();
-                    foreach ($this->content['script'] as $row_index=>$row)
-                    {
-                        if (isset($row['type']))
-                        {
-                            switch ($row['type'])
-                            {
-                                case 'local_file':
-                                    if (file_exists(PATH_CONTENT_JS.$row['file_name'].'.js'))
-                                    {
-                                        $file_version = strtolower(date('dMY', filemtime(PATH_CONTENT_JS.$row['file_name'].'.js')));
-                                        if (!file_exists(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js'))
-                                        {
-                                            if (!file_exists(PATH_CACHE_JS)) mkdir(PATH_CACHE_JS, 0755, true);
-                                            exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar '.PATH_CONTENT_JS.$row['file_name'].'.js -o '.PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js', $result);
-                                            // further minify js, remove comments
-                                            if (file_exists(PATH_CACHE_JS.$row['file_name'].'.'.$file_version.'.min.js'))
-                                            {
-                                                $min_file = $format->minify_js(file_get_contents(PATH_CACHE_JS . $row['file_name'] . '.' . $file_version . '.min.js'));
-                                                file_put_contents(PATH_CACHE_JS . $row['file_name'] . '.' . $file_version . '.min.js', $min_file);
-                                                unset($min_file);   // release memory from the temp file
-                                            }
-                                        }
-                                        $row['src'] = URI_CONTENT_JS.$row['file_name'].'.js';
-                                    }
-                                    else
-                                    {
-                                        $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): load source js script ['.PATH_CONTENT_JS.$row['file_name'].'.js] failed';
-                                    }
-                                    break;
-                                case 'remote_file':
-                                    $file_header = @get_headers($row['file_path']);
-                                    if (strpos( $file_header[0], '200 OK' ) !== false)
-                                    {
-                                        $row['src'] = $row['file_path'];
-                                        unset($file_header);
-                                    }
-                                    break;
-                                case 'text_content':
-                                    break;
-                                case 'json-ld':
-                                    $json_ld = array_merge($json_ld, $row['content']);
-                                    unset($row['content']);
-                                default:
-                            }
-                        }
-                        if (isset($row['src']))
-                        {
-                            $page_script .= '
-<script type="text/javascript" src="'.$row['src'].'">';
-                        }
-                        else
-                        {
-                            $page_script .= '
-<script type="text/javascript">';
-                        }
-                        if (isset($row['content'])) $page_script .= $row['content'];
-                        $page_script .= '</script>';
-                    }
-                    $page_script = str_replace('<script type="text/javascript"></script>','',$page_script);
-                    if ($json_ld) $page_script .= '<script type="application/ld+json">'.json_encode($json_ld).'</script>';
-                }
-                $this->content['html'] = str_replace('[[+script]]',$page_script,$this->content['html']);
-                unset($page_script);
-            }
-
-            $page_style = '';
-            if ($GLOBALS['global_preference']->minify_css)
-            {
-                foreach ($this->content['style'] as $row_index=>$row)
-                {
-                    if (isset($row['type']))
-                    {
-                        switch ($row['type'])
-                        {
-                            case 'local_file':
-                                if (file_exists(PATH_CONTENT_CSS.$row['file_name'].'.css'))
-                                {
-                                    $file_version = strtolower(date('dMY', filemtime(PATH_CONTENT_CSS.$row['file_name'].'.css')));
-                                    if (!file_exists(PATH_CONTENT_CSS.$row['file_name'].'.'.$file_version.'.min.css'))
-                                    {
-                                        if (!file_exists(PATH_CACHE_CSS)) mkdir(PATH_CACHE_CSS, 0755, true);
-                                        exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar '.PATH_CONTENT_CSS.$row['file_name'].'.css -o '.PATH_CACHE_CSS.$row['file_name'].'.'.$file_version.'.min.css', $result);
-                                        // further minify css, remove comments
-                                        if (file_exists(PATH_CACHE_CSS.$row['file_name'].'.'.$file_version.'.min.css'))
-                                        {
-                                            $min_file = $format->minify_css(file_get_contents(PATH_CACHE_CSS.$row['file_name'].'.'.$file_version.'.min.css'));
-                                            // replace all relative path to absolute path in css as file location changes
-                                            $min_file = str_replace('../',URI_CONTENT,$min_file);
-                                            // update min file
-                                            file_put_contents(PATH_CACHE_CSS.$row['file_name'].'.'.$file_version.'.min.css',$min_file);
-                                            // release memory from the temp file
-                                            unset($min_file);
-                                        }
-                                    }
-                                    // Double check if min.css is generated successfully
-                                    if (file_exists(PATH_CACHE_CSS.$row['file_name'].'.'.$file_version.'.min.css'))
-                                    {
-                                        $row['content'] = file_get_contents(PATH_CACHE_CSS.$row['file_name'].'.'.$file_version.'.min.css');
-                                    }
-                                    else
-                                    {
-                                        $row['src'] = URI_CONTENT_CSS.$row['file_name'].'.css';
-                                        $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): load minified css script ['.PATH_CONTENT_CSS.$row['file_name'].'.'.$file_version.'.min.css] failed';
-                                    }
-                                }
-                                else
-                                {
-                                    $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): load source css script ['.PATH_CONTENT_CSS.$row['file_name'].'.css] failed';
-                                }
-                                break;
-                            case 'remote_file':
-                                // cross domain css is normally forbidden
-                                break;
-                            case 'text_content':
-                                $row['content'] = $format->minify_css($row['content']);
-                                break;
-                            default:
-                        }
-                    }
-                    if (isset($row['src'])) $page_style .= '<link href="'.$row['src'].'" rel="stylesheet" type="text/css">';
-                    if (isset($row['content'])) $page_style .= '<style>'.$format->minify_css($row['content']).'</style>';
-                }
-                $page_style = str_replace('</style><style>','',$page_style);
-            }
-            else
-            {
-                foreach ($this->content['style'] as $row_index=>$row)
-                {
-                    if (isset($row['type']))
-                    {
-                        switch ($row['type'])
-                        {
-                            case 'local_file':
-                                if (file_exists(PATH_CONTENT_CSS.$row['file_name'].'.css'))
-                                {
-                                    $file_version = strtolower(date('dMY', filemtime(PATH_CONTENT_CSS.$row['file_name'].'.css')));
-                                    if (!file_exists(PATH_CONTENT_CSS.$row['file_name'].'.'.$file_version.'.min.css'))
-                                    {
-                                        if (!file_exists(PATH_CACHE_CSS)) mkdir(PATH_CACHE_CSS, 0755, true);
-                                        exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar '.PATH_CONTENT_CSS.$row['file_name'].'.css -o '.PATH_CACHE_CSS.$row['file_name'].'.'.$file_version.'.min.css', $result);
-                                        // further minify css, remove comments
-                                        if (file_exists(PATH_CACHE_CSS.$row['file_name'].'.'.$file_version.'.min.css'))
-                                        {
-                                            $min_file = $format->minify_css(file_get_contents(PATH_CACHE_CSS.$row['file_name'].'.'.$file_version.'.min.css'));
-                                            // replace all relative path to absolute path in css as file location changes
-                                            $min_file = str_replace('../',URI_CONTENT,$min_file);
-                                            // update min file
-                                            file_put_contents(PATH_CACHE_CSS.$row['file_name'].'.'.$file_version.'.min.css',$min_file);
-                                            // release memory from the temp file
-                                            unset($min_file);
-                                        }
-                                    }
-                                    $row['src'] = URI_CONTENT_CSS.$row['file_name'].'.css';
-                                }
-                                else
-                                {
-                                    $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): load source css script ['.PATH_CONTENT_CSS.$row['file_name'].'.css] failed';
-                                }
-                                break;
-                            case 'remote_file':
-                                // cross domain css is normally forbidden
-                                break;
-                            case 'text_content':
-                                $row['content'] = $format->minify_css($row['content']);
-                                break;
-                            default:
-                        }
-                    }
-                    if (isset($row['src'])) $page_style .= '
-<link href="'.$row['src'].'" rel="stylesheet" type="text/css">';
-                    if (isset($row['content'])) $page_style .= '
-<style>'.$row['content'].'</style>';
-                }
-                $page_style = str_replace('</style>
-<style>','',$page_style);
-            }
-            if (substr($this->parameter['namespace'], strlen($this->parameter['namespace'])-4) == '-amp')
-            {
-                $page_style = str_replace('<style>','<style amp-custom>',$page_style);
-            }
-            $this->content['html'] = str_replace('[[+style]]',$page_style,$this->content['html']);
-            unset($page_style);
-
-            $this->set_cache();
-        }
-
-        if ($this->parameter['instance'] == 'ajax-load')
-        {
-            if ($this->parameter['debug_mode'] == true)
-            {
-                $this->content['system_debug'] = $GLOBALS['global_message']->display();
-            }
-            $ajax_result = json_encode($this->content);
-            if (isset($_POST['data_encode_type']))
-            {
-                if ($_POST['data_encode_type'] == 'base64')
-                {
-                    $ajax_result = base64_encode($ajax_result);
-                }
-            }
-            print_r($ajax_result);
-            return true;
-        }
-        else
-        {
-            if ($this->parameter['debug_mode'] == true)
-            {
-                echo '<div class="system_debug wrapper"><div class="system_debug_row container">';
-                print_r(json_encode($GLOBALS['global_message']->display()));
-                echo '</div></div>';
-            }
-            print_r($this->content['html']);
-            return true;
         }
     }
 }

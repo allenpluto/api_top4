@@ -141,6 +141,5 @@ class entity_image extends entity
                 }
             }
         }
-
     }
 }

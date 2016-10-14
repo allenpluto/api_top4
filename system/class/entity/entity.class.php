@@ -42,18 +42,6 @@ class entity
             else
             {
                 $this->parameter['table_fields'] = $result;
-                // By default, leave enter_time and update_time untended, let MYSQL update them with system timestamp
-                $field_index = array_search('update_time', $this->parameter['table_fields']);
-                if ($field_index !== false)
-                {
-                    unset($this->parameter['table_fields'][$field_index]);
-                }
-                $field_index = array_search('enter_time', $this->parameter['table_fields']);
-                if ($field_index !== false)
-                {
-                    unset($this->parameter['table_fields'][$field_index]);
-                }
-                unset($field_index);
             }
         }
 
@@ -385,6 +373,15 @@ class entity
                 }
                 $parameter['table_fields'] = $table_fields;
             }
+            // By default, leave enter_time and update_time untended, let MYSQL update them with system timestamp if they are not specified in set fields
+            if (in_array('update_time', $parameter['table_fields']))
+            {
+                $flag_keep_update_time = true;
+            }
+            if (in_array('enter_time', $parameter['table_fields']))
+            {
+                $flag_keep_enter_time = true;
+            }
         }
 
         if (isset($parameter['relational_fields']))
@@ -410,6 +407,11 @@ class entity
 
         $parameter = array_merge($this->parameter,$parameter);
         $format = format::get_obj();
+
+        if (empty($flag_keep_update_time)) unset($parameter['table_fields']['update_time']);
+        if (empty($flag_keep_enter_time)) unset($parameter['table_fields']['enter_time']);
+
+
         if ($GLOBALS['db']) $db = $GLOBALS['db'];
         else $db = new db;
 
