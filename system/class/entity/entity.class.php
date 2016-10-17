@@ -73,6 +73,7 @@ class entity
             {
                 if (is_string($value))
                 {
+                    $value = preg_replace('/^(.*)(-)(.*)/','$1',$value);
                     $parameter = array(
                         'bind_param' => array(':friendly_url'=>$value),
                         'where' => array('`friendly_url` = :friendly_url')
@@ -184,6 +185,7 @@ class entity
     // Select id_group by conditions
     function get($parameter = array())
     {
+//print_r($parameter);
         $format = format::get_obj();
         if (isset($parameter['id_group']))
         {
@@ -194,8 +196,15 @@ class entity
         {
             if (empty($this->id_group))
             {
-                $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): '.get_class($this).' GET entity with empty id_group';
-                return false;
+                if (empty($parameter['where']))
+                {
+                    $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): '.get_class($this).' GET entity with empty id_group and where condition';
+                    return false;
+                }
+                else
+                {
+                    $id_group = array();
+                }
             }
             else
             {
@@ -278,8 +287,11 @@ class entity
                 $where[] = $parameter['where'];
             }
         }
-        $where[] = $parameter['table'].'.'.$parameter['primary_key'].' IN ('.implode(',',array_keys($id_group)).')';
-        $parameter['bind_param'] = array_merge($parameter['bind_param'],$id_group);
+        if (!empty($id_group))
+        {
+            $where[] = $parameter['table'].'.'.$parameter['primary_key'].' IN ('.implode(',',array_keys($id_group)).')';
+            $parameter['bind_param'] = array_merge($parameter['bind_param'],$id_group);
+        }
 
         if (!empty($where))
         {
@@ -321,7 +333,7 @@ class entity
             $new_row['id_'.$row_value[$parameter['primary_key']]] = $row_value;
         }
         // Keep the original id order if no specific "order by" is set
-        if (empty($parameter['order']))
+        if (empty($parameter['order']) AND !empty($id_group))
         {
             $this->id_group = array_intersect($id_group, $new_id_group);
             $this->row = array();
@@ -329,6 +341,7 @@ class entity
             {
                 $this->row['id_'.$id] = $new_row['id_'.$id];
             }
+
         }
         else
         {
@@ -345,6 +358,8 @@ class entity
     // INSERT/UPDATE multiple rows of data, return id_group of inserted/updated rows
     function set($parameter = array())
     {
+print_r('set function');
+print_r($parameter);
         if (isset($parameter['row']))
         {
             $row = $parameter['row'];
@@ -421,6 +436,9 @@ class entity
         }
 
         $id_group = array();
+print_r('sql');
+print_r($parameter);
+print_r($row);
 
         $sql = 'INSERT INTO '.$parameter['table'].' (`'.implode('`,`',$parameter['table_fields']).'`) VALUES (:'.implode(',:',$parameter['table_fields']).') ON DUPLICATE KEY UPDATE ';
         $field_bind = array();
@@ -473,12 +491,16 @@ class entity
 
             $bind_value = array_merge($parameter['bind_param'],$bind_value);
 
+print_r('bind value<br>');
+print_r($bind_value);
+
             if (count($bind_value) != count($parameter['table_fields']))
             {
                 $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): '.get_class($this).' INSERT/UPDATE number of tokens ('.count($parameter['table_fields']).') does not match number of bound variables('.count($bind_value).') - '.print_r($bind_value,true);
             }
             else
             {
+
                 $query->execute($bind_value);
                 if ($query === false) continue;
 

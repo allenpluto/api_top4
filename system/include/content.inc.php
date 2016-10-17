@@ -454,6 +454,15 @@ class content {
                 }
                 break;
             case 'json':
+                if (isset($_SERVER['HTTP_AUTH_KEY']))
+                {
+                    $entity_api_key_obj = new entity_api_key();
+                    $auth_id = $entity_api_key_obj->validate_api_key($_SERVER['HTTP_AUTH_KEY']);
+                    if ($auth_id === false)
+                    {
+
+                    }
+                }
                 break;
             case 'html':
             default:
@@ -743,7 +752,7 @@ class content {
                                 if ($this->content['default_file']['path'] != end($entity_image_obj->row)['file'])
                                 {
                                     // TODO: Error Handling, request file_path is not consistent with entity_image file_path
-                                    $this->message->notice = 'Rendering: Local Database generate image path is different from request image path [Request:'.$this->content['default_file']['path'].';Generated:'.$entity_image_obj->row[0]['file'].']';
+                                    $this->message->notice = 'Rendering: Local Database generate image path is different from request image path [Request:'.$this->content['default_file']['path'].';Generated:'.end($entity_image_obj->row)['file'].']';
                                     $this->content['default_file']['path'] = end($entity_image_obj->row)['file'];
                                 }
 

@@ -33,13 +33,13 @@ for($i=0;$i<8;$i++)
     $key_part[] = $sub_hash;
 }
 $key = implode('-',$key_part);
-echo '<strong>Final Key</strong>:<br>'.$key;
+echo '<br><strong>Final Key</strong>:<br>'.$key;
 
 // Key decoder
 $key_part = explode('-',$key);
-$crc32b = '';
+$crc32b_dec = '';
 foreach($key_part as $index=>$sub_hash)
 {
-    $crc32b .= substr($sub_hash,ord(substr($sub_hash,0,1)) % 3 + 1,1);
+    $crc32b_dec .= substr($sub_hash,ord(substr($sub_hash,0,1)) % 3 + 1,1);
 }
-
+echo '<br><strong>Decoder CRC</strong>:<br>'.$crc32b_dec;
