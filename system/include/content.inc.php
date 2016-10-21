@@ -101,7 +101,7 @@ class content {
         $request_uri = trim(preg_replace('/^[\/]?'.FOLDER_SITE_BASE.'[\/]/','',$value),'/');
         $request_path = explode('/',$request_uri);
 
-        $type = ['css','image','js','json'];
+        $type = ['css','image','js','json','xml'];
         $request_path_part = array_shift($request_path);
         if (in_array($request_path_part,$type))
         {
@@ -275,6 +275,21 @@ class content {
                 $this->request['file_uri'] .= $file_name;
                 break;
             case 'json':
+            case 'xml':
+                if (empty($request_path))
+                {
+                    $this->request['method'] = 'list-available-method';
+                }
+                else
+                {
+                    $this->request['method'] = array_shift($request_path);
+                }
+                if (!empty($request_path))
+                {
+                    // TODO: More unrecognized value passed through URI
+                    $this->message->error = 'Decoding: URI parts unrecognized ['.implode('/',$request_path).']';
+                    return false;
+                }
                 break;
         }
 
@@ -373,7 +388,8 @@ class content {
                         if (!in_array($this->request['extension']['image_size'],array_keys($this->preference->image['size'])))
                         {
                             // TODO: Error Handling, image size is not defined in global preference
-                            break;
+                            $this->message->error = 'Building: image size is not defined in global preference';
+                            return false;
                         }
 
                         $this->content['target_file']['width'] = $this->preference->image['size'][$this->request['extension']['image_size']];
@@ -439,12 +455,14 @@ class content {
                             if (empty($document_id) OR !is_numeric($document_id))
                             {
                                 // TODO: Error Handling, fail to get source file from database, last part of file name is not a valid id
+                                $this->message->error = 'Building: fail to get source file from database, file not in standard format';
                                 return false;
                             }
                             $entity_image_obj = new entity_image($document_id);
                             if (empty($entity_image_obj->row))
                             {
                                 // TODO: Error Handling, fail to get source file from database, cannot find matched record
+                                $this->message->error = 'Building: fail to get source file from database, invalid id';
                                 return false;
                             }
                             //$entity_image_obj->generate_cache_file();
@@ -454,13 +472,41 @@ class content {
                 }
                 break;
             case 'json':
+            case 'xml':
                 if (isset($_SERVER['HTTP_AUTH_KEY']))
                 {
                     $entity_api_key_obj = new entity_api_key();
                     $auth_id = $entity_api_key_obj->validate_api_key($_SERVER['HTTP_AUTH_KEY']);
                     if ($auth_id === false)
                     {
+                        // TODO: Error Handling, api key authentication failed
+                        $this->message->notice = 'Building: Api Key Authentication Failed';
+                        return false;
+                    }
+                    $entity_api_obj = new entity_api($auth_id);
+                }
+                $entity_api_method_obj = new entity_api_method($this->request['method']);
+                if (empty($entity_api_method_obj->id_group))
+                {
+                    // TODO: Error Handling, api method not recognized
+                    $this->message->notice = 'Building: Unknown Request Api Method ['.$this->request['method'].']';
+                    return false;
+                }
 
+                if ($entity_api_method_obj->id_group[0] > 99)
+                {
+                    // For non-public functions, check if the user get the access
+                    $entity_api_method_obj->list_available_method(['auth_id'=>$auth_id,'function_name_only'=>true]);
+                }
+                else
+                {
+                    // For public functions, direct execute
+                    $method_calling = str_replace('-','_',$this->request['method']);
+                    if (!method_exists($entity_api_method_obj,$method_calling))
+                    {
+                        // TODO: Error Handling, internal error, api method defined in database, but does not exist in class function
+                        $this->message->notice = 'Building: Server Internal Error Api Method ['.$this->request['method'].'] not defined';
+                        return false;
                     }
                 }
                 break;
@@ -754,6 +800,7 @@ class content {
                                     // TODO: Error Handling, request file_path is not consistent with entity_image file_path
                                     $this->message->notice = 'Rendering: Local Database generate image path is different from request image path [Request:'.$this->content['default_file']['path'].';Generated:'.end($entity_image_obj->row)['file'].']';
                                     $this->content['default_file']['path'] = end($entity_image_obj->row)['file'];
+                                    return false;
                                 }
 
                                 if (!file_exists($this->content['default_file']['path']))
@@ -789,6 +836,7 @@ class content {
                         }
                         if ($source_image === FALSE) {
                             // TODO: Error Handling, fail to create image
+                            $this->message->error = 'Rendering: fail to create image';
                             return false;
                         }
 

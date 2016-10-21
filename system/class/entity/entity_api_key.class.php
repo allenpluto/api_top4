@@ -7,11 +7,12 @@ class entity_api_key extends entity
 {
     function generate_api_key($account_id)
     {
-        $random_hash = substr(sha1(openssl_random_pseudo_bytes(20)),-32);
         $crc32b = hash('crc32b',2000-$account_id);
+        $set_count = strlen($crc32b);
+        $random_hash = substr(sha1(openssl_random_pseudo_bytes(20)),-$set_count*4);
 
         $api_key_part = [];
-        for($i=0;$i<8;$i++)
+        for($i=0;$i<$set_count;$i++)
         {
             $sub_hash = substr($random_hash,$i*4,4);
             $seq = ord(substr($sub_hash,0,1)) % 3 + 1;
@@ -23,7 +24,7 @@ class entity_api_key extends entity
             'row'=>[['account_id'=>$account_id,'name'=>$api_key]],
             'table_fields'=>['account_id','name']
         ];
-print_r($parameter);
+//print_r($parameter);
         $this->set($parameter);
     }
 
