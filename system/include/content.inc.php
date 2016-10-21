@@ -496,7 +496,13 @@ class content {
                 if ($entity_api_method_obj->id_group[0] > 99)
                 {
                     // For non-public functions, check if the user get the access
-                    $entity_api_method_obj->list_available_method(['auth_id'=>$auth_id,'function_name_only'=>true]);
+                    $available_functions = $entity_api_method_obj->list_available_method(['bind_value'=>[':api_id'=>$auth_id],'function_name_only'=>true]);
+                    if (!in_array($this->request['method'],$available_functions))
+                    {
+                        // TODO: Error Handling, user permission error, user does not have permission to use this function
+                        $this->message->notice = 'Building: User ['.$entity_api_obj->name.'] does not have the permission to use method ['.$this->request['method'].']';
+                        return false;
+                    }
                 }
                 else
                 {
@@ -508,6 +514,7 @@ class content {
                         $this->message->notice = 'Building: Server Internal Error Api Method ['.$this->request['method'].'] not defined';
                         return false;
                     }
+                    $entity_api_method_obj->$method_calling(['bind_value'=>[':api_id'=>$auth_id]]);
                 }
                 break;
             case 'html':
