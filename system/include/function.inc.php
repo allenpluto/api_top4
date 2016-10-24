@@ -5,6 +5,33 @@
  * Date: 26/09/2016
  * Time: 2:24 PM
  */
+function render_xml($field = array(), &$xml = NULL, $parent_node_name = '')
+{
+    if (!isset($xml)) $xml = new SimpleXMLElement('<?xml version="1.0"?><response></response>');
+    foreach ($field as $field_name=>$field_value)
+    {
+        if (!empty($parent_node_name)) $field_name = $parent_node_name;
+        if (is_array($field_value))
+        {
+            // For sequential array
+            if (array_keys($field_value) === range(0, count($field_value) - 1))
+            {
+                $parent_node = $xml->addChild($field_name.'s');
+                render_xml($field_value,$parent_node,$field_name);
+            }
+            else
+            {
+                $parent_node = $xml->addChild($field_name);
+                render_xml($field_value,$parent_node);
+            }
+        }
+        else
+        {
+            $xml->addChild($field_name,htmlspecialchars($field_value));
+        }
+    }
+    return $xml;
+}
 
 function render_html($field = array(), $template = '')
 {

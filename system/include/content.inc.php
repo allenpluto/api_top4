@@ -10,6 +10,7 @@ class content {
 
     protected $request = array();
     protected $content = array();
+    protected $result = array();
 
     public $message;
     public $format;
@@ -22,6 +23,8 @@ class content {
 
     function __construct($parameter = array())
     {
+        $this->status = 'OK';
+
         $this->request = array();
         $this->message = message::get_instance();
         $this->format = format::get_obj();
@@ -61,7 +64,7 @@ class content {
             return $this;
         }
 
-        $this->status = 'OK';
+
     }
 
     private function request_decoder($value = '')
@@ -278,11 +281,15 @@ class content {
             case 'xml':
                 if (empty($request_path))
                 {
-                    $this->request['method'] = 'list-available-method';
+                    $this->request['method'] = 'list_available_method';
                 }
                 else
                 {
                     $this->request['method'] = array_shift($request_path);
+                }
+                if (!empty($request_path))
+                {
+                    $this->request['value'] = array_shift($request_path);
                 }
                 if (!empty($request_path))
                 {
@@ -309,7 +316,7 @@ class content {
 
     private function build_content()
     {
-        if (!isset($this->request['format'])) $this->content['format'] = 'default';
+        if (!isset($this->request['format'])) $this->content['format'] = $this->request['data_type'];
         else $this->content['format'] = $this->request['format'];
 
         switch($this->request['data_type'])
@@ -473,48 +480,91 @@ class content {
                 break;
             case 'json':
             case 'xml':
-                if (isset($_SERVER['HTTP_AUTH_KEY']))
+                if (empty($_SERVER['HTTP_AUTH_KEY']))
                 {
-                    $entity_api_key_obj = new entity_api_key();
-                    $auth_id = $entity_api_key_obj->validate_api_key($_SERVER['HTTP_AUTH_KEY']);
-                    if ($auth_id === false)
-                    {
-                        // TODO: Error Handling, api key authentication failed
-                        $this->message->notice = 'Building: Api Key Authentication Failed';
-                        return false;
-                    }
-                    $entity_api_obj = new entity_api($auth_id);
+                    // TODO: Error Handling, api key authentication failed
+                    $this->message->notice = 'Building: Api Key Not Provided';
+                    $this->result = [
+                        'status'=>'Permission Denied',
+                        'message'=>'Api Key Not Provided'
+                    ];
+                    return true;
                 }
+                $entity_api_key_obj = new entity_api_key();
+                $auth_id = $entity_api_key_obj->validate_api_key(['api_key'=>$_SERVER['HTTP_AUTH_KEY'],'remote_ip'=>$_SERVER['REMOTE_ADDR']]);
+                if ($auth_id === false)
+                {
+                    // TODO: Error Handling, api key authentication failed
+                    $this->message->notice = 'Building: Api Key Authentication Failed';
+                    $this->result = [
+                        'status'=>'Permission Denied',
+                        'message'=>'Api Key Authentication Failed'
+                    ];
+                    return true;
+                }
+                $entity_api_obj = new entity_api($auth_id);
                 $entity_api_method_obj = new entity_api_method($this->request['method']);
                 if (empty($entity_api_method_obj->id_group))
                 {
                     // TODO: Error Handling, api method not recognized
                     $this->message->notice = 'Building: Unknown Request Api Method ['.$this->request['method'].']';
-                    return false;
+                    $this->result = [
+                        'status'=>'Fail',
+                        'message'=>'Method Does Not Exist: '.$this->request['method']
+                    ];
+                    return true;
                 }
 
-                if ($entity_api_method_obj->id_group[0] > 99)
+                $method_variable = [];
+                if (!empty($this->request['option'])) $method_variable = $this->request['option'];
+                if (!empty($this->request['value'])) $method_variable['value'] = $this->request['value'];
+                $method_variable['api_id'] = $auth_id;
+                $method_variable['status'] = $this->status;
+                $method_variable['message'] = '';
+
+                if (end($entity_api_method_obj->id_group) > 99)
                 {
                     // For non-public functions, check if the user get the access
-                    $available_functions = $entity_api_method_obj->list_available_method(['bind_value'=>[':api_id'=>$auth_id],'function_name_only'=>true]);
+                    $available_functions = $entity_api_method_obj->list_available_method(array_merge($method_variable,['function_name_only'=>true]));
                     if (!in_array($this->request['method'],$available_functions))
                     {
                         // TODO: Error Handling, user permission error, user does not have permission to use this function
-                        $this->message->notice = 'Building: User ['.$entity_api_obj->name.'] does not have the permission to use method ['.$this->request['method'].']';
-                        return false;
+                        $this->message->notice = 'Building: User ['.end($entity_api_obj->row)['name'].'] does not have the permission to use the method ['.$this->request['method'].']';
+                        $this->result = [
+                            'status'=>'Permission Denied',
+                            'message'=>'User ['.end($entity_api_obj->row)['name'].'] does not have the permission to use the method ['.$this->request['method'].']'
+                        ];
+                        return true;
                     }
                 }
-                else
+
+                // For public functions, direct execute
+                //$method_calling = str_replace('-','_',$this->request['method']);
+                $method_calling = $this->request['method'];
+                if (!method_exists($entity_api_method_obj,$method_calling))
                 {
-                    // For public functions, direct execute
-                    $method_calling = str_replace('-','_',$this->request['method']);
-                    if (!method_exists($entity_api_method_obj,$method_calling))
+                    // TODO: Error Handling, internal error, api method defined in database, but does not exist in class function
+                    $this->message->notice = 'Building: Server Internal Error Api Method ['.$this->request['method'].'] not defined';
+                    $this->result = [
+                        'status'=>'Fail',
+                        'message'=>'Server Error, Try Again Later'
+                    ];
+                    return true;
+                }
+
+                $this->content['method'] = $this->request['method'];
+
+                $api_call_result = $entity_api_method_obj->$method_calling($method_variable);
+
+                if (isset($method_variable['status'])) $this->result['status'] = $method_variable['status'];
+                if (isset($method_variable['message'])) $this->result['message'] = $method_variable['message'];
+                if ($api_call_result !== FALSE)
+                {
+                    foreach ($api_call_result as $record_index=>&$record)
                     {
-                        // TODO: Error Handling, internal error, api method defined in database, but does not exist in class function
-                        $this->message->notice = 'Building: Server Internal Error Api Method ['.$this->request['method'].'] not defined';
-                        return false;
+                        if (!empty($record['request_uri'])) $record['request_uri'] = URI_SITE_BASE.$this->content['format'].'/'.$record['request_uri'];
                     }
-                    $entity_api_method_obj->$method_calling(['bind_value'=>[':api_id'=>$auth_id]]);
+                    $this->result['result'] = &$api_call_result;
                 }
                 break;
             case 'html':
@@ -582,7 +632,7 @@ class content {
 
     function render()
     {
-        switch($this->request['data_type'])
+        switch($this->content['format'])
         {
             case 'css':
             case 'js':
@@ -702,6 +752,21 @@ class content {
 
                         readfile($this->request['file_path']);
                 }
+                break;
+            case 'json':
+                $result = json_encode($this->result);
+                header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
+                header('Content-Length: '.strlen($result));
+                header("Content-Type: application/json");
+                print_r($result);
+                break;
+            case 'xml':
+                $result = render_xml($this->result)->asXML();
+                //$result = $result->__toString();
+                header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
+                header('Content-Length: '.strlen($result));
+                header("Content-Type: text/xml");
+                print_r($result);
                 break;
             case 'html':
                 print_r(render_html($this->request['field'],$this->request['template']));

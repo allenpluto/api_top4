@@ -28,19 +28,19 @@ class entity_api_key extends entity
         $this->set($parameter);
     }
 
-    function validate_api_key($api_key)
+    function validate_api_key($parameter = array())
     {
-        $key_part = explode('-',$api_key);
+        $key_part = explode('-',$parameter['api_key']);
         $crc32b_dec = '';
         foreach($key_part as $index=>$sub_hash)
         {
             $crc32b_dec .= substr($sub_hash,ord(substr($sub_hash,0,1)) % 3 + 1,1);
         }
-        $parameter = array(
-            'bind_param' => array(':name'=>$api_key),
+        $get_parameter = array(
+            'bind_param' => array(':name'=>$parameter['api_key']),
             'where' => array('`name` = :name')
         );
-        $row = $this->get($parameter);
+        $row = $this->get($get_parameter);
         if (empty($row))
         {
             // TODO: Error, type invalid api key
@@ -50,7 +50,7 @@ class entity_api_key extends entity
             if (hash('crc32b',2000-$record['account_id']) == $crc32b_dec)
             {
                 $ip_restriction = explode(',',$record['ip_restriction']);
-                if (in_array($_SERVER['remote_ip'], $ip_restriction))
+                if (in_array($parameter['remote_ip'], $ip_restriction))
                 {
                     return $record['account_id'];
                 }

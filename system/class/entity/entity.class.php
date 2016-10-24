@@ -75,8 +75,8 @@ class entity
                 {
                     $value = preg_replace('/^(.*)(-)(.*)/','$1',$value);
                     $parameter = array(
-                        'bind_param' => array(':friendly_url'=>$value),
-                        'where' => array('`friendly_url` = :friendly_url')
+                        'bind_param' => array(':friendly_uri'=>$value),
+                        'where' => array('`friendly_uri` = :friendly_uri')
                     );
                     $this->get($parameter);
                 }
