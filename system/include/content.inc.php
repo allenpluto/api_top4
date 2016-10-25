@@ -566,6 +566,7 @@ class content extends base {
                     foreach ($api_call_result as $record_index=>&$record)
                     {
                         if (!empty($record['request_uri'])) $record['request_uri'] = URI_SITE_BASE.$this->content['format'].'/'.$record['request_uri'];
+                        if (!empty($record['friendly_url'])) $record['friendly_url'] = 'http://www.top4.com.au/business/'.$record['friendly_url'];
                     }
                     $this->result['result'] = &$api_call_result;
                 }
