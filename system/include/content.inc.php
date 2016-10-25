@@ -525,14 +525,20 @@ class content {
                 if (end($entity_api_method_obj->id_group) > 99)
                 {
                     // For non-public functions, check if the user get the access
-                    $available_functions = $entity_api_method_obj->list_available_method(array_merge($method_variable,['function_name_only'=>true]));
-                    if (!in_array($this->request['method'],$available_functions))
+                    $available_functions = $entity_api_method_obj->list_available_method(array_merge($method_variable));
+                    $available_function_name = [];
+                    foreach($available_functions as $available_function_index=>$available_function)
+                    {
+                        $available_function_name[] = $available_function['request_uri'];
+                    }
+                    if (!in_array($this->request['method'],$available_function_name))
                     {
                         // TODO: Error Handling, user permission error, user does not have permission to use this function
                         $this->message->notice = 'Building: User ['.end($entity_api_obj->row)['name'].'] does not have the permission to use the method ['.$this->request['method'].']';
                         $this->result = [
                             'status'=>'Permission Denied',
-                            'message'=>'User ['.end($entity_api_obj->row)['name'].'] does not have the permission to use the method ['.$this->request['method'].']'
+                            'message'=>'User ['.end($entity_api_obj->row)['name'].'] does not have the permission to use the method ['.$this->request['method'].']',
+                            'available_methods'=>$available_functions
                         ];
                         return true;
                     }
@@ -566,6 +572,7 @@ class content {
                     }
                     $this->result['result'] = &$api_call_result;
                 }
+
                 break;
             case 'html':
             default:

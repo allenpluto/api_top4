@@ -12,8 +12,7 @@ if (!isset($_GET['handler']))
     //$my_uri .= $_SERVER['HTTP_HOST']?$_SERVER['HTTP_HOST']:'127.0.0.1';
     //$my_uri .= $_SERVER['REQUEST_URI']?$_SERVER['REQUEST_URI']:'/';
     $my_uri = 'http://localhost/allen_frame_trial/json/select_business_by_uri';
-
-    $handler_uri = $my_uri.($_SERVER['QUERY_STRING']?'&handler=true':'?handler=true');
+    $handler_uri = $my_uri.($_SERVER['QUERY_STRING']?'?'.$_SERVER['QUERY_STRING']:'').'&handler=true';
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $handler_uri);

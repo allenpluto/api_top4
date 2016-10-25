@@ -148,6 +148,7 @@ class format
         {
             $result = str_replace(":","",$result);
             $result = str_replace("//","/",$result);
+            $result = trim($result,'/');
             $result = 'http://'.$result;
         }
 

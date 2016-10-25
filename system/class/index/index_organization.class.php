@@ -138,6 +138,18 @@ class index_organization extends index
         return $this->full_text_search($filter_parameter);
     }
 
+    function filter_by_uri($value, $parameter = array())
+    {
+        $value = trim(preg_replace('/^https?:\:\/\/(www\.)?/','',$value),'/');
+        if (empty($value))
+        {
+            // TODO: Error Handling, empty uri string
+            return false;
+        }
+
+        return $this->get(['where'=>'url LIKE "%'.$value.'%"']);
+    }
+
 
 }
 

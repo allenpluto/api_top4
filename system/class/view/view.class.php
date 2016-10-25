@@ -16,7 +16,7 @@ class view
     var $id_group = array();
 
     // row of values, only fetch on fetch_value(), clear on get()
-    protected $row = null;
+    public $row = null;
 
     // rendered html, only generate on render(), clear on get()
     protected $rendered_html = null;
