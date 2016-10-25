@@ -526,7 +526,7 @@ class content extends base {
                     foreach($available_functions as $available_function_index=>&$available_function)
                     {
                         $available_function_name[] = $available_function['request_uri'];
-                        $available_function['request_uri'] = URI_SITE_BASE.$this->content['format'].'/'.$record['request_uri'];
+                        $available_function['request_uri'] = URI_SITE_BASE.$this->content['format'].'/'.$available_function['request_uri'];
                     }
                     if (!in_array($this->request['method'],$available_function_name))
                     {
