@@ -70,7 +70,7 @@ class entity_api_key extends entity
             {
                 // TODO: Error, type invalid api key, key is not generated through genuine method
                 $parameter['status'] = 'INVALID_REQUEST';
-                $parameter['message'] = 'Invalid api key';
+                $parameter['message'] = 'Invalid api key, key is not genuine';
             }
         }
         return false;

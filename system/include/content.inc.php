@@ -5,16 +5,12 @@
 
 // Render template, create html page view...
 
-class content {
+class content extends base {
     public $status;
 
     protected $request = array();
     protected $content = array();
     protected $result = array();
-
-    public $message;
-    public $format;
-    public $preference;
 
 
     //protected $cache = 0;
@@ -23,12 +19,10 @@ class content {
 
     function __construct($parameter = array())
     {
+        parent::__construct();
         $this->status = 'OK';
 
         $this->request = array();
-        $this->message = message::get_instance();
-        $this->format = format::get_obj();
-        $this->preference = preference::get_instance();
 
         // Analyse uri structure and validate input variables, store separate input parts into $request
         if ($this->request_decoder($parameter) === false)
@@ -249,6 +243,7 @@ class content {
                     // TODO: image folder forbid direct access
                     return false;
                 }
+                include_once(PATH_PREFERENCE.'image'.FILE_EXTENSION_INCLUDE);
                 $image_size = array_keys($this->preference->image['size']);;
                 $file_name = array_pop($request_path);
                 $file_part = explode('.',$file_name);
@@ -485,7 +480,7 @@ class content {
                     // TODO: Error Handling, api key authentication failed
                     $this->message->notice = 'Building: Api Key Not Provided';
                     $this->result = [
-                        'status'=>'Permission Denied',
+                        'status'=>'REQUEST_DENIED',
                         'message'=>'Api Key Not Provided'
                     ];
                     return true;
@@ -510,7 +505,7 @@ class content {
                     // TODO: Error Handling, api method not recognized
                     $this->message->notice = 'Building: Unknown Request Api Method ['.$this->request['method'].']';
                     $this->result = [
-                        'status'=>'Fail',
+                        'status'=>'INVALID_REQUEST',
                         'message'=>'Method Does Not Exist: '.$this->request['method']
                     ];
                     return true;
@@ -520,7 +515,7 @@ class content {
                 if (!empty($this->request['option'])) $method_variable = $this->request['option'];
                 if (!empty($this->request['value'])) $method_variable['value'] = $this->request['value'];
                 $method_variable['api_id'] = $auth_id;
-                $method_variable['status'] = $this->status;
+                $method_variable['status'] = 'OK';
                 $method_variable['message'] = '';
 
                 if (end($entity_api_method_obj->id_group) > 99)
@@ -528,16 +523,17 @@ class content {
                     // For non-public functions, check if the user get the access
                     $available_functions = $entity_api_method_obj->list_available_method(array_merge($method_variable));
                     $available_function_name = [];
-                    foreach($available_functions as $available_function_index=>$available_function)
+                    foreach($available_functions as $available_function_index=>&$available_function)
                     {
                         $available_function_name[] = $available_function['request_uri'];
+                        $available_function['request_uri'] = URI_SITE_BASE.$this->content['format'].'/'.$record['request_uri'];
                     }
                     if (!in_array($this->request['method'],$available_function_name))
                     {
                         // TODO: Error Handling, user permission error, user does not have permission to use this function
                         $this->message->notice = 'Building: User ['.end($entity_api_obj->row)['name'].'] does not have the permission to use the method ['.$this->request['method'].']';
                         $this->result = [
-                            'status'=>'Permission Denied',
+                            'status'=>'REQUEST_DENIED',
                             'message'=>'User ['.end($entity_api_obj->row)['name'].'] does not have the permission to use the method ['.$this->request['method'].']',
                             'available_methods'=>$available_functions
                         ];
@@ -553,8 +549,8 @@ class content {
                     // TODO: Error Handling, internal error, api method defined in database, but does not exist in class function
                     $this->message->notice = 'Building: Server Internal Error Api Method ['.$this->request['method'].'] not defined';
                     $this->result = [
-                        'status'=>'Fail',
-                        'message'=>'Server Error, Try Again Later'
+                        'status'=>'UNKNOWN_ERROR',
+                        'message'=>'Method not available: '.$this->request['method'].'. Server side is probably upgrading or under maintenance, try again later.'
                     ];
                     return true;
                 }

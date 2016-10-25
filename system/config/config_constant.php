@@ -27,8 +27,10 @@ define('URI_CONTENT_JS', URI_CONTENT . FOLDER_JS . '/');
 
 define('PATH_SYSTEM', PATH_SITE_BASE . 'system' . DIRECTORY_SEPARATOR);
 define('PATH_CLASS', PATH_SYSTEM . 'class' . DIRECTORY_SEPARATOR);
-define('PATH_INCLUDE', PATH_SYSTEM . 'include' . DIRECTORY_SEPARATOR);
 define('PATH_TEMPLATE', PATH_SYSTEM . 'template' . DIRECTORY_SEPARATOR);
+
+define('PATH_INCLUDE', PATH_SYSTEM . 'include' . DIRECTORY_SEPARATOR);
+define('PATH_PREFERENCE', PATH_INCLUDE . 'preference' . DIRECTORY_SEPARATOR);
 
 define('PATH_ASSET', PATH_SITE_BASE . FOLDER_ASSET . DIRECTORY_SEPARATOR);
 define('PATH_CSS', PATH_ASSET . FOLDER_CSS . DIRECTORY_SEPARATOR);
@@ -54,78 +56,7 @@ define('PREFIX_TEMPLATE_PAGE', 'page_');
 // Preference (Global variables, can be overwritten)
 include_once(PATH_INCLUDE.'preference'.FILE_EXTENSION_INCLUDE);
 $global_preference = preference::get_instance();
-
-// Site Request
-//$global_preference->data_type = ['html','css','image','js','json'];    // html request as default
-//$global_preference->module = ['default','listing','business','business-amp'];    // modules for html and json requests
-//$global_preference->method = ['default','search','find'];    // modules for html and json requests
-
-// View Page Size (number of rows fetched from db and render)
-$global_preference->view_page_size = 100;
-$global_preference->view_category_page_size = 12;
-$global_preference->view_business_summary_page_size = 8;
-
-// Image Size (width grid)
-$global_preference->image_size_xxs = 45;
-$global_preference->image_size_xs = 90;
-$global_preference->image_size_s = 180;
-$global_preference->image_size_m = 300;
-$global_preference->image_size_l = 480;
-$global_preference->image_size_xl = 800;
-$global_preference->image_size_xxl = 1200;
-$global_preference->image = array(
-    'size'=>array(
-        'xxs'=>45,
-        'xs'=>90,
-        's'=>180,
-        'm'=>300,
-        'l'=>480,
-        'xl'=>800,
-        'xxl'=>1200,
-        ''=>1600
-    ),
-    'quality'=>array(
-        // Minimize file size, for pre generated thumbnail
-        'min'=>array(
-            'image/jpeg'=>40,
-            'image/png'=>array(9,PNG_ALL_FILTERS)
-        ),
-        // Small file size, with relatively high generate speed and good quality, default option for pre generated images
-        'opt'=>array(
-            'image/jpeg'=>80,
-            'image/png'=>array(7,PNG_NO_FILTER)
-        ),
-        // Best Quality, default option for source images
-        'max'=>array(
-            'image/jpeg'=>95,
-            'image/png'=>array(1,PNG_NO_FILTER)
-        ),
-        // Fast generate speed, with relatively small file size and good quality, default option for real time rendering images
-        'spd'=>array(
-            'image/jpeg'=>80,
-            'image/png'=>array(1,PNG_FILTER_UP)
-        )
-    )
-);
-
-// Data Encode
-$global_preference->ajax_data_encode = 'base64';
-
-// Minify Text files, (remove unnecessary spaces, long variable name...)
-$global_preference->minify_html = false;
-$global_preference->minify_css = false;
-$global_preference->minify_js = false;
-
-// Enable Cache
-$global_preference->page_cache = true;
-$global_preference->format_cache = true;
-
-// Server Environment
-$global_preference->environment = 'production';
-
-// Search Related
-// Location Search, Max similar suburb returned
-$global_preference->max_relevant_suburb = 5;
+include_once(PATH_PREFERENCE.'general'.FILE_EXTENSION_INCLUDE);
 
 // Message (Global message, record handled errors)
 include_once(PATH_INCLUDE.'message'.FILE_EXTENSION_INCLUDE);
@@ -143,7 +74,7 @@ $format = format::get_obj();
 // Each Entity Class represents one and only one table, handle table operations
 // View Classes are read only classes, display to front end
 // Index Classes are indexed tables for search only
-set_include_path(PATH_CLASS.'entity/'.PATH_SEPARATOR.PATH_CLASS.'view/'.PATH_SEPARATOR.PATH_CLASS.'index/');
+set_include_path(PATH_CLASS.PATH_SEPARATOR.PATH_CLASS.'entity/'.PATH_SEPARATOR.PATH_CLASS.'view/'.PATH_SEPARATOR.PATH_CLASS.'index/');
 spl_autoload_extensions(FILE_EXTENSION_CLASS);
 spl_autoload_register();
 

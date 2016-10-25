@@ -140,14 +140,14 @@ class index_organization extends index
 
     function filter_by_uri($value, $parameter = array())
     {
-        $value = trim(preg_replace('/^https?:\:\/\/(www\.)?/','',$value),'/');
+        $value = trim(preg_replace('/^(https?:\/\/)?(www\.)?/','',$value),'/');
         if (empty($value))
         {
             // TODO: Error Handling, empty uri string
             return false;
         }
 
-        return $this->get(['where'=>'url LIKE "%'.$value.'%"']);
+        return $this->get(['where'=>'url LIKE CONCAT("%",:url,"%")','bind_param'=>[':url'=>$value]]);
     }
 
 
