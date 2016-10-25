@@ -12,13 +12,15 @@ if (!isset($_GET['handler']))
     //$my_uri .= $_SERVER['HTTP_HOST']?$_SERVER['HTTP_HOST']:'127.0.0.1';
     //$my_uri .= $_SERVER['REQUEST_URI']?$_SERVER['REQUEST_URI']:'/';
     $my_uri = 'http://localhost/allen_frame_trial/json/select_business_by_uri';
+    $my_uri = 'http://api.top4.com.au/json/list_available_methods';
     $handler_uri = $my_uri.($_SERVER['QUERY_STRING']?'?'.$_SERVER['QUERY_STRING']:'').'&handler=true';
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $handler_uri);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Auth-Key: 0650-2370-f1fa-24bf-019d-800f-a1b3-cf66'
+        //'Auth-Key: 0650-2370-f1fa-24bf-019d-800f-a1b3-cf66'
+        'Auth-Key: dbf5-6923-311e-367c-1a4b-14ed-aa00-f5ce'
     ));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     $contents = curl_exec ($ch);

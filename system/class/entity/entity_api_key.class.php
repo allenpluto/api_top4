@@ -28,7 +28,7 @@ class entity_api_key extends entity
         $this->set($parameter);
     }
 
-    function validate_api_key($parameter = array())
+    function validate_api_key(&$parameter = array())
     {
         $key_part = explode('-',$parameter['api_key']);
         $crc32b_dec = '';
@@ -44,6 +44,9 @@ class entity_api_key extends entity
         if (empty($row))
         {
             // TODO: Error, type invalid api key
+            $parameter['status'] = 'REQUEST_DENIED';
+            $parameter['message'] = 'Invalid api key';
+            return false;
         }
         foreach($row as $row_id=>$record)
         {
@@ -52,19 +55,26 @@ class entity_api_key extends entity
                 $ip_restriction = explode(',',$record['ip_restriction']);
                 if (in_array($parameter['remote_ip'], $ip_restriction))
                 {
+                    $parameter['status'] = 'OK';
+                    $parameter['message'] = NULL;
                     return $record['account_id'];
                 }
                 else
                 {
                     // TODO: Error, requested ip not accepted
+                    $parameter['status'] = 'REQUEST_DENIED';
+                    $parameter['message'] = 'Invalid ip address ['.$parameter['remote_ip'].']';
                 }
             }
             else
             {
                 // TODO: Error, type invalid api key, key is not generated through genuine method
+                $parameter['status'] = 'INVALID_REQUEST';
+                $parameter['message'] = 'Invalid api key';
             }
         }
         return false;
+
     }
 }
 

@@ -491,14 +491,15 @@ class content {
                     return true;
                 }
                 $entity_api_key_obj = new entity_api_key();
-                $auth_id = $entity_api_key_obj->validate_api_key(['api_key'=>$_SERVER['HTTP_AUTH_KEY'],'remote_ip'=>$_SERVER['REMOTE_ADDR']]);
+                $method_variable = ['api_key'=>$_SERVER['HTTP_AUTH_KEY'],'remote_ip'=>$_SERVER['REMOTE_ADDR']];
+                $auth_id = $entity_api_key_obj->validate_api_key($method_variable);
                 if ($auth_id === false)
                 {
                     // TODO: Error Handling, api key authentication failed
                     $this->message->notice = 'Building: Api Key Authentication Failed';
                     $this->result = [
-                        'status'=>'Permission Denied',
-                        'message'=>'Api Key Authentication Failed'
+                        'status'=>$method_variable['status'],
+                        'message'=>$method_variable['message']
                     ];
                     return true;
                 }
