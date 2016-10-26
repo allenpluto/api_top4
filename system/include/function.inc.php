@@ -216,3 +216,21 @@ function minify_content($value, $type='html')
             return false;
     }
 }
+
+function get_remote_ip()
+{
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP']))
+    {
+        // For Cloud Flare forwarded request, get the original remote ip address
+        return $_SERVER['HTTP_CF_CONNECTING_IP'];
+    }
+    if (!empty($_SERVER['HTTP_CLIENT_IP']))
+    {
+        return $_SERVER['HTTP_CLIENT_IP'];
+    }
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
+    {
+        return $_SERVER['HTTP_X_FORWARDED_FOR'];
+    }
+    return $_SERVER['REMOTE_ADDR'];
+}

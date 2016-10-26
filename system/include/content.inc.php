@@ -29,7 +29,7 @@ class content extends base {
         {
             // TODO: Error Log, error during reading input uri and parameters
             $this->message->error = 'Fail: Error during request_decoder';
-            $this->status = 'fail';
+            $this->status = 'Fail';
             return $this;
         }
 //print_r('request_decoder: <br>');
@@ -42,7 +42,7 @@ class content extends base {
         {
             // TODO: Error Log, error during building data object
             $this->message->error = 'Fail: Error during build_content';
-            $this->status = 'fail';
+            $this->status = 'Fail';
             return $this;
         }
 //print_r('build_content: <br>');
@@ -54,7 +54,7 @@ class content extends base {
         {
             // TODO: Error Log, error during rendering
             $this->message->error = 'Fail: Error during render';
-            $this->status = 'fail';
+            $this->status = 'Fail';
             return $this;
         }
 
@@ -156,7 +156,7 @@ class content extends base {
                 break;
             case 'html':
                 //$request_path_part = array_shift($request_path);
-                $module = ['listing','business','business-amp'];
+                $module = ['listing','business','business-amp','members'];
                 if (in_array($request_path_part,$module))
                 {
                     $this->request['module'] = $request_path_part;
@@ -231,6 +231,9 @@ class content extends base {
                             default:
                                 //$this->request['document'] = $request_path_part;
                         }
+                        break;
+                    case 'members':
+
                         break;
                     default:
                         $this->request['document'] = $request_path_part;
@@ -486,7 +489,7 @@ class content extends base {
                     return true;
                 }
                 $entity_api_key_obj = new entity_api_key();
-                $method_variable = ['api_key'=>$_SERVER['HTTP_AUTH_KEY'],'remote_ip'=>$_SERVER['REMOTE_ADDR']];
+                $method_variable = ['api_key'=>$_SERVER['HTTP_AUTH_KEY'],'remote_ip'=>get_remote_ip()];
                 $auth_id = $entity_api_key_obj->validate_api_key($method_variable);
                 if ($auth_id === false)
                 {
@@ -566,7 +569,11 @@ class content extends base {
                     foreach ($api_call_result as $record_index=>&$record)
                     {
                         if (!empty($record['request_uri'])) $record['request_uri'] = URI_SITE_BASE.$this->content['format'].'/'.$record['request_uri'];
-                        if (!empty($record['friendly_url'])) $record['friendly_url'] = 'http://www.top4.com.au/business/'.$record['friendly_url'];
+                        if (!empty($record['friendly_url']))
+                        {
+                            $record['listing_url'] = 'http://www.top4.com.au/business/'.$record['friendly_url'];
+                            unset($record['friendly_url']);
+                        }
                     }
                     $this->result['result'] = &$api_call_result;
                 }
