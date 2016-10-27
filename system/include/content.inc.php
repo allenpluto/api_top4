@@ -10,12 +10,7 @@ class content extends base {
 
     protected $request = array();
     protected $content = array();
-    protected $result = array();
-
-
-    //protected $cache = 0;
-    //public $parameter = array();
-    //public $content = array();
+    public $result = array();
 
     function __construct($parameter = array())
     {
@@ -30,7 +25,6 @@ class content extends base {
             // TODO: Error Log, error during reading input uri and parameters
             $this->message->error = 'Fail: Error during request_decoder';
             $this->status = 'Fail';
-            return $this;
         }
 //print_r('request_decoder: <br>');
 //print_r($this);
@@ -38,12 +32,11 @@ class content extends base {
         // Generate the necessary components for the content, store separate component parts into $content
         // Read data from database (if applicable), only generate raw data from db
         // If any further complicate process required, leave it to render
-        if ($this->build_content() === false)
+        if ($this->status == 'OK' AND $this->build_content() === false)
         {
             // TODO: Error Log, error during building data object
             $this->message->error = 'Fail: Error during build_content';
             $this->status = 'Fail';
-            return $this;
         }
 //print_r('build_content: <br>');
 //print_r($this);
@@ -55,10 +48,8 @@ class content extends base {
             // TODO: Error Log, error during rendering
             $this->message->error = 'Fail: Error during render';
             $this->status = 'Fail';
-            return $this;
+            return false;
         }
-
-
     }
 
     private function request_decoder($value = '')
@@ -150,13 +141,68 @@ class content extends base {
                 }
                 $this->request['file_path'] .= $file_name;
                 $this->request['file_uri'] .= $file_name;
-
-
                 unset($file_name);
                 break;
+            case 'image':
+                if (empty($request_path))
+                {
+                    // TODO: image folder forbid direct access
+                    return false;
+                }
+                include_once(PATH_PREFERENCE.'image'.FILE_EXTENSION_INCLUDE);
+                $image_size = array_keys($this->preference->image['size']);;
+                $file_name = array_pop($request_path);
+                $file_part = explode('.',$file_name);
+                $this->request['document'] = array_shift($file_part);
+                if (!empty($file_part)) $this->request['file_type'] = array_pop($file_part);
+                $this->request['extension'] = [];
+                if (in_array(end($file_part),$image_size))
+                {
+                    $this->request['extension']['image_size'] = array_pop($file_part);
+                }
+                if (!empty($file_part))
+                {
+                    // Put the rest part that is not an extension back to document name, e.g. jquery-1.11.8.min.js
+                    $this->request['document'] .= '.'.implode('.',$file_part);
+                }
+                unset($file_part);
+
+                if (!empty($request_path))
+                {
+                    $this->request['file_path'] .= implode(DIRECTORY_SEPARATOR,$request_path).DIRECTORY_SEPARATOR;
+                    $this->request['file_uri'] .= implode('/',$request_path).'/';
+
+                    $this->request['sub_path'] = $request_path;
+                }
+
+                $this->request['file_path'] .= $file_name;
+                $this->request['file_uri'] .= $file_name;
+                break;
+            case 'json':
+            case 'xml':
+                if (empty($request_path))
+                {
+                    $this->request['method'] = 'list_available_method';
+                }
+                else
+                {
+                    $this->request['method'] = array_shift($request_path);
+                }
+                if (!empty($request_path))
+                {
+                    $this->request['value'] = array_shift($request_path);
+                }
+                if (!empty($request_path))
+                {
+                    // TODO: More unrecognized value passed through URI
+                    $this->message->error = 'Decoding: URI parts unrecognized ['.implode('/',$request_path).']';
+                    return false;
+                }
+                break;
             case 'html':
+            default:
                 //$request_path_part = array_shift($request_path);
-                $module = ['listing','business','business-amp','members'];
+                $module = ['listing','business','business-amp','console'];
                 if (in_array($request_path_part,$module))
                 {
                     $this->request['module'] = $request_path_part;
@@ -232,69 +278,23 @@ class content extends base {
                                 //$this->request['document'] = $request_path_part;
                         }
                         break;
-                    case 'members':
-
+                    case 'console':
+                        $method = ['dashboard','credential'];
+                        if (in_array($request_path_part,$method))
+                        {
+                            $this->request['method'] = $request_path_part;
+                        }
+                        else
+                        {
+                            // TODO: Error Handling, trying to access console without module specified or unrecognized module
+                            header("HTTP/1.0 404 Not Found");
+                            header('Location: '.URI_SITE_BASE.$this->request['module'].DIRECTORY_SEPARATOR.end($method));
+                        }
                         break;
                     default:
                         $this->request['document'] = $request_path_part;
                 }
 
-                break;
-            case 'image':
-                if (empty($request_path))
-                {
-                    // TODO: image folder forbid direct access
-                    return false;
-                }
-                include_once(PATH_PREFERENCE.'image'.FILE_EXTENSION_INCLUDE);
-                $image_size = array_keys($this->preference->image['size']);;
-                $file_name = array_pop($request_path);
-                $file_part = explode('.',$file_name);
-                $this->request['document'] = array_shift($file_part);
-                if (!empty($file_part)) $this->request['file_type'] = array_pop($file_part);
-                $this->request['extension'] = [];
-                if (in_array(end($file_part),$image_size))
-                {
-                    $this->request['extension']['image_size'] = array_pop($file_part);
-                }
-                if (!empty($file_part))
-                {
-                    // Put the rest part that is not an extension back to document name, e.g. jquery-1.11.8.min.js
-                    $this->request['document'] .= '.'.implode('.',$file_part);
-                }
-                unset($file_part);
-
-                if (!empty($request_path))
-                {
-                    $this->request['file_path'] .= implode(DIRECTORY_SEPARATOR,$request_path).DIRECTORY_SEPARATOR;
-                    $this->request['file_uri'] .= implode('/',$request_path).'/';
-
-                    $this->request['sub_path'] = $request_path;
-                }
-
-                $this->request['file_path'] .= $file_name;
-                $this->request['file_uri'] .= $file_name;
-                break;
-            case 'json':
-            case 'xml':
-                if (empty($request_path))
-                {
-                    $this->request['method'] = 'list_available_method';
-                }
-                else
-                {
-                    $this->request['method'] = array_shift($request_path);
-                }
-                if (!empty($request_path))
-                {
-                    $this->request['value'] = array_shift($request_path);
-                }
-                if (!empty($request_path))
-                {
-                    // TODO: More unrecognized value passed through URI
-                    $this->message->error = 'Decoding: URI parts unrecognized ['.implode('/',$request_path).']';
-                    return false;
-                }
                 break;
         }
 
@@ -314,68 +314,142 @@ class content extends base {
 
     private function build_content()
     {
-        if (!isset($this->request['format'])) $this->content['format'] = $this->request['data_type'];
-        else $this->content['format'] = $this->request['format'];
+        if (!isset($this->request['option']['format'])) $this->content['format'] = $this->request['data_type'];
+        else $this->content['format'] = $this->request['option']['format'];
+
+        if($this->content['format'] == 'html_tag')
+        {
+            if (isset($this->request['option']['html_tag']))
+            {
+                $this->content = array_merge($this->content,$this->request['option']['html_tag']);
+            }
+            if (!isset($this->content['attr'])) $this->content['attr'] = array();
+            switch($this->request['data_type']) {
+                case 'css':
+                    if (!isset($this->content['name'])) $this->content['name'] = 'link';
+                    $this->content['attr']['href'] = $this->request['file_uri'];
+                    if (!isset($this->content['attr']['type'])) $this->content['attr']['type'] = 'text/css';
+                    break;
+                case 'js':
+                    if (!isset($this->content['name'])) $this->content['name'] = 'script';
+                    $this->content['attr']['src'] = $this->request['file_uri'];
+                    if (!isset($this->content['attr']['type'])) $this->content['attr']['type'] = 'text/javascript';
+                default:
+                    // TODO: Error Handling, tag name not given
+                    if (!isset($this->content['name'])) $this->content['name'] = 'div';
+            }
+        }
 
         switch($this->request['data_type'])
         {
             case 'css':
             case 'js':
-                if (isset($this->request['source_file']))
+                $this->content['target_file'] = [
+                    'file'=>$this->request['file_path'],
+                    'uri'=>$this->request['file_uri'],
+                    'minify'=>false
+                ];
+                if (file_exists($this->content['target_file']['file']))
                 {
-                    $this->content['source_file'] = [
-                        'file'=>$this->request['source_file']
-                    ];
+                    $this->content['target_file']['last_modified'] = filemtime($this->content['target_file']['file']);
+                    $this->content['target_file']['content_length'] = filesize($this->content['target_file']['file']);
                 }
                 else
                 {
-                    $source_file = $this->request['document'].'.'.$this->request['file_type'];
-                    if (!empty($this->request['sub_path'])) $source_file = implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR.$source_file;
-                    if (!empty($this->request['extension']))
-                    {
-                        // If requiring for file with extension, e.g. minimized js or css as .min.js/.min.css, first check if the original version is in the cache folder
-                        if (file_exists(PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file))
-                        {
-                            $source_file = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file;
-                            $this->content['source_file'] = [
-                                'file'=>$source_file
-                            ];
-                        }
-                    }
-
-                    if (!isset($this->content['source_file']))
-                    {
-                        $this->content['source_file'] = [
-                            'file'=>PATH_CONTENT.$this->request['data_type'].DIRECTORY_SEPARATOR.$source_file
-                        ];
-                        if (!file_exists($this->content['source_file']['file']))
-                        {
-                            // TODO: Error Handling, last ditch failed, source file does not exist in content folder either
-                            return false;
-                        }
-                    }
-
-                    $this->content['source_file']['source'] = 'local_file';
+                    $this->content['target_file']['last_modified'] = 0;
+                    $this->content['target_file']['content_length'] = 0;
+                }
+                if (in_array('min',$this->request['extension']))
+                {
+                    $this->content['target_file']['minify'] = true;
                 }
 
-                if (isset($this->request['source_file_type']))
+                $source_file = $this->request['data_type'].DIRECTORY_SEPARATOR;
+                if (!empty($this->request['sub_path'])) $source_file .= implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR;
+                $source_file .= $this->request['document'].'.'.$this->request['file_type'];
+
+                if (isset($this->request['option']['source']))
                 {
-                    $this->content['source_file']['source'] = $this->request['source_file_type'];
-                }
-                else
-                {
-                    if ((strpos($this->content['source_file']['file'],URI_SITE_BASE) == FALSE)  AND (preg_match('/^http/',$this->content['source_file']['file']) == 1))
+                    $this->content['source_file'] = ['file'=>PATH_ASSET.$source_file];
+                    if ((strpos($this->request['option']['source'],URI_SITE_BASE) == FALSE)  AND (preg_match('/^http/',$this->request['option']['source']) == 1))
                     {
                         // If source_file is not relative uri and not start with current site uri base, it is an external (cross domain) source file
+                        $this->content['source_file']['original_file'] = $this->request['option']['source'];
                         $this->content['source_file']['source'] = 'remote_file';
                     }
                     else
                     {
-                        $this->content['source_file']['file'] = str_replace(URI_SITE_BASE,PATH_SITE_BASE,$this->content['source_file']['file']);
+                        $this->content['source_file']['original_file'] = str_replace(URI_SITE_BASE,PATH_SITE_BASE,$this->request['option']['source']);
                         $this->content['source_file']['source'] = 'local_file';
                     }
-                }
 
+                    if ($this->content['source_file']['source'] == 'local_file')
+                    {
+                        $this->content['source_file']['last_modified'] = filemtime($this->content['source_file']['original_file']);
+                        $this->content['source_file']['content_length'] = filesize($this->content['source_file']['original_file']);
+                    }
+                    else
+                    {
+                        // External source file
+                        $file_header = @get_headers($this->request['option']['source'],true);
+                        if (strpos( $file_header[0], '200 OK' ) === false) {
+                            // TODO: Error Handling, fail to get external source file header
+                            return false;
+                        }
+                        if (isset($file_header['Last-Modified'])) {
+                            $this->request['option']['last_modified'] = strtotime($file_header['Last-Modified']);
+                        } else {
+                            if (isset($file_header['Expires'])) {
+                                $this->request['option']['last_modified'] = strtotime($file_header['Expires']);
+                            } else {
+                                if (isset($file_header['Date'])) $this->request['option']['last_modified'] = strtotime($file_header['Date']);
+                                else $this->request['option']['last_modified'] = ('+1 day');
+                            }
+                        }
+                        if (isset($file_header['Content-Length']))
+                        {
+                            $this->content['source_file']['content_length'] = $file_header['Content-Length'];
+                            if ($this->content['source_file']['content_length'] > 10485760)
+                            {
+                                // TODO: Error Handling, source file too big
+                                return false;
+                            }
+                        }
+                    }
+                    if ($this->content['source_file']['last_modified'] > $this->content['target_file']['last_modified'])
+                    {
+                        if ($this->content['source_file']['file'] == $this->content['source_file']['original_file'])
+                        {
+                            unset($this->content['source_file']['original_file']);
+                        }
+                        else
+                        {
+                            if (!file_exists(dirname($this->content['source_file']['file']))) mkdir(dirname($this->content['source_file']['file']), 0755, true);
+                            copy($this->content['source_file']['original_file'],$this->content['source_file']['file']);
+                        }
+                    }
+                }
+                else
+                {
+                    $this->content['source_file'] = ['source'=>'local_file'];
+                    if (file_exists(PATH_ASSET.$source_file))
+                    {
+                        $this->content['source_file']['file'] = PATH_ASSET.$source_file;
+                    }
+                    else
+                    {
+                        if (file_exists(PATH_CONTENT.$source_file))
+                        {
+                            $this->content['source_file']['file'] = PATH_CONTENT.$source_file;
+                        }
+                        else
+                        {
+                            // TODO: Error Handling, last ditch failed, source file does not exist in content folder either
+                            $this->message->error = 'Building: cannot find source file';
+                            return false;
+                        }
+                    }
+                }
                 break;
             case 'image':
                 $default_file = $this->request['document'];
@@ -553,7 +627,7 @@ class content extends base {
                     $this->message->notice = 'Building: Server Internal Error Api Method ['.$this->request['method'].'] not defined';
                     $this->result = [
                         'status'=>'UNKNOWN_ERROR',
-                        'message'=>'Method not available: '.$this->request['method'].'. Server side is probably upgrading or under maintenance, try again later.'
+                        'message'=>'Method not available: ['.$this->request['method'].']. Server side is probably upgrading or under maintenance, try again later.'
                     ];
                     return true;
                 }
@@ -581,15 +655,20 @@ class content extends base {
                 break;
             case 'html':
             default:
-                $resources_loader = [];
-                $resources_loader[] = ['value'=>'/js/jquery-1.11.3.min.js','option'=>['source_file_type'=>'local_file','render'=>'source_uri']];
-                $resources_loader[] = ['value'=>'/js/default.min.js','option'=>['source_file_type'=>'local_file','render'=>'source_uri']];
-                $resource_render = [];
-                foreach($resources_loader as $resource_index=>$resource)
+                $this->content['resource'] = [];
+                $this->content['resource'][] = ['value'=>'/js/jquery.min.js','option'=>['source'=>PATH_CONTENT_JS.'jquery-1.11.3.js','format'=>'html_tag']];
+                $this->content['resource'][] = ['value'=>'/js/default.min.js','option'=>['format'=>'html_tag']];
+                $this->content['resource'][] = ['value'=>'/css/default.min.css','option'=>['format'=>'html_tag']];
+                foreach($this->content['resource'] as $resource_index=>&$resource)
                 {
-                    $resource_render[] = new content($resource);
+                    $resource_obj =  new content($resource);
+                    $resource['result'] = $resource_obj->result;
+                    print_r($resource_obj);
+                    unset($resource_obj);
                 }
-                print_r($resource_render);
+                echo '<pre>resource_render<br>';
+                print_r($this->content['resource']);
+                exit();
 
 
 
@@ -648,140 +727,89 @@ class content extends base {
         {
             case 'css':
             case 'js':
+                $target_file_path = dirname($this->content['target_file']['file']);
+                if (!file_exists($target_file_path)) mkdir($target_file_path, 0755, true);
+
+                if (!file_exists($this->content['target_file']['file']) OR $this->content['source_file']['last_modified'] > $this->content['target_file']['last_modified'])
+                {
+                    if ($this->content['minify'])
+                    {
+                        // Yuicompressor 2.4.8 does not support output as Windows absolute path start with Driver
+                        $start_time = microtime(true);
+                        exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar "'.$this->content['source_file']['file'].'" -o "'.preg_replace('/^\w:/','',$this->content['target_file']['file']).'"', $result);
+                        $this->message->notice = 'Yuicompressor Execution Time: '. (microtime(true) - $start_time) . '<br>';
+                    }
+
+                    if (!file_exists($this->content['target_file']['file']))
+                    {
+                        // If fail to generate minimized file, copy the source file
+                        copy($this->content['source_file']['file'], $this->content['target_file']['file']);
+                    }
+                    else
+                    {
+                        if (filesize($this->content['target_file']['file']) > $this->content['source_file']['content_length'])
+                        {
+                            // If file getting bigger, original file probably already minimized with better algorithm (e.g. google's js files, just use the original file)
+                            copy($this->content['source_file']['file'], $this->content['target_file']['file']);
+                        }
+                    }
+                    if ($this->content['minify'])
+                    {
+                        $start_time = microtime(true);
+                        file_put_contents($this->content['target_file']['file'],minify_content(file_get_contents($this->content['target_file']['file']),$this->request['data_type']));
+                        $this->message->notice = 'PHP Minifier Execution Time: '. (microtime(true) - $start_time) . '<br>';
+                    }
+
+                    // remove the copied source file
+                    if (isset($this->content['source_file']['original_file']))
+                    {
+                        unlink($this->content['source_file']['file']);
+                    }
+                }
+
+                if (file_exists($this->content['target_file']['file']))
+                {
+                    // TODO: Force regenerate cache file if source file has been updated
+                    if ($this->content['source_file']['last_modified'] > $this->content['target_file']['last_modified'])
+                    {
+                        if (!file_exists(dirname($this->content['source_file']['file']))) mkdir(dirname($this->content['source_file']['file']), 0755, true);
+                        copy($this->content['source_file']['original_file'],$this->content['source_file']['file']);
+                    }
+                    if ($this->request['source_file_update'] > filemtime($target_file))
+                    {
+                        // TODO: Force regenerate cache file if source file has been updated
+                    }
+                }
+
+
+
+                // TODO: On Direct Rendering from HTTP REQUEST, if request_uri is different from target file_uri, do 301 redirect
+
+                header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
+                header('Content-Length: '.filesize($this->request['file_path']));
+
+                switch ($this->request['data_type'])
+                {
+                    case 'css':
+                        header("Content-Type: text/css");
+                        break;
+                    case 'js':
+                        header("Content-Type: application/javascript");
+                        break;
+                    default:
+                }
+
+                readfile($this->request['file_path']);
+
                 switch ($this->request['render'])
                 {
                     case 'source_uri':
                         return $this->request['file_uri'];
                         break;
-                    default:
-                        if ($this->request['source_file_type'] == 'remote_file')
-                        {
-                            // External source file
-                            $file_header = @get_headers($this->request['source_file'],true);
-                            if (strpos( $file_header[0], '200 OK' ) === false) {
-                                // TODO: Error Handling, fail to get external source file header
-                                return false;
-                            }
-                            if (isset($file_header['Last-Modified'])) {
-                                $this->request['source_file_update'] = strtotime($file_header['Last-Modified']);
-                            } else {
-                                if (isset($file_header['Expires'])) {
-                                    $this->request['source_file_update'] = strtotime($file_header['Expires']);
-                                } else {
-                                    if (isset($file_header['Date'])) $this->request['source_file_update'] = strtotime($file_header['Date']);
-                                    else $this->request['source_file_update'] = ('+1 day');
-                                }
-                            }
-                            if (isset($file_header['Content-Length']))
-                            {
-                                $this->request['source_file_size'] = $file_header['Content-Length'];
-                                if ($this->request['source_file_size'] > 10485760)
-                                {
-                                    // TODO: Error Handling, source file too big
-                                    return false;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (!file_exists($this->request['source_file']))
-                            {
-                                // TODO: Error Handling, fail to get local source file
-                                return false;
-                            }
-                            $this->request['source_file_update'] = filemtime($this->request['source_file']);
-                            $this->request['source_file_size'] = filesize($this->request['source_file']);
-                        }
-
-                        $target_file_path = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR;
-                        if (!empty($this->request['sub_path'])) $target_file_path .= implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR;
-                        if (!file_exists($target_file_path)) mkdir($target_file_path, 0755, true);
-
-                        $source_file = $target_file_path.$this->request['document'].'.src.'.$this->request['file_type'];
-                        copy($this->request['source_file'],$source_file);
-
-                        $target_file = $target_file_path.$this->request['document'];
-                        if (!empty($this->request['extension'])) $target_file = $target_file.'.'.implode('.',$this->request['extension']);
-                        if (!empty($this->request['file_type'])) $target_file = $target_file.'.'.$this->request['file_type'];
-
-                        if (file_exists($target_file))
-                        {
-                            // Requested file probably already exist due to request uri is different from the target uri
-                            if ($this->request['source_file_update'] > filemtime($target_file))
-                            {
-                                // TODO: Force regenerate cache file if source file has been updated
-                            }
-                        }
-
-                        if (in_array('min',$this->request['extension']))
-                        {
-                            // Yuicompressor 2.4.8 does not support output as Windows absolute path start with Driver
-                            $start_time = microtime(true);
-                            exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar "'.$source_file.'" -o "'.preg_replace('/^\w:/','',$target_file).'"', $result);
-                            print_r('Yuicompressor Execution Time: '. (microtime(true) - $start_time) . '<br>');
-
-                        }
-
-                        if (!file_exists($target_file))
-                        {
-                            // If fail to generate minimized file, copy the source file
-                            copy($source_file, $target_file);
-                        }
-                        else
-                        {
-                            if (filesize($target_file) > $this->request['source_file_size'])
-                            {
-                                // If file getting bigger, original file probably already minimized with better algorithm (e.g. google's js files, just use the original file)
-                                copy($source_file, $target_file);
-                            }
-                        }
-
-                        if (end($this->request['extension']) == 'min')
-                        {
-                            $start_time = microtime(true);
-                            file_put_contents($target_file,minify_content(file_get_contents($target_file),$this->request['data_type']));
-                            print_r('PHP Minifier Execution Time: '. (microtime(true) - $start_time) . '<br>');
-                        }
-
-                        // remove the copied source file
-                        unlink($source_file);
-
-                        // TODO: On Direct Rendering from HTTP REQUEST, if request_uri is different from target file_uri, do 301 redirect
-
-                        header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
-                        header('Content-Length: '.filesize($this->request['file_path']));
-
-                        switch ($this->request['data_type'])
-                        {
-                            case 'css':
-                                header("Content-Type: text/css");
-                                break;
-                            case 'js':
-                                header("Content-Type: application/javascript");
-                                break;
-                            default:
-                        }
-
-                        readfile($this->request['file_path']);
                 }
                 break;
-            case 'json':
-                $result = json_encode($this->result);
-                header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
-                header('Content-Length: '.strlen($result));
-                header("Content-Type: application/json");
-                print_r($result);
-                break;
-            case 'xml':
-                $result = render_xml($this->result)->asXML();
-                //$result = $result->__toString();
-                header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
-                header('Content-Length: '.strlen($result));
-                header("Content-Type: text/xml");
-                print_r($result);
-                break;
-            case 'html':
-                print_r(render_html($this->request['field'],$this->request['template']));
+            case 'file_uri':
+                $this->result = $this->content['target_file']['uri'];
                 break;
             case 'image':
                 switch ($this->content['format'])
@@ -1052,6 +1080,41 @@ class content extends base {
 
                         readfile($this->content['target_file']['path']);
                 }
+                break;
+            case 'json':
+                $result = json_encode($this->result);
+                header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
+                header('Content-Length: '.strlen($result));
+                header("Content-Type: application/json");
+                print_r($result);
+                break;
+            case 'html_tag':
+                $this->result = '<'.$this->content['name'];
+                foreach($this->content['attr'] as $attr_name=>$attr_content)
+                {
+                    $this->result .= ' '.$attr_name.'="'.$attr_content.'"';
+                }
+                $this->result .= '>';
+                $void_tag = ['area','base','br','col','command','embed','hr','img','input','keygen','link','meta','param','source','track','wbr'];
+                if (!in_array($this->content['name'],$void_tag))
+                {
+                    if (isset($this->content['inner_html']))
+                    {
+                        $this->result .= htmlspecialchars($this->content['inner_html']);
+                    }
+                    $this->result .= '</'.$this->content['name'].'>';
+                }
+                break;
+            case 'xml':
+                $result = render_xml($this->result)->asXML();
+                //$result = $result->__toString();
+                header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
+                header('Content-Length: '.strlen($result));
+                header("Content-Type: text/xml");
+                print_r($result);
+                break;
+            case 'html':
+                print_r(render_html($this->request['field'],$this->request['template']));
                 break;
 
         }
