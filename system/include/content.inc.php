@@ -345,14 +345,14 @@ class content extends base {
             case 'css':
             case 'js':
                 $this->content['target_file'] = [
-                    'file'=>$this->request['file_path'],
+                    'path'=>$this->request['file_path'],
                     'uri'=>$this->request['file_uri'],
                     'minify'=>false
                 ];
-                if (file_exists($this->content['target_file']['file']))
+                if (file_exists($this->content['target_file']['path']))
                 {
-                    $this->content['target_file']['last_modified'] = filemtime($this->content['target_file']['file']);
-                    $this->content['target_file']['content_length'] = filesize($this->content['target_file']['file']);
+                    $this->content['target_file']['last_modified'] = filemtime($this->content['target_file']['path']);
+                    $this->content['target_file']['content_length'] = filesize($this->content['target_file']['path']);
                 }
                 else
                 {
@@ -370,7 +370,7 @@ class content extends base {
 
                 if (isset($this->request['option']['source']))
                 {
-                    $this->content['source_file'] = ['file'=>PATH_ASSET.$source_file];
+                    $this->content['source_file'] = ['path'=>PATH_ASSET.$source_file];
                     if ((strpos($this->request['option']['source'],URI_SITE_BASE) == FALSE)  AND (preg_match('/^http/',$this->request['option']['source']) == 1))
                     {
                         // If source_file is not relative uri and not start with current site uri base, it is an external (cross domain) source file
@@ -391,19 +391,19 @@ class content extends base {
                     else
                     {
                         // External source file
-                        $file_header = @get_headers($this->request['option']['source'],true);
+                        $file_header = @get_headers($this->content['source_file']['original_file'],true);
                         if (strpos( $file_header[0], '200 OK' ) === false) {
                             // TODO: Error Handling, fail to get external source file header
                             return false;
                         }
                         if (isset($file_header['Last-Modified'])) {
-                            $this->request['option']['last_modified'] = strtotime($file_header['Last-Modified']);
+                            $this->content['source_file']['last_modified'] = strtotime($file_header['Last-Modified']);
                         } else {
                             if (isset($file_header['Expires'])) {
-                                $this->request['option']['last_modified'] = strtotime($file_header['Expires']);
+                                $this->content['source_file']['last_modified'] = strtotime($file_header['Expires']);
                             } else {
-                                if (isset($file_header['Date'])) $this->request['option']['last_modified'] = strtotime($file_header['Date']);
-                                else $this->request['option']['last_modified'] = ('+1 day');
+                                if (isset($file_header['Date'])) $this->content['source_file']['last_modified'] = strtotime($file_header['Date']);
+                                else $this->content['source_file']['last_modified'] = ('+1 day');
                             }
                         }
                         if (isset($file_header['Content-Length']))
@@ -412,20 +412,24 @@ class content extends base {
                             if ($this->content['source_file']['content_length'] > 10485760)
                             {
                                 // TODO: Error Handling, source file too big
+                                $this->message->error = 'Source File too big ( > 10MB )';
                                 return false;
                             }
                         }
                     }
                     if ($this->content['source_file']['last_modified'] > $this->content['target_file']['last_modified'])
                     {
-                        if ($this->content['source_file']['file'] == $this->content['source_file']['original_file'])
+                        if ($this->content['source_file']['path'] == $this->content['source_file']['original_file'])
                         {
                             unset($this->content['source_file']['original_file']);
                         }
                         else
                         {
-                            if (!file_exists(dirname($this->content['source_file']['file']))) mkdir(dirname($this->content['source_file']['file']), 0755, true);
-                            copy($this->content['source_file']['original_file'],$this->content['source_file']['file']);
+                            if(file_exists($this->content['target_file']['path'])) unlink($this->content['target_file']['path']);
+
+                            if (!file_exists(dirname($this->content['source_file']['path']))) mkdir(dirname($this->content['source_file']['path']), 0755, true);
+                            copy($this->content['source_file']['original_file'],$this->content['source_file']['path']);
+                            if(!isset($this->content['source_file']['content_length'])) $this->content['source_file']['content_length'] = filesize($this->content['source_file']['path']);
                         }
                     }
                 }
@@ -434,13 +438,14 @@ class content extends base {
                     $this->content['source_file'] = ['source'=>'local_file'];
                     if (file_exists(PATH_ASSET.$source_file))
                     {
-                        $this->content['source_file']['file'] = PATH_ASSET.$source_file;
+                        $this->content['source_file']['path'] = PATH_ASSET.$source_file;
+                        $this->content['source_file']['remove_cache'] = true;
                     }
                     else
                     {
                         if (file_exists(PATH_CONTENT.$source_file))
                         {
-                            $this->content['source_file']['file'] = PATH_CONTENT.$source_file;
+                            $this->content['source_file']['path'] = PATH_CONTENT.$source_file;
                         }
                         else
                         {
@@ -449,6 +454,8 @@ class content extends base {
                             return false;
                         }
                     }
+                    $this->content['source_file']['last_modified'] = filemtime($this->content['source_file']['path']);
+                    $this->content['source_file']['content_length'] = filesize($this->content['source_file']['path']);
                 }
                 break;
             case 'image':
@@ -500,7 +507,7 @@ class content extends base {
                         if (preg_match('/^http/',$this->request['source_file']) == 1)
                         {
                             $this->content['source_file']['uri'] = $this->request['source_file'];
-                            if (strpos($this->request['source_file']['file'],URI_SITE_BASE) == FALSE)
+                            if (strpos($this->request['source_file']['path'],URI_SITE_BASE) == FALSE)
                             {
                                 $this->content['source_file']['source'] = 'remote_file';
                                 $this->content['source_file']['path'] = PATH_ASSET.$this->request['data_type'].DIRECTORY_SEPARATOR.$this->request['document'].'.src.'.$this->request['file_type'];;
@@ -658,16 +665,20 @@ class content extends base {
                 $this->content['resource'] = [];
                 $this->content['resource'][] = ['value'=>'/js/jquery.min.js','option'=>['source'=>PATH_CONTENT_JS.'jquery-1.11.3.js','format'=>'html_tag']];
                 $this->content['resource'][] = ['value'=>'/js/default.min.js','option'=>['format'=>'html_tag']];
+                $this->content['resource'][] = ['value'=>'/js/default-top4.js','option'=>['source'=>'http://dev.top4.com.au/scripts/default.js','format'=>'html_tag']];
                 $this->content['resource'][] = ['value'=>'/css/default.min.css','option'=>['format'=>'html_tag']];
+echo '<pre>resource_render<br>';
                 foreach($this->content['resource'] as $resource_index=>&$resource)
                 {
                     $resource_obj =  new content($resource);
                     $resource['result'] = $resource_obj->result;
                     print_r($resource_obj);
+                    print_r($resource_obj->message->display());
                     unset($resource_obj);
                 }
                 echo '<pre>resource_render<br>';
                 print_r($this->content['resource']);
+                print_r($this->message->display());
                 exit();
 
 
@@ -727,66 +738,73 @@ class content extends base {
         {
             case 'css':
             case 'js':
-                $target_file_path = dirname($this->content['target_file']['file']);
+                $target_file_path = dirname($this->content['target_file']['path']);
                 if (!file_exists($target_file_path)) mkdir($target_file_path, 0755, true);
 
-                if (!file_exists($this->content['target_file']['file']) OR $this->content['source_file']['last_modified'] > $this->content['target_file']['last_modified'])
+                if (!file_exists($this->content['target_file']['path']) OR $this->content['source_file']['last_modified'] > $this->content['target_file']['last_modified'])
                 {
-                    if ($this->content['minify'])
+                    if (!empty($this->content['target_file']['minify']))
                     {
                         // Yuicompressor 2.4.8 does not support output as Windows absolute path start with Driver
                         $start_time = microtime(true);
-                        exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar "'.$this->content['source_file']['file'].'" -o "'.preg_replace('/^\w:/','',$this->content['target_file']['file']).'"', $result);
-                        $this->message->notice = 'Yuicompressor Execution Time: '. (microtime(true) - $start_time) . '<br>';
+                        exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar "'.$this->content['source_file']['path'].'" -o "'.preg_replace('/^\w:/','',$this->content['target_file']['path']).'"', $result);
+                        $this->message->notice = 'Yuicompressor Execution Time: '. (microtime(true) - $start_time);
                     }
 
-                    if (!file_exists($this->content['target_file']['file']))
+                    if (!file_exists($this->content['target_file']['path']))
                     {
                         // If fail to generate minimized file, copy the source file
-                        copy($this->content['source_file']['file'], $this->content['target_file']['file']);
+                        copy($this->content['source_file']['path'], $this->content['target_file']['path']);
                     }
                     else
                     {
-                        if (filesize($this->content['target_file']['file']) > $this->content['source_file']['content_length'])
+                        if (filesize($this->content['target_file']['path']) > $this->content['source_file']['content_length'])
                         {
                             // If file getting bigger, original file probably already minimized with better algorithm (e.g. google's js files, just use the original file)
-                            copy($this->content['source_file']['file'], $this->content['target_file']['file']);
+                            copy($this->content['source_file']['path'], $this->content['target_file']['path']);
                         }
                     }
-                    if ($this->content['minify'])
+                    if (!empty($this->content['target_file']['minify']))
                     {
                         $start_time = microtime(true);
-                        file_put_contents($this->content['target_file']['file'],minify_content(file_get_contents($this->content['target_file']['file']),$this->request['data_type']));
-                        $this->message->notice = 'PHP Minifier Execution Time: '. (microtime(true) - $start_time) . '<br>';
+                        file_put_contents($this->content['target_file']['path'],minify_content(file_get_contents($this->content['target_file']['path']),$this->request['data_type']));
+                        $this->message->notice = 'PHP Minifier Execution Time: '. (microtime(true) - $start_time);
                     }
 
                     // remove the copied source file
-                    if (isset($this->content['source_file']['original_file']))
+                    if (isset($this->content['source_file']['original_file']) OR !empty($this->content['source_file']['remove_cache']))
                     {
-                        unlink($this->content['source_file']['file']);
+                        unlink($this->content['source_file']['path']);
                     }
                 }
 
-                if (file_exists($this->content['target_file']['file']))
+                if (!file_exists($this->content['target_file']['path']))
                 {
-                    // TODO: Force regenerate cache file if source file has been updated
-                    if ($this->content['source_file']['last_modified'] > $this->content['target_file']['last_modified'])
-                    {
-                        if (!file_exists(dirname($this->content['source_file']['file']))) mkdir(dirname($this->content['source_file']['file']), 0755, true);
-                        copy($this->content['source_file']['original_file'],$this->content['source_file']['file']);
-                    }
-                    if ($this->request['source_file_update'] > filemtime($target_file))
-                    {
-                        // TODO: Force regenerate cache file if source file has been updated
-                    }
+                    // TODO: Error Handling, Fail to generate target file
+                    $this->message->error = 'Rendering: Fail to generate target file';
+                    return false;
                 }
 
+                if ($this->request['file_uri'] != $this->content['target_file']['uri'])
+                {
+                    // TODO: On Direct Rendering from HTTP REQUEST, if request_uri is different from target file_uri, do 301 redirect
+                    header('HTTP/1.1 301 Moved Permanently');
+                    header('Location: '.$this->content['target_file']['uri']);
+                    return false;
+                }
 
+                $this->content['target_file']['last_modified'] = filemtime($this->content['target_file']['path']);
+                $this->content['target_file']['content_length'] = filesize($this->content['target_file']['path']);
 
-                // TODO: On Direct Rendering from HTTP REQUEST, if request_uri is different from target file_uri, do 301 redirect
+                if ($this->content['target_file']['content_length'] == 0)
+                {
+                    // TODO: Error Handling, Fail to generate target file
+                    $this->message->error = 'Rendering: Fail to generate target file';
+                    return false;
+                }
 
-                header('Last-Modified: '.gmdate('D, d M Y H:i:s').' GMT');
-                header('Content-Length: '.filesize($this->request['file_path']));
+                header('Last-Modified: '.gmdate('D, d M Y H:i:s',$this->content['target_file']['last_modified']).' GMT');
+                header('Content-Length: '.$this->content['target_file']['content_length']);
 
                 switch ($this->request['data_type'])
                 {
@@ -798,7 +816,6 @@ class content extends base {
                         break;
                     default:
                 }
-
                 readfile($this->request['file_path']);
 
                 switch ($this->request['render'])
@@ -1073,7 +1090,6 @@ class content extends base {
                         {
                             $last_modified_time = gmdate('D, d M Y H:i:s');
                         }
-
                         header('Last-Modified: '.$last_modified_time.' GMT');
                         header('Content-Length: '.filesize($this->content['target_file']['path']));
                         header('Content-Type: '.$this->content['target_file']['mime']);

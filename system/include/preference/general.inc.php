@@ -5,6 +5,7 @@
  * Date: 25/10/2016
  * Time: 3:08 PM
  */
+if (!isset($global_preference)) $global_preference = preference::get_instance();
 
 // View Page Size (number of rows fetched from db and render)
 $global_preference->view_page_size = 100;
