@@ -343,6 +343,7 @@ class content extends base {
         switch($this->request['data_type'])
         {
             case 'css':
+            case 'image':
             case 'js':
                 $this->content['target_file'] = [
                     'path'=>$this->request['file_path'],
@@ -359,9 +360,22 @@ class content extends base {
                     $this->content['target_file']['last_modified'] = 0;
                     $this->content['target_file']['content_length'] = 0;
                 }
-                if (in_array('min',$this->request['extension']))
+                foreach ($this->request['extension'] as $extension_index=>$extension)
                 {
-                    $this->content['target_file']['minify'] = true;
+                    if ($extension == 'min')
+                    {
+                        $this->content['target_file']['minify'] = true;
+                        continue;
+                    }
+                    if (isset($this->preference->image))
+                    {
+                        if (in_array($extension,array_keys($this->preference->image['size'])))
+                        {
+                            $this->request['extension']['image_size'] = $extension;
+                            $this->content['target_file']['width'] = $this->preference->image['size'][$extension];
+                            continue;
+                        }
+                    }
                 }
 
                 $source_file = $this->request['data_type'].DIRECTORY_SEPARATOR;
@@ -449,10 +463,36 @@ class content extends base {
                         }
                         else
                         {
-                            // TODO: Error Handling, last ditch failed, source file does not exist in content folder either
-                            $this->message->error = 'Building: cannot find source file';
-                            return false;
-                        }
+                            // If image doesn't exist in content folder, try database
+                            $this->content['source_file']['source'] = 'local_data';
+                            $document_name_part = explode('-',$this->request['document']);
+                            $document_id = end($document_name_part);
+                            if (empty($document_id) OR !is_numeric($document_id))
+                            {
+                                // TODO: Error Handling, fail to get source file from database, last part of file name is not a valid id
+                                $this->message->error = 'Building: fail to get source file from database, file not in standard format';
+                                return false;
+                            }
+                            $entity_class = 'entity_'.$this->request['data_type'];
+                            if (!class_exists($entity_class))
+                            {
+                                // TODO: Error Handling, last ditch failed, source file does not exist in database either
+                                $this->message->error = 'Building: cannot find source file';
+                                return false;
+                            }
+                            $entity_obj = new $entity_class($document_id);
+                            if (empty($entity_obj->row))
+                            {
+                                // TODO: Error Handling, fail to get source file from database, cannot find matched record
+                                $this->message->error = 'Building: fail to get source file from database, invalid id';
+                                return false;
+                            }
+                            $record = $entity_obj->row[0];
+                            $this->content['source_file']['path'] = PATH_ASSET.$source_file;
+                            if (!file_exists(dirname($this->content['source_file']['path']))) mkdir(dirname($this->content['source_file']['path']), 0755, true);
+                            file_put_contents($this->content['source_file']['path'],$record['data']);
+                            //$entity_image_obj->generate_cache_file();
+                            $this->content['source_file']['object'] = &$entity_image_obj;                        }
                     }
                     $this->content['source_file']['last_modified'] = filemtime($this->content['source_file']['path']);
                     $this->content['source_file']['content_length'] = filesize($this->content['source_file']['path']);

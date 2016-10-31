@@ -4,6 +4,7 @@ SELECT Listing.id,Listing.account_id,Listing.title as name,Listing.keywords,List
 LEFT JOIN Listing_Category Listing_Category ON Listing.id = Listing_Category.listing_id
 LEFT JOIN ListingCategory ListingCategory ON ListingCategory.id = Listing_Category.category_id
 LEFT JOIN ListingFeatured ON Listing.id = ListingFeatured.listing_id
+WHERE Listing.status = 'A'
 GROUP BY Listing.id;
 ALTER TABLE `tbl_index_organization` ADD PRIMARY KEY(`id`);
 ALTER TABLE `tbl_index_organization` ENGINE = MYISAM DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
