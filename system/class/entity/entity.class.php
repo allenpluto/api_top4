@@ -3,7 +3,7 @@
 // Name: entity
 // Description: Base class for all database table classes, read/write limited rows per query (PHP memory limit and system performance)
 
-class entity
+class entity extends base
 {
     // database connection
     protected $_conn = null;
@@ -21,6 +21,7 @@ class entity
     // By default, all entities can be constructed by a number (id), an array of numbers (ids), a string of numbers separate by comma (e.g. "10,11,12") or a string of friendly url
     function __construct($value = null, $parameter = array())
     {
+        parent::__construct();
         if (!empty($parameter)) $this->set_parameter($parameter);
 
         if ($GLOBALS['db']) $db = $GLOBALS['db'];
@@ -358,8 +359,8 @@ class entity
     // INSERT/UPDATE multiple rows of data, return id_group of inserted/updated rows
     function set($parameter = array())
     {
-print_r('set function');
-print_r($parameter);
+//print_r('set function');
+//print_r($parameter);
         if (isset($parameter['row']))
         {
             $row = $parameter['row'];
@@ -436,9 +437,9 @@ print_r($parameter);
         }
 
         $id_group = array();
-print_r('sql');
-print_r($parameter);
-print_r($row);
+//print_r('sql');
+//print_r($parameter);
+//print_r($row);
 
         $sql = 'INSERT INTO '.$parameter['table'].' (`'.implode('`,`',$parameter['table_fields']).'`) VALUES (:'.implode(',:',$parameter['table_fields']).') ON DUPLICATE KEY UPDATE ';
         $field_bind = array();
@@ -491,8 +492,8 @@ print_r($row);
 
             $bind_value = array_merge($parameter['bind_param'],$bind_value);
 
-print_r('bind value<br>');
-print_r($bind_value);
+//print_r('bind value<br>');
+//print_r($bind_value);
 
             if (count($bind_value) != count($parameter['table_fields']))
             {

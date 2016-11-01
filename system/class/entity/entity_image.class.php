@@ -32,7 +32,7 @@ class entity_image extends entity
         {
             foreach($this->row as $record_index=>&$record)
             {
-                $record['document'] = $format->file_name((!empty($record['friendly_url'])?$record['friendly_url']:$record['name']).'-'.$record['id']);
+                $record['document'] = $this->format->file_name((!empty($record['friendly_url'])?$record['friendly_url']:$record['name']).'-'.$record['id']);
                 switch($record['mime'])
                 {
                     case 'image/gif':
@@ -63,23 +63,23 @@ class entity_image extends entity
     {
         if (isset($parameter['row']))
         {
-            foreach($parameter['row'] as $record_index => $record)
+            foreach($parameter['row'] as $record_index => &$record)
             {
                 if (isset($record['image_src']))
                 {
                     $image_size = getimagesize($record['image_src']);
                     if ($image_size !== false)
                     {
-                        $parameter['row'][$record_index]['width'] = $image_size[0];
-                        $parameter['row'][$record_index]['height'] = $image_size[1];
-                        if (isset($image_size['mime'])) $parameter['row'][$record_index]['mime'] = $image_size['mime'];
+                        $record['width'] = $image_size[0];
+                        $record['height'] = $image_size[1];
+                        if (isset($image_size['mime'])) $record['mime'] = $image_size['mime'];
                     }
                     unset($image_size);
 
                     $image_data = file_get_contents($record['image_src']);
                     if ($image_data !== false)
                     {
-                        $parameter['row'][$record_index]['data'] = $image_data;
+                        $record['data'] = $image_data;
                     }
                     unset($image_data);
                 }
