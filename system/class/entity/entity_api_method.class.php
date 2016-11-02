@@ -15,6 +15,8 @@ class entity_api_method extends entity
         if (empty($parameter['api_id']))
         {
             // TODO: Error Handling api account id not provided
+            $parameter['status'] = 'REQUEST_DENIED';
+            $parameter['message'] = 'Cannot access API Account';
             return false;
         }
         $row = $this->get(['where'=>'`tbl_entity_api_method`.id < 100 OR `tbl_entity_api_method`.id IN (SELECT api_method_id FROM tbl_rel_api_to_api_method WHERE api_id = :api_id)','bind_param'=>[':api_id'=>$parameter['api_id']],'id_group'=>array()]);
@@ -30,7 +32,7 @@ class entity_api_method extends entity
     {
         if (empty($parameter['uri']))
         {
-            // TODO: Error Handling api account id not provided
+            // TODO: Error Handling, Website uri not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'Website uri not provided';
             return false;
