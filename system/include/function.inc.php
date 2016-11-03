@@ -234,3 +234,22 @@ function get_remote_ip()
     }
     return $_SERVER['REMOTE_ADDR'];
 }
+
+function session_validation()
+{
+    $message = message::get_instance();
+
+    if (!isset($_COOKIE['session_id']))
+    {
+        // TODO: Error Handling, fail to get external source file header
+        $message->notice = 'Session Validation Failed, Redirect to Login Page';
+        return false;
+    }
+
+    if (!isset($_SESSION)) {
+        session_start();
+    }
+
+    $entity_api_session = new entity_api_session();
+
+}

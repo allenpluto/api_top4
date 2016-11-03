@@ -109,11 +109,12 @@ class content extends base {
         switch ($this->request['data_type'])
         {
             case 'css':
+            case 'font':
             case 'image':
             case 'js':
                 if (empty($request_path))
                 {
-                    // TODO: css/js folder forbid direct access
+                    // TODO: Folder forbid direct access
                     $this->result['status'] = 403;
                     return false;
                 }
@@ -295,7 +296,7 @@ class content extends base {
                         {
                             // TODO: Error Handling, trying to access console without module specified or unrecognized module
                             $this->result['status'] = 301;
-                            $this->result['header']['Location'] =  URI_SITE_BASE.$this->request['module'].DIRECTORY_SEPARATOR.end($method);
+                            $this->result['header']['Location'] =  URI_SITE_BASE.$this->request['module'].'/'.end($method);
                         }
                         break;
                     default:
@@ -326,29 +327,32 @@ class content extends base {
 
         if($this->content['format'] == 'html_tag')
         {
+            $this->content['html_tag'] = array();
             if (isset($this->request['option']['html_tag']))
             {
-                $this->content = array_merge($this->content,$this->request['option']['html_tag']);
+                $this->content['html_tag'] = array_merge($this->content['html_tag'],$this->request['option']['html_tag']);
             }
-            if (!isset($this->content['attr'])) $this->content['attr'] = array();
+            if (!isset($this->content['html_tag']['attr'])) $this->content['html_tag']['attr'] = array();
             switch($this->request['data_type']) {
                 case 'css':
-                    if (!isset($this->content['name'])) $this->content['name'] = 'link';
-                    $this->content['attr']['href'] = $this->request['file_uri'];
-                    if (!isset($this->content['attr']['type'])) $this->content['attr']['type'] = 'text/css';
+                    if (!isset($this->content['html_tag']['name'])) $this->content['html_tag']['name'] = 'link';
+                    $this->content['html_tag']['attr']['href'] = $this->request['file_uri'];
+                    if (!isset($this->content['html_tag']['attr']['type'])) $this->content['html_tag']['attr']['type'] = 'text/css';
+                    if (!isset($this->content['html_tag']['attr']['rel'])) $this->content['html_tag']['attr']['rel'] = 'stylesheet';
+                    if (!isset($this->content['html_tag']['attr']['media'])) $this->content['html_tag']['attr']['media'] = 'all';
                     break;
                 case 'image':
-                    if (!isset($this->content['name'])) $this->content['name'] = 'img';
-                    $this->content['attr']['src'] = $this->request['file_uri'];
-                    if (!isset($this->content['attr']['alt'])) $this->content['attr']['alt'] = trim(ucwords($this->format->caption($this->request['document'])));
+                    if (!isset($this->content['html_tag']['name'])) $this->content['html_tag']['name'] = 'img';
+                    $this->content['html_tag']['attr']['src'] = $this->request['file_uri'];
+                    if (!isset($this->content['html_tag']['attr']['alt'])) $this->content['html_tag']['attr']['alt'] = trim(ucwords($this->format->caption($this->request['document'])));
                     break;
                 case 'js':
-                    if (!isset($this->content['name'])) $this->content['name'] = 'script';
-                    $this->content['attr']['src'] = $this->request['file_uri'];
-                    if (!isset($this->content['attr']['type'])) $this->content['attr']['type'] = 'text/javascript';
+                    if (!isset($this->content['html_tag']['name'])) $this->content['html_tag']['name'] = 'script';
+                    $this->content['html_tag']['attr']['src'] = $this->request['file_uri'];
+                    if (!isset($this->content['html_tag']['attr']['type'])) $this->content['html_tag']['attr']['type'] = 'text/javascript';
                 default:
                     // TODO: Error Handling, tag name not given
-                    if (!isset($this->content['name'])) $this->content['name'] = 'div';
+                    if (!isset($this->content['html_tag']['name'])) $this->content['html_tag']['name'] = 'div';
             }
         }
 
@@ -375,12 +379,13 @@ class content extends base {
 
                 $file_relative_path = $this->request['data_type'].DIRECTORY_SEPARATOR;
                 if (!empty($this->request['sub_path'])) $file_relative_path .= implode(DIRECTORY_SEPARATOR,$this->request['sub_path']).DIRECTORY_SEPARATOR;
-
                 $this->content['source_file'] = [
                     'path' => PATH_ASSET.$file_relative_path.$this->request['document'].'.src.'.$this->request['file_type'],
                     'source' => 'local_file'
                 ];
                 $file_relative_path .= $this->request['document'].'.'.$this->request['file_type'];
+
+                if (!file_exists(dirname($this->content['source_file']['path']))) mkdir(dirname($this->content['source_file']['path']), 0755, true);
 
                 if (isset($this->request['option']['source']))
                 {
@@ -444,7 +449,6 @@ class content extends base {
                         {
                             if(file_exists($this->content['target_file']['path'])) unlink($this->content['target_file']['path']);
 
-                            if (!file_exists(dirname($this->content['source_file']['path']))) mkdir(dirname($this->content['source_file']['path']), 0755, true);
                             copy($this->content['source_file']['original_file'],$this->content['source_file']['path']);
                             touch($this->content['source_file']['path'], $this->content['source_file']['last_modified']);
                             if(!isset($this->content['source_file']['content_length'])) $this->content['source_file']['content_length'] = filesize($this->content['source_file']['path']);
@@ -556,18 +560,26 @@ class content extends base {
 
                 foreach ($this->request['extension'] as $extension_index=>$extension)
                 {
+                    // General Extensions
                     switch ($extension_index)
                     {
-                        case 'image_size':
-                            $this->content['target_file']['width'] = $this->preference->image['size'][$extension];
-                            $this->content['target_file']['height'] = $this->content['source_file']['height'] / $this->content['source_file']['width'] * $this->content['target_file']['width'];
-                            break;
                         case 'minify':
                             $this->content['target_file']['minify'] = true;
                             break;
-                        case 'quality':
-                            $this->content['target_file']['quality'] = $this->preference->image['quality'][$extension];
-                            break;
+                    }
+                    if ($this->request['data_type'] == 'image')
+                    {
+                        // Image Extensions
+                        switch ($extension_index)
+                        {
+                            case 'image_size':
+                                $this->content['target_file']['width'] = $this->preference->image['size'][$extension];
+                                $this->content['target_file']['height'] = $this->content['source_file']['height'] / $this->content['source_file']['width'] * $this->content['target_file']['width'];
+                                break;
+                            case 'quality':
+                                $this->content['target_file']['quality'] = $this->preference->image['quality'][$extension];
+                                break;
+                        }
                     }
                 }
 
@@ -679,26 +691,143 @@ class content extends base {
                 break;
             case 'html':
             default:
-                $this->content['resource'] = [];
+                switch($this->request['module'])
+                {
+                    case 'console':
+                        if (!isset($_COOKIE['session_id']))
+                        {
+                            // TODO: Error Handling, session validation failed, session_id not set
+                            $this->message->notice = 'Session Validation Failed, Redirect to Login Page';
+                            $this->result['status'] = 301;
+                            $this->result['header']['Location'] =  URI_SITE_BASE.'login';
+                            return false;
+                        }
+
+                        $entity_api_session_obj = new entity_api_session();
+                        $api_account_id = $entity_api_session_obj->validate_api_session_id($_COOKIE['session_id']);
+                        if ($api_account_id == false)
+                        {
+                            // TODO: Error Handling, session validation failed, session_id invalid
+                            $this->message->notice = 'Session Validation Failed, Redirect to Login Page';
+                            $this->result['status'] = 301;
+                            $this->result['header']['Location'] =  URI_SITE_BASE.'login';
+                            return false;
+                        }
+                        $entity_api_obj = new entity_api($api_account_id);
+                        if (empty($entity_api_obj->row))
+                        {
+                            // TODO: Error Handling, session validation failed, session_id is valid, but cannot read corresponding account
+                            $this->message->error = 'Session Validation Succeed, but cannot find related api account';
+                            $this->result['status'] = 301;
+                            $this->result['header']['Location'] =  URI_SITE_BASE.'login';
+                            return false;
+                        }
+                        $this->content['account'] = end($entity_api_obj->row);
+
+                        break;
+                    case 'login':
+                        if (isset($_COOKIE['session_id']))
+                        {
+                            // TODO: session_id is set, check if it is already logged in
+                            $entity_api_session_obj = new entity_api_session();
+                            $api_account_id = $entity_api_session_obj->validate_api_session_id($_COOKIE['session_id']);
+                            if ($api_account_id == false)
+                            {
+                                // If session_id is not valid, unset it and continue login process
+                                setcookie('session_id', '', 1);
+                            }
+                            $entity_api_obj = new entity_api($api_account_id);
+                            if (empty($entity_api_obj->row))
+                            {
+                                // TODO: Error Handling, session validation failed, session_id is valid, but cannot read corresponding account
+                                $this->message->error = 'Session Validation Succeed, but cannot find related api account';
+                                // If session_id is not valid, unset it and continue login process
+                                setcookie('session_id', '', 1);
+                            }
+
+                            $this->result['cookie'] = ['session_id'=>$_COOKIE['session_id']];
+                            $this->result['status'] = 301;
+                            $this->result['header']['Location'] =  URI_SITE_BASE.'console';
+                            return true;
+                        }
+
+                        if ($_SERVER['REQUEST_METHOD'] == 'POST')
+                        {
+                            if (isset($this->request['option']['username']))
+                            {
+                                $login_param = [];
+                                $login_param_keys = ['username','password','remember_me'];
+                                foreach($this->request['option'] as  $option_key=>&$option_value)
+                                {
+                                    if (in_array($option_key,$login_param_keys))
+                                    {
+                                        $login_param[$option_key] = $option_value;
+                                        //unset($option_value);
+                                    }
+                                }
+                                $entity_api_obj = new entity_api();
+                                $api_account_id = $entity_api_obj->authenticate($login_param);
+                                if ($api_account_id == false)
+                                {
+                                    // TODO: Error Handling, login failed
+                                    setcookie('session_id', '', 1);
+                                }
+
+                                $this->result['cookie'] = ['session_id'=>$_COOKIE['session_id']];
+                                $this->result['status'] = 301;
+                                $this->result['header']['Location'] =  URI_SITE_BASE.'console';
+                                return true;
+                            }
+                        }
+                }
+                $this->content['field'] = $page_fetched_value[0];
+                $this->content['template'] = 'page_login';
+
+                return true;
+                /*$this->content['resource'] = [];
                 $this->content['resource'][] = ['value'=>'/js/jquery.min.js','option'=>['source'=>PATH_CONTENT_JS.'jquery-1.11.3.js','format'=>'html_tag']];
                 $this->content['resource'][] = ['value'=>'/js/default.min.js','option'=>['format'=>'html_tag']];
                 $this->content['resource'][] = ['value'=>'/js/default-top4.js','option'=>['source'=>'http://dev.top4.com.au/scripts/default.js','format'=>'html_tag']];
                 $this->content['resource'][] = ['value'=>'/css/default.min.css','option'=>['format'=>'html_tag']];
-                $this->content['resource'][] = ['value'=>'/image/10/chiaro-bathroom-package-10013.m.jpg','option'=>['format'=>'html_tag']];
-                $this->content['resource'][] = ['value'=>'/image/wardrobe.m.jpg','option'=>['source'=>'http://mobile.top4.com.au/asset/image/xxl/354_photo_296388.jpg','format'=>'file_uri']];
-echo '<pre>resource_render<br>';
+//echo '<pre>resource_render<br>';
+echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>';
                 foreach($this->content['resource'] as $resource_index=>&$resource)
                 {
                     $resource_obj =  new content($resource);
-                    $resource['result'] = $resource_obj->render(true);
-                    print_r($resource_obj);
-                    print_r($resource_obj->message->display());
+                    $resource['result'] = $resource_obj->get_result();
+                    echo $resource['result'];
+                    $resource['message'] = $resource_obj->message->display();
+                    //print_r($resource_obj);
+                    //print_r($resource_obj->message->display());
                     unset($resource_obj);
                 }
+echo '</head>
+
+<body>
+<div class="font_icon font_icon_map">Map Icon</div>
+';
+                $this->content['resource2'] = [];
+                $this->content['resource2'][] = ['value'=>'/image/10/chiaro-bathroom-package-10013.m.jpg','option'=>['format'=>'html_tag','html_tag'=>['attr'=>['class'=>'font_icon_map']]]];
+                $this->content['resource2'][] = ['value'=>'/image/wardrobe.m.jpg','option'=>['source'=>'http://mobile.top4.com.au/asset/image/xxl/354_photo_296388.jpg','format'=>'file_uri']];
+                foreach($this->content['resource2'] as $resource_index=>&$resource)
+                {
+                    $resource_obj =  new content($resource);
+                    $resource['result'] = $resource_obj->get_result();
+                    echo $resource['result'];
+                    $resource['message'] = $resource_obj->message->display();
+                    //print_r($resource_obj);
+                    //print_r($resource_obj->message->display());
+                    unset($resource_obj);
+                }
+echo '</body>
+</html>';
                 echo '<pre>resource_render<br>';
                 print_r($this->content['resource']);
+                print_r($this->content['resource2']);
                 print_r($this->message->display());
-                exit();
+                exit();*/
 
 
 
@@ -766,8 +895,11 @@ echo '<pre>resource_render<br>';
                     {
                         // Yuicompressor 2.4.8 does not support output as Windows absolute path start with Driver
                         $start_time = microtime(true);
-                        exec('java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar "'.$this->content['source_file']['path'].'" -o "'.preg_replace('/^\w:/','',$this->content['target_file']['path']).'"', $result);
+                        $execution_command = 'java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar --type '.$this->content['format'].' "'.$this->content['source_file']['path'].'" -o "'.preg_replace('/^\w:/','',$this->content['target_file']['path']).'" > '.PATH_ASSET.DIRECTORY_SEPARATOR.'log'.DIRECTORY_SEPARATOR.'yuicompressor_log_'.$this->request['document'].'_'.$this->request['file_type'].'.txt 2>&1 &';
+                        exec($execution_command, $result);
                         $this->message->notice = 'Yuicompressor Execution Time: '. (microtime(true) - $start_time);
+                        $this->message->notice = $execution_command;
+                        //$this->message->notice = $result;
                     }
 
                     if (!file_exists($this->content['target_file']['path']))
@@ -816,7 +948,13 @@ echo '<pre>resource_render<br>';
                     return false;
                 }
 
-                unlink($this->content['source_file']['path']);
+                // Try up to 3 times to delete the source file
+                $unlink_retry_counter = 3;
+                while (!unlink($this->content['source_file']['path']) AND $unlink_retry_counter > 0)
+                {
+                    sleep(1);
+                    $unlink_retry_counter--;
+                }
 
                 $this->result['header']['Last-Modified'] = gmdate('D, d M Y H:i:s',$this->content['target_file']['last_modified']).' GMT';
                 $this->result['header']['Content-Length'] = $this->content['target_file']['content_length'];
@@ -946,8 +1084,13 @@ echo '<pre>resource_render<br>';
                 }
                 if (empty($this->content['target_file']['last_modified'])) $this->content['target_file']['last_modified'] = filemtime($this->content['target_file']['path']);
 
-                // remove the source file if it is a copy
-                unlink($this->content['source_file']['path']);
+                // Try up to 3 times to delete the source file
+                $unlink_retry_counter = 3;
+                while (!unlink($this->content['source_file']['path']) AND $unlink_retry_counter > 0)
+                {
+                    sleep(1);
+                    $unlink_retry_counter--;
+                }
 
 //echo '<pre>';print_r($this);
 //print_r(['Last-Modified'=>gmdate('D, d M Y H:i:s',$this->content['target_file']['last_modified']).' GMT','Content-Length'=>$this->content['target_file']['content_length'],'Content-Type'=>$this->content['target_file']['content_type']]);
@@ -965,20 +1108,20 @@ echo '<pre>resource_render<br>';
                 $this->result['header']['Content-Type'] = 'application/json';
                 break;
             case 'html_tag':
-                $this->result['content'] = '<'.$this->content['name'];
-                foreach($this->content['attr'] as $attr_name=>$attr_content)
+                $this->result['content'] = '<'.$this->content['html_tag']['name'];
+                foreach($this->content['html_tag']['attr'] as $attr_name=>$attr_content)
                 {
                     $this->result['content'] .= ' '.$attr_name.'="'.$attr_content.'"';
                 }
                 $this->result['content'] .= '>';
                 $void_tag = ['area','base','br','col','command','embed','hr','img','input','keygen','link','meta','param','source','track','wbr'];
-                if (!in_array($this->content['name'],$void_tag))
+                if (!in_array($this->content['html_tag']['name'],$void_tag))
                 {
-                    if (isset($this->content['inner_html']))
+                    if (isset($this->content['html_tag']['html']))
                     {
-                        $this->result['content'] .= htmlspecialchars($this->content['inner_html']);
+                        $this->result['content'] .= htmlspecialchars($this->content['html_tag']['html']);
                     }
-                    $this->result['content'] .= '</'.$this->content['name'].'>';
+                    $this->result['content'] .= '</'.$this->content['html_tag']['name'].'>';
                 }
                 break;
             case 'xml':
@@ -996,32 +1139,30 @@ echo '<pre>resource_render<br>';
         }
     }
 
-    function render($return = false)
+    function render()
     {
-        if ($return === true)
+        http_response_code($this->result['status']);
+        foreach($this->result['header'] as $header_name=>$header_content)
         {
-            if (isset($this->result['file_path']))
-            {
-                return file_get_contents($this->result['file_path']);
-            }
-            return $this->result['content'];
+            header($header_name.': '.$header_content);
         }
-        else
+        if (isset($this->result['file_path']))
         {
-            http_response_code($this->result['status']);
-            foreach($this->result['header'] as $header_name=>$header_content)
-            {
-                header($header_name.': '.$header_content);
-            }
-            if (isset($this->result['file_path']))
-            {
-                readfile($this->result['file_path']);
-                exit();
-            }
-            if (!empty($this->result['content']))
-            {
-                print_r($this->result['content']);
-            }
+            readfile($this->result['file_path']);
+            exit();
         }
+        if (!empty($this->result['content']))
+        {
+            print_r($this->result['content']);
+        }
+    }
+
+    function get_result()
+    {
+        if (isset($this->result['file_path']))
+        {
+            return file_get_contents($this->result['file_path']);
+        }
+        return $this->result['content'];
     }
 }
