@@ -32,7 +32,7 @@ class content extends base {
 //print_r($this);
 if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml')
 {
-    file_put_contents(PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_access_log.txt','REQUEST: ['.date('D, d M Y H:i:s').']'.$_SERVER['REQUEST_URI']."\n",FILE_APPEND);
+    file_put_contents(PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_access_log.txt','REQUEST: '.$this->request['remote_ip'].' ['.date('D, d M Y H:i:s').']'.$_SERVER['REQUEST_URI']."\n",FILE_APPEND);
 }
 
         // Generate the necessary components for the content, store separate component parts into $content
@@ -214,6 +214,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     ];
                     return true;
                 }
+                $this->request['remote_ip'] = get_remote_ip();
                 break;
             case 'html':
             default:
@@ -607,7 +608,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     return true;
                 }
                 $entity_api_key_obj = new entity_api_key();
-                $method_variable = ['api_key'=>$_SERVER['HTTP_AUTH_KEY'],'remote_ip'=>get_remote_ip()];
+                $method_variable = ['api_key'=>$_SERVER['HTTP_AUTH_KEY'],'remote_ip'=>$this->request['remote_ip']];
                 $auth_id = $entity_api_key_obj->validate_api_key($method_variable);
                 if ($auth_id === false)
                 {
