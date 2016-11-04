@@ -30,6 +30,10 @@ class content extends base {
         }
 //print_r('request_decoder: <br>');
 //print_r($this);
+if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml')
+{
+    file_put_contents(PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_access_log.txt','REQUEST: ['.date('D, d M Y H:i:s').']'.$_SERVER['REQUEST_URI']."\n",FILE_APPEND);
+}
 
         // Generate the necessary components for the content, store separate component parts into $content
         // Read data from database (if applicable), only generate raw data from db
@@ -52,6 +56,10 @@ class content extends base {
             //$this->result['status'] = 'Fail';
             return false;
         }
+if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml')
+{
+    file_put_contents(PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_access_log.txt','RESULT: '.$this->result['content']."\n\n",FILE_APPEND);
+}
     }
 
     private function request_decoder($value = '')
@@ -780,7 +788,7 @@ class content extends base {
                             }
                         }
                 }
-                $this->content['field'] = $page_fetched_value[0];
+                //$this->content['field'] = $page_fetched_value[0];
                 $this->content['template'] = 'page_login';
 
                 return true;
@@ -895,7 +903,7 @@ echo '</body>
                     {
                         // Yuicompressor 2.4.8 does not support output as Windows absolute path start with Driver
                         $start_time = microtime(true);
-                        $execution_command = 'java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar --type '.$this->content['format'].' "'.$this->content['source_file']['path'].'" -o "'.preg_replace('/^\w:/','',$this->content['target_file']['path']).'" > '.PATH_ASSET.DIRECTORY_SEPARATOR.'log'.DIRECTORY_SEPARATOR.'yuicompressor_log_'.$this->request['document'].'_'.$this->request['file_type'].'.txt 2>&1 &';
+                        $execution_command = 'java -jar '.PATH_CONTENT_JAR.'yuicompressor-2.4.8.jar --type '.$this->content['format'].' "'.$this->content['source_file']['path'].'" -o "'.preg_replace('/^\w:/','',$this->content['target_file']['path']).'"';
                         exec($execution_command, $result);
                         $this->message->notice = 'Yuicompressor Execution Time: '. (microtime(true) - $start_time);
                         $this->message->notice = $execution_command;

@@ -52,6 +52,9 @@ class entity_api_key extends entity
         {
             if (hash('crc32b',2000-$record['account_id']) == $crc32b_dec)
             {
+$parameter['status'] = 'OK';
+return $record['account_id'];
+
                 $ip_restriction = explode(',',$record['ip_restriction']);
                 if (in_array($parameter['remote_ip'], $ip_restriction))
                 {

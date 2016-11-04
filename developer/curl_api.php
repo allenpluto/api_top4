@@ -23,8 +23,8 @@ if (!isset($_GET['handler']))
         $method = 'list_available_method';
     }
 
-    $handler_uri = 'http://api.top4.com.au/json/'.$method;
-    //$handler_uri = 'http://localhost/allen_frame_trial/json/'.$method;
+    //$handler_uri = 'http://api.top4.com.au/json/'.$method;
+    $handler_uri = 'http://localhost/allen_frame_trial/json/'.$method;
     //$handler_uri = $my_uri.($_SERVER['QUERY_STRING']?'?'.$_SERVER['QUERY_STRING']:'').'&handler=true';
     //$handler_uri = 'http://api.top4.com.au/json/select_business_by_uri&dd=http://www.caroma.com.au';
 
@@ -32,8 +32,8 @@ if (!isset($_GET['handler']))
     curl_setopt($ch, CURLOPT_URL, $handler_uri);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-        'Auth-Key: dbf5-6923-311e-367c-1a4b-14ed-aa00-f5ce'
-        //'Auth-Key: 0650-2370-f1fa-24bf-019d-800f-a1b3-cf66'
+        //'Auth-Key: dbf5-6923-311e-367c-1a4b-14ed-aa00-f5ce'
+        'Auth-Key: 0650-2370-f1fa-24bf-019d-800f-a1b3-cf66'
     ));
     curl_setopt($ch,CURLOPT_POST, count($post_value));
     curl_setopt($ch,CURLOPT_POSTFIELDS, http_build_query($post_value));
