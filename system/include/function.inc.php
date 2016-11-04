@@ -5,6 +5,8 @@
  * Date: 26/09/2016
  * Time: 2:24 PM
  */
+if (!isset($start_time)) $start_time = microtime(1);
+
 function render_xml($field = array(), &$xml = NULL, $parent_node_name = '')
 {
     if (!isset($xml)) $xml = new SimpleXMLElement('<?xml version="1.0"?><response></response>');
@@ -79,6 +81,7 @@ $GLOBALS['time_stack']['analyse template '.$template] = microtime(1) - $GLOBALS[
             case '$':
                 // Chunk, load sub-template
                 if (!isset($match_result_value['condition'])) $match_result_value['condition'] = true;
+                else $match_result_value['condition'] = $field[$match_result_value['condition']];
                 if (!isset($match_result_value['alternative_chunk'])) $match_result_value['alternative_chunk'] = '';
                 if (isset($match_result_value['field'])) $field = array_merge($field, json_decode($match_result_value['field'],true));
                 if ($match_result_value['condition']) $match_result_value['value'] = render_html($field,$match_result_value['name']);
@@ -143,6 +146,16 @@ $GLOBALS['time_stack']['render row['.$index.'] '.$match_result_value['object']] 
                 break;
             case '+':
                 // do not replace, keep for further operation, such as insert style or script
+                $match_result_value['value'] = '';
+                if (isset($field[$match_result_value['name']]))
+                {
+                    foreach($field[$match_result_value['name']] as $resource_index=>&$resource)
+                    {
+                        $resource_obj =  new content($resource);
+                        $match_result_value['value'] .= $resource_obj->get_result();
+                    }
+                }
+                else $match_result_value['value'] = '';
                 break;
             default:
                 $match_result_value['value'] = '';

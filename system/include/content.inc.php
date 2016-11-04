@@ -28,6 +28,7 @@ class content extends base {
             $this->message->error = 'Fail: Error during request_decoder';
             //$this->result['status'] = 'Fail';
         }
+//echo '<pre>';
 //print_r('request_decoder: <br>');
 //print_r($this);
 if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml')
@@ -46,7 +47,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
         }
 //print_r('build_content: <br>');
 //print_r($this);
-
+//exit();
         // Processing file, database and etc (basically whatever time consuming, process it here)
         // As some rendering methods may only need the raw data without going through all the file copy, modify, generate processes
         if ($this->result['status'] == 200 AND $this->generate_rendering() === false)
@@ -734,51 +735,27 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $this->content['account'] = end($entity_api_obj->row);
 
                         break;
-                    case 'login':
-                        if (isset($_COOKIE['session_id']))
+                    case 'default':
+                    default:
+                        // If page is login, check for user login session
+                        if ($this->request['document'] == 'login')
                         {
-                            // TODO: session_id is set, check if it is already logged in
-                            $entity_api_session_obj = new entity_api_session();
-                            $api_account_id = $entity_api_session_obj->validate_api_session_id($_COOKIE['session_id']);
-                            if ($api_account_id == false)
+                            if (isset($_COOKIE['session_id']))
                             {
-                                // If session_id is not valid, unset it and continue login process
-                                setcookie('session_id', '', 1);
-                            }
-                            $entity_api_obj = new entity_api($api_account_id);
-                            if (empty($entity_api_obj->row))
-                            {
-                                // TODO: Error Handling, session validation failed, session_id is valid, but cannot read corresponding account
-                                $this->message->error = 'Session Validation Succeed, but cannot find related api account';
-                                // If session_id is not valid, unset it and continue login process
-                                setcookie('session_id', '', 1);
-                            }
-
-                            $this->result['cookie'] = ['session_id'=>$_COOKIE['session_id']];
-                            $this->result['status'] = 301;
-                            $this->result['header']['Location'] =  URI_SITE_BASE.'console';
-                            return true;
-                        }
-
-                        if ($_SERVER['REQUEST_METHOD'] == 'POST')
-                        {
-                            if (isset($this->request['option']['username']))
-                            {
-                                $login_param = [];
-                                $login_param_keys = ['username','password','remember_me'];
-                                foreach($this->request['option'] as  $option_key=>&$option_value)
-                                {
-                                    if (in_array($option_key,$login_param_keys))
-                                    {
-                                        $login_param[$option_key] = $option_value;
-                                        //unset($option_value);
-                                    }
-                                }
-                                $entity_api_obj = new entity_api();
-                                $api_account_id = $entity_api_obj->authenticate($login_param);
+                                // TODO: session_id is set, check if it is already logged in
+                                $entity_api_session_obj = new entity_api_session();
+                                $api_account_id = $entity_api_session_obj->validate_api_session_id($_COOKIE['session_id']);
                                 if ($api_account_id == false)
                                 {
-                                    // TODO: Error Handling, login failed
+                                    // If session_id is not valid, unset it and continue login process
+                                    setcookie('session_id', '', 1);
+                                }
+                                $entity_api_obj = new entity_api($api_account_id);
+                                if (empty($entity_api_obj->row))
+                                {
+                                    // TODO: Error Handling, session validation failed, session_id is valid, but cannot read corresponding account
+                                    $this->message->error = 'Session Validation Succeed, but cannot find related api account';
+                                    // If session_id is not valid, unset it and continue login process
                                     setcookie('session_id', '', 1);
                                 }
 
@@ -787,10 +764,109 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 $this->result['header']['Location'] =  URI_SITE_BASE.'console';
                                 return true;
                             }
+                            if ($_SERVER['REQUEST_METHOD'] == 'POST')
+                            {
+                                if (isset($this->request['option']['username']))
+                                {
+                                    $login_param = [];
+                                    $login_param_keys = ['username','password','remember_me'];
+                                    foreach($this->request['option'] as  $option_key=>&$option_value)
+                                    {
+                                        if (in_array($option_key,$login_param_keys))
+                                        {
+                                            $login_param[$option_key] = $option_value;
+                                            //unset($option_value);
+                                        }
+                                    }
+                                    $entity_api_obj = new entity_api();
+                                    $api_account_id = $entity_api_obj->authenticate($login_param);
+                                    if ($api_account_id == false)
+                                    {
+                                        // TODO: Error Handling, login failed
+                                        setcookie('session_id', '', 1);
+                                    }
+
+                                    $this->result['cookie'] = ['session_id'=>$_COOKIE['session_id']];
+                                    $this->result['status'] = 301;
+                                    $this->result['header']['Location'] =  URI_SITE_BASE.'console';
+                                    return true;
+                                }
+                            }
                         }
+
+                        if (isset($this->request['option']['field']))
+                        {
+                            $this->content['field'] = $this->request['option']['field'];
+                        }
+                        else
+                        {
+                            // Set field value from database
+                            if (!isset($this->request['document']))
+                            {
+                                $this->result['status'] = 404;
+                                return false;
+                            }
+                            $page_obj = new view_web_page($this->request['document']);
+                            if (empty($page_obj->id_group))
+                            {
+                                $this->result['status'] = 404;
+                                return false;
+                            }
+                            if (count($page_obj->id_group) > 1)
+                            {
+                                // TODO: Error Handling, ambiguous reference, multiple page found, database data error
+                                $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): Multiple web page resources loaded '.implode(',',$page_obj->id_group);
+                            }
+                            $page_fetched_value = $page_obj->fetch_value(['page_size'=>1]);
+                            if (empty($page_fetched_value))
+                            {
+                                // TODO: Error Handling, fetch record row failed, database data error
+                                $GLOBALS['global_message']->error = __FILE__.'(line '.__LINE__.'): Fetch row failed '.implode(',',$page_obj->id_group);
+                                $this->result['status'] = 404;
+                                return false;
+                            }
+                            $this->content['field'] = end($page_fetched_value);
+                            $this->content['field']['style'] = [
+                                ['value'=>'/css/default.min.css','option'=>['format'=>'html_tag']]
+                            ];
+                            $this->content['field']['script'] = [
+                                ['value'=>'/js/jquery.min.js','option'=>['source'=>PATH_CONTENT_JS.'jquery-1.11.3.js','format'=>'html_tag']],
+                                ['value'=>'/js/default.min.js','option'=>['format'=>'html_tag']],
+                                ['value'=>'/js/default-top4.js','option'=>['source'=>'http://dev.top4.com.au/scripts/default.js','format'=>'html_tag']]
+                            ];
+                        }
+
+                        if (isset($this->request['option']['template']))
+                        {
+                            $this->content['template'] = $this->request['option']['template'];
+                        }
+                        else
+                        {
+                            // Looking for default template
+                            $template_name_part = [];
+                            if (!empty($this->request['module'])) $template_name_part[] = $this->request['module'];
+                            else $template_name_part[] = 'default';
+                            if (isset($this->request['method'])) $template_name_part[] = $this->request['method'];
+                            if (isset($this->request['document'])) $template_name_part[] = $this->request['document'];
+
+                            while(!isset($this->content['template']))
+                            {
+                                if (file_exists(PATH_TEMPLATE.'page_'.implode('_',$template_name_part).FILE_EXTENSION_TEMPLATE))
+                                {
+                                    $this->content['template'] = 'page_'.implode('_',$template_name_part);
+                                }
+                                else
+                                {
+                                    if (is_null(array_pop($template_name_part)))
+                                    {
+                                        $this->content['template'] = 'page_default';
+                                    }
+                                }
+                            }
+                        }
+                        $this->result['content'] = render_html($this->content['field'],$this->content['template']);
+
                 }
-                //$this->content['field'] = $page_fetched_value[0];
-                $this->content['template'] = 'page_login';
 
                 return true;
                 /*$this->content['resource'] = [];
@@ -1140,7 +1216,7 @@ echo '</body>
                 $this->result['header']['Content-Type'] = 'text/xml';
                 break;
             case 'html':
-                $this->result['content'] = render_html($this->request['field'],$this->request['template']);
+                $this->result['content'] = render_html($this->content['field'],$this->content['template']);
                 $this->result['header']['Last-Modified'] = gmdate('D, d M Y H:i:s').' GMT';
                 $this->result['header']['Content-Length'] = strlen($this->result['content']);
                 $this->result['header']['Content-Type'] = 'text/html';
