@@ -204,10 +204,10 @@ print_r(message::get_instance()->display());
 
 
 // TEST CREATE API ACCOUNT AND KEY
-/*$entity = new entity_api(10001);
-$entity->update(['password'=>'top4#2016']);
+/*$entity = new entity_api(10002);
+$entity->update(['password'=>'needle#2016']);
 $entity_key = new entity_api_key();
-$entity_key->generate_api_key(10001);
+$entity_key->generate_api_key(10002);
 print_r(message::get_instance()->display());*/
 
 /*$parameter = array();

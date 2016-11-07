@@ -1,0 +1,178 @@
+#login
+{
+    background:#796fce url(../image/bg_top4_api_login.jpg) bottom left no-repeat;
+    background-size: cover;
+}
+
+#login > .body_wrapper
+{
+    min-height: 100%;
+    position: relative;
+}
+
+@media only screen and (max-width:319px)
+{
+    #login
+    {
+        background-image: url("../image/bg_vertical_top4_api_login.m.max.jpg");
+        background-size: 100% auto;
+    }
+}
+
+@media only screen and (min-width:320px) and (max-width:479px)
+{
+    #login
+    {
+        background-image: url("../image/bg_vertical_top4_api_login.l.max.jpg");
+        background-size: 100% auto;
+    }
+}
+
+@media only screen and (min-width:480px) and (max-width:767px)
+{
+    #login
+    {
+        background-image: url("../image/bg_vertical_top4_api_login.xl.max.jpg");
+        background-size: 100% auto;
+    }
+}
+
+@media only screen and (min-width:768px) and (max-width:1199px)
+{
+    #login
+    {
+        background-image: url("../image/bg_top4_api_login.xxl.max.jpg");
+    }
+}
+
+input[type="text"],
+input[type="password"]
+{
+    display: inline-block;
+    padding: 0.5em 1em;
+    margin-bottom: 1em;
+
+    font-size: 1.6em;
+
+    border:2px solid #eeeeee;
+    border-radius: 3px;
+}
+
+input[type="submit"]
+{
+    display: inline-block;
+    padding: 1em;
+
+    background: #666666 url(/images/top4/bg_button_face_gray.jpg) top center repeat-x;
+    background: -webkit-linear-gradient(top, #999999, #666666);
+    background: -moz-linear-gradient(top, #999999, #666666);
+    background: -ms-linear-gradient(top, #999999, #666666);
+    background: -o-linear-gradient(top, #999999, #666666);
+    background: linear-gradient(top, #999999, #666666);
+
+    color: #ffffff;
+    font-size: 1.6em;
+    text-align: center;
+
+    border: 1px outset #888888;
+    border-radius: 3px;
+
+    cursor: pointer;
+}
+input[type="submit"]:active
+{
+    background: #666666;
+    border-style: inset;
+}
+
+.login_form_container {display:block;max-width: 40rem;}
+.login_form_container input {width: 100%;}
+
+@media only screen and (min-width:768px)
+{
+    .login_form_container {position: absolute; top:30%; left: 50%; margin-left: -20rem;}
+    .login_form_container input {padding: 1em;margin-bottom: 1.5em;}
+}
+
+.body_title_container
+{
+    padding: 3em 0 6em 0;
+}
+
+.body_title_container > *
+{
+    font-size: 3em;
+}
+
+.body_title_logo
+{
+    display: inline-block;
+    width: 4em;
+    height: 2em;
+    position: relative;
+
+    vertical-align: middle;
+}
+
+.body_title_logo > svg
+{
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+
+.body_title_logo > svg > image
+{
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+
+@media only screen and (max-width:479px)
+{
+    .body_title_container > *
+    {
+        font-size: 3em;
+        text-align: center;
+    }
+
+    .body_title_logo
+    {
+        display: block;
+        width: 50%;
+        height: 0;
+        margin: 0 auto;
+        padding-bottom: 25%;
+    }
+}
+
+
+
+
+/*# Responsive #*/
+/*# Responsive/XXS #*/
+@media only screen and (max-width:319px)
+{
+}
+
+/*# Responsive/XS #*/
+@media only screen and (min-width:320px) and (max-width:479px)
+{
+}
+
+/*# Responsive/S #*/
+@media only screen and (min-width:480px) and (max-width:767px)
+{
+}
+
+/*# Responsive/M #*/
+@media only screen and (min-width:768px) and (max-width:991px)
+{
+}
+
+/*# Responsive/L #*/
+@media only screen and (min-width:992px) and (max-width:1199px)
+{
+}

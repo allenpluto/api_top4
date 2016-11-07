@@ -152,6 +152,7 @@ $GLOBALS['time_stack']['render row['.$index.'] '.$match_result_value['object']] 
                     foreach($field[$match_result_value['name']] as $resource_index=>&$resource)
                     {
                         $resource_obj =  new content($resource);
+                        //print_r($resource_obj);
                         $match_result_value['value'] .= $resource_obj->get_result();
                     }
                 }

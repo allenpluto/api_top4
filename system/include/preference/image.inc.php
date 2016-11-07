@@ -17,7 +17,7 @@ $global_preference->image = array(
         'l'=>480,
         'xl'=>800,
         'xxl'=>1200,
-        ''=>1600
+        ''=>1920
     ),
     'quality'=>array(
         // Minimize file size, for pre generated thumbnail

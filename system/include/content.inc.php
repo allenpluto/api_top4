@@ -33,6 +33,7 @@ class content extends base {
 //print_r($this);
 if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml')
 {
+    print_r($this);
     file_put_contents(PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_access_log.txt','REQUEST: '.$this->request['remote_ip'].' ['.date('D, d M Y H:i:s').']'.$_SERVER['REQUEST_URI']."\n",FILE_APPEND);
 }
 
@@ -89,11 +90,12 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
             unset($_GET);
         }
 
-        if ($_SERVER['REQUEST_METHOD'] == 'POST')
+        if ($_SERVER['REQUEST_METHOD'] == 'POST' AND !empty($_POST))
         {
+
             // default post request with json format Input and Output
             $option = array_merge($option,$_POST);
-            if (!isset($option['data_type'])) $option['data_type'] = 'json';
+            //if (!isset($option['data_type'])) $option['data_type'] = 'json';
             unset($_POST);
         }
 
@@ -311,6 +313,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         break;
                     default:
                         $this->request['document'] = $request_path_part;
+                        $this->request['file_path'] .= $this->request['document'].DIRECTORY_SEPARATOR.'index.html';
+                        $this->request['file_uri'] .= $this->request['document'];
                 }
 
                 break;
@@ -468,81 +472,90 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 }
                 else
                 {
-                    if (!file_exists($this->content['source_file']['path']))
+                    if (file_exists(PATH_ASSET.$file_relative_path))
                     {
-                        if (file_exists(PATH_ASSET.$file_relative_path))
+                        $this->content['source_file']['original_file'] = PATH_ASSET.$file_relative_path;
+                        $this->content['source_file']['last_modified'] = filemtime($this->content['source_file']['original_file']);
+                        if (!file_exists($this->content['source_file']['path']) OR $this->content['source_file']['last_modified']>filemtime($this->content['source_file']['path']))
                         {
                             copy(PATH_ASSET.$file_relative_path,$this->content['source_file']['path']);
-                            $this->content['source_file']['original_file'] = PATH_ASSET.$file_relative_path;
-                            $this->content['source_file']['last_modified'] = filemtime($this->content['source_file']['original_file']);
                             touch($this->content['source_file']['path'],$this->content['source_file']['last_modified']);
+                            if (file_exists($this->content['target_file']['path'])) unlink($this->content['target_file']['path']);
                         }
-                        elseif (file_exists(PATH_CONTENT.$file_relative_path))
+                    }
+                    elseif (file_exists(PATH_CONTENT.$file_relative_path))
+                    {
+                        $this->content['source_file']['original_file'] = PATH_CONTENT.$file_relative_path;
+                        $this->content['source_file']['last_modified'] = filemtime($this->content['source_file']['original_file']);
+                        if (!file_exists($this->content['source_file']['path']) OR $this->content['source_file']['last_modified']>filemtime($this->content['source_file']['path']))
                         {
                             copy(PATH_CONTENT.$file_relative_path,$this->content['source_file']['path']);
-                            $this->content['source_file']['original_file'] = PATH_CONTENT.$file_relative_path;
-                            $this->content['source_file']['last_modified'] = filemtime($this->content['source_file']['original_file']);
                             touch($this->content['source_file']['path'],$this->content['source_file']['last_modified']);
+                            if (file_exists($this->content['target_file']['path'])) unlink($this->content['target_file']['path']);
+                        }
+                    }
+                    else
+                    {
+                        // If file source doesn't exist in content folder, try database
+                        $document_name_part = explode('-',$this->request['document']);
+                        $document_id = end($document_name_part);
+                        if (empty($document_id) OR !is_numeric($document_id))
+                        {
+                            // TODO: Error Handling, fail to get source file from database, last part of file name is not a valid id
+                            $this->message->error = 'Building: fail to get source file from database, file not in standard format';
+                            $this->result['status'] = 404;
+                            return false;
+                        }
+                        $entity_class = 'entity_'.$this->request['data_type'];
+                        if (!class_exists($entity_class))
+                        {
+                            // TODO: Error Handling, last ditch failed, source file does not exist in database either
+                            $this->message->error = 'Building: cannot find source file';
+                            $this->result['status'] = 404;
+                            return false;
+                        }
+                        $entity_obj = new $entity_class($document_id);
+                        if (empty($entity_obj->row))
+                        {
+                            // TODO: Error Handling, fail to get source file from database, cannot find matched record
+                            $this->message->error = 'Building: fail to get source file from database, invalid id';
+                            $this->result['status'] = 404;
+                            return false;
+                        }
+                        $record = array_shift($entity_obj->row);
+
+                        if (empty($record['data']))
+                        {
+                            // TODO: Error Handling, image record found, but image data is not stored in database
+                            $this->message->error = 'Building: fail to get source file from database, image data not stored';
+                            $this->result['status'] = 404;
+                            return false;
+                        }
+
+                        $this->content['source_file']['source'] = 'local_data';
+                        $this->content['source_file']['original_file'] = $record['data'];
+
+                        if (!empty($record['update_time']))
+                        {
+                            $this->content['source_file']['last_modified'] = strtotime($record['update_time']);
                         }
                         else
                         {
-                            // If file source doesn't exist in content folder, try database
-                            $document_name_part = explode('-',$this->request['document']);
-                            $document_id = end($document_name_part);
-                            if (empty($document_id) OR !is_numeric($document_id))
-                            {
-                                // TODO: Error Handling, fail to get source file from database, last part of file name is not a valid id
-                                $this->message->error = 'Building: fail to get source file from database, file not in standard format';
-                                $this->result['status'] = 404;
-                                return false;
-                            }
-                            $entity_class = 'entity_'.$this->request['data_type'];
-                            if (!class_exists($entity_class))
-                            {
-                                // TODO: Error Handling, last ditch failed, source file does not exist in database either
-                                $this->message->error = 'Building: cannot find source file';
-                                $this->result['status'] = 404;
-                                return false;
-                            }
-                            $entity_obj = new $entity_class($document_id);
-                            if (empty($entity_obj->row))
-                            {
-                                // TODO: Error Handling, fail to get source file from database, cannot find matched record
-                                $this->message->error = 'Building: fail to get source file from database, invalid id';
-                                $this->result['status'] = 404;
-                                return false;
-                            }
-                            $record = array_shift($entity_obj->row);
-
-                            if (empty($record['data']))
-                            {
-                                // TODO: Error Handling, image record found, but image data is not stored in database
-                                $this->message->error = 'Building: fail to get source file from database, image data not stored';
-                                $this->result['status'] = 404;
-                                return false;
-                            }
-
-                            $this->content['source_file']['source'] = 'local_data';
-                            $this->content['source_file']['original_file'] = $record['data'];
-                            if (!file_exists(dirname($this->content['source_file']['path']))) mkdir(dirname($this->content['source_file']['path']), 0755, true);
-                            file_put_contents($this->content['source_file']['path'],$record['data']);
-
-                            if (!empty($record['update_time']))
-                            {
-                                $this->content['source_file']['last_modified'] = strtotime($record['update_time']);
-                                touch($this->content['source_file']['path'],$this->content['source_file']['last_modified']);
-                            }
-                            else
-                            {
-                                $this->content['source_file']['last_modified'] = filemtime($this->content['source_file']['path']);
-                            }
-                            if (!empty($record['update_time'])) $this->content['source_file']['content_type'] = $record['mime'];
+                            $this->content['source_file']['last_modified'] = time();
                         }
+
+                        if (!file_exists($this->content['source_file']['path']) OR $this->content['source_file']['last_modified']>filemtime($this->content['source_file']['path']))
+                        {
+                            file_put_contents($this->content['source_file']['path'],$record['data']);
+                            touch($this->content['source_file']['path'],$this->content['source_file']['last_modified']);
+                            if (file_exists($this->content['target_file']['path'])) unlink($this->content['target_file']['path']);
+                        }
+
+                        if (!empty($record['mime'])) $this->content['source_file']['content_type'] = $record['mime'];
                     }
                     if (!isset($this->content['source_file']['last_modified'])) $this->content['source_file']['last_modified'] = filemtime($this->content['source_file']['path']);
                     if (!isset($this->content['source_file']['content_length'])) $this->content['source_file']['content_length'] = filesize($this->content['source_file']['path']);
                     if (!isset($this->content['source_file']['content_type'])) $this->content['source_file']['content_type'] = mime_content_type($this->content['source_file']['path']);
-
                 }
 
                 if ($this->request['data_type'] == 'image')
@@ -762,6 +775,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 $this->result['cookie'] = ['session_id'=>$_COOKIE['session_id']];
                                 $this->result['status'] = 301;
                                 $this->result['header']['Location'] =  URI_SITE_BASE.'console';
+
                                 return true;
                             }
                             if ($_SERVER['REQUEST_METHOD'] == 'POST')
@@ -786,7 +800,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                         setcookie('session_id', '', 1);
                                     }
 
-                                    $this->result['cookie'] = ['session_id'=>$_COOKIE['session_id']];
+                                    $this->result['cookie'] = ['session_id'=>['value'=>$_COOKIE['session_id'],'time'=>86400*7]];
                                     $this->result['status'] = 301;
                                     $this->result['header']['Location'] =  URI_SITE_BASE.'console';
                                     return true;
@@ -829,6 +843,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             $this->content['field']['style'] = [
                                 ['value'=>'/css/default.min.css','option'=>['format'=>'html_tag']]
                             ];
+
                             $this->content['field']['script'] = [
                                 ['value'=>'/js/jquery.min.js','option'=>['source'=>PATH_CONTENT_JS.'jquery-1.11.3.js','format'=>'html_tag']],
                                 ['value'=>'/js/default.min.js','option'=>['format'=>'html_tag']],
@@ -848,6 +863,18 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             else $template_name_part[] = 'default';
                             if (isset($this->request['method'])) $template_name_part[] = $this->request['method'];
                             if (isset($this->request['document'])) $template_name_part[] = $this->request['document'];
+
+                            if (!empty($template_name_part))
+                            {
+                                if (file_exists(PATH_CONTENT_CSS.implode('_',$template_name_part).'.css'))
+                                {
+                                    $this->content['field']['style'][] = ['value'=>'/css/'.implode('_',$template_name_part).'.min.css','option'=>['format'=>'html_tag']];
+                                }
+                                if (file_exists(PATH_CONTENT_JS.implode('_',$template_name_part).'.js'))
+                                {
+                                    $this->content['field']['script'][] = ['value'=>'/js/'.implode('_',$template_name_part).'.min.js','option'=>['format'=>'html_tag']];
+                                }
+                            }
 
                             while(!isset($this->content['template']))
                             {
@@ -1034,7 +1061,7 @@ echo '</body>
                 }
 
                 // Try up to 3 times to delete the source file
-                $unlink_retry_counter = 3;
+                $unlink_retry_counter = 10;
                 while (!unlink($this->content['source_file']['path']) AND $unlink_retry_counter > 0)
                 {
                     sleep(1);
@@ -1226,6 +1253,13 @@ echo '</body>
 
     function render()
     {
+        if (isset($this->result['cookie']))
+        {
+            foreach($this->result['cookie'] as $cookie_name=>$cookie_content)
+            {
+                setcookie($cookie_name,$cookie_content['value'],time() + $cookie_content['time']);
+            }
+        }
         http_response_code($this->result['status']);
         foreach($this->result['header'] as $header_name=>$header_content)
         {
