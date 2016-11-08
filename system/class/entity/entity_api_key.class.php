@@ -67,6 +67,7 @@ return $record['account_id'];
                     // TODO: Error, requested ip not accepted
                     $parameter['status'] = 'REQUEST_DENIED';
                     $parameter['message'] = 'Invalid ip address ['.$parameter['remote_ip'].']';
+                    return false;
                 }
             }
             else
@@ -74,9 +75,9 @@ return $record['account_id'];
                 // TODO: Error, type invalid api key, key is not generated through genuine method
                 $parameter['status'] = 'INVALID_REQUEST';
                 $parameter['message'] = 'Invalid api key, key is not genuine';
+                return false;
             }
         }
-        return false;
     }
 }
 
