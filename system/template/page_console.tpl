@@ -9,15 +9,15 @@
             [[$chunk_menu]]
         </div><!-- #off_canvas_menu -->
         <div class="wrapper header_wrapper">
-            [[$chunk_header_banner]]
+            [[$chunk_header_console]]
         </div><!-- #header_wrapper -->
         <div class="wrapper body_wrapper">
+            [[*content]]
         </div><!-- #body_wrapper -->
         <div class="wrapper footer_wrapper">
         </div><!-- #footer_wrapper -->
     </div>
 </div>
-
 [[+script]]
 </body>
 </html>

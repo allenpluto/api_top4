@@ -8,7 +8,7 @@
     </div>
     <div class="container login_form_container">
         <form class="login_form" method="post" action="">
-            <input type="hidden" name="handler" value="true">
+            <input type="hidden" name="complementary" value="[[*complementary]]">
             <input type="text" name="username" value="[[*username]]" placeholder="Username">
             <input type="password" name="password" value="" placeholder="Password">
             <input type="submit" value="Login">

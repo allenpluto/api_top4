@@ -21,8 +21,8 @@ class entity_api_session extends entity
         }
         $api_session_id = implode('-',$api_session_id_part);
         $set_parameter = [
-            'row'=>[['account_id'=>$parameter['account_id'],'name'=>$api_session_id,'expire_time'=>$parameter['expire_time']]],
-            'table_fields'=>['account_id','name','expire_time']
+            'row'=>[['account_id'=>$parameter['account_id'],'name'=>$api_session_id,'expire_time'=>$parameter['expire_time'],'remote_addr'=>$parameter['remote_addr'],'http_user_agent'=>$parameter['http_user_agent']]],
+            'table_fields'=>['account_id','name','expire_time','remote_addr','http_user_agent']
         ];
 //print_r($parameter);
         $this->set($set_parameter);
@@ -50,7 +50,7 @@ class entity_api_session extends entity
         $row = $this->get($get_parameter);
         if (empty($row))
         {
-            // TODO: Error, type invalid api key
+            // TODO: Error Handling, invalid api key
             $parameter['status'] = 'REQUEST_DENIED';
             $parameter['message'] = 'Please login again';
             $this->message->notice = 'Invalid session id '.$parameter['api_session_id'].'.';
