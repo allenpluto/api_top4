@@ -1,0 +1,35 @@
+.content_title
+{
+    padding: 1em 0 2em 0;
+
+    font-size: 2em;
+}
+
+.content_body
+{
+}
+
+.content_body > h2 {font-size: 1.8em;padding-bottom: 0.5em;}
+.content_body > h3 {font-size: 1.6em;padding-bottom: 0.5em;}
+.content_body > p {font-size: 1.4em;}
+
+
+.api_method_container
+{
+    padding:0.5em 0 2em 0;
+}
+
+.api_method_container > *
+{
+    font-size: 1.4em;
+}
+
+.api_method_field_container > *
+{
+    display: inline-block;
+}
+
+.field_title {width: 8em;}
+.field_type {width: 8em;}
+.field_max_length {width: 8em;}
+.field_description {width: 30em;}

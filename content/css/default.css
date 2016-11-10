@@ -238,6 +238,25 @@ img {display:block;max-width:100%;}
 .general_style_colour_orange {color:#ffb303;}
 .general_style_colour_light_gray {color:#cccccc;}
 
+/*# General/Inline Block #*/
+.general_style_inline_block
+{
+    display: block;
+    padding: 0.1em 0.5em;
+    margin: 0.1em;
+
+    background: #dddddd;
+
+    border-radius: 3px;
+
+    white-space: nowrap;
+}
+
+.general_style_inline_block > *
+{
+    display: inline-block;
+}
+
 /*# General/Animation #*/
 @-webkit-keyframes general_style_animation_rotate {
     0% {

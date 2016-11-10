@@ -5,6 +5,23 @@
 
 class entity_api_key extends entity
 {
+    function get_api_key($account_id)
+    {
+        $get_parameter = array(
+            'bind_param' => array(':account_id'=>$account_id),
+            'where' => array('`account_id` = :account_id')
+        );
+        $row = $this->get($get_parameter);
+        if (is_array($row))
+        {
+            foreach($row as $record_index=>&$record)
+            {
+                if (isset($record['ip_restriction'])) $record['ip_restriction'] = explode(',',$record['ip_restriction']);
+            }
+        }
+        return $row;
+    }
+
     function generate_api_key($account_id)
     {
         $crc32b = hash('crc32b',2000-$account_id);

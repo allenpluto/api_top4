@@ -1,0 +1,1 @@
+<div class="general_style_inline_block">[[*ip_restriction]]</div>

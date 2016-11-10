@@ -35,11 +35,11 @@ function render_xml($field = array(), &$xml = NULL, $parent_node_name = '')
     return $xml;
 }
 
-function render_html($field = array(), $template = '')
+function render_html($field = array(), $template_name = '')
 {
-    if (empty($template)) return '';
-$GLOBALS['time_stack']['analyse template '.$template] = microtime(1) - $GLOBALS['start_time'];
-    if (file_exists(PATH_TEMPLATE.$template.FILE_EXTENSION_TEMPLATE)) $template = file_get_contents(PATH_TEMPLATE.$template.FILE_EXTENSION_TEMPLATE);
+    if (empty($template_name)) return '';
+$GLOBALS['time_stack']['analyse template '.$template_name] = microtime(1) - $GLOBALS['start_time'];
+    if (file_exists(PATH_TEMPLATE.$template_name.FILE_EXTENSION_TEMPLATE)) $template = file_get_contents(PATH_TEMPLATE.$template_name.FILE_EXTENSION_TEMPLATE);
     else return '';
     if (empty($field)) return $template;
 
@@ -75,7 +75,30 @@ $GLOBALS['time_stack']['analyse template '.$template] = microtime(1) - $GLOBALS[
         {
             case '*':
                 // Field value, directly set value from given field
-                if (isset($field[$match_result_value['name']])) $match_result_value['value'] = $field[$match_result_value['name']];
+                if (isset($field[$match_result_value['name']]))
+                {
+                    if (is_array($field[$match_result_value['name']]))
+                    {
+                        if (file_exists(PATH_TEMPLATE.$template_name.'_'.$match_result_value['name'].FILE_EXTENSION_TEMPLATE))
+                        {
+                            $match_result_value['value'] = '';
+                            foreach ($field[$match_result_value['name']] as $field_index=>$field_value)
+                            {
+                                $sub_field = $field;
+                                $sub_field[$match_result_value['name']] = $field_value;
+                                $match_result_value['value'] .= render_html($sub_field,$template_name.'_'.$match_result_value['name']);
+                            }
+                        }
+                        else
+                        {
+                            $match_result_value['value'] = implode(',',$field[$match_result_value['name']]);
+                        }
+                    }
+                    else
+                    {
+                        $match_result_value['value'] = $field[$match_result_value['name']];
+                    }
+                }
                 else $match_result_value['value'] = '';
                 break;
             case '$':

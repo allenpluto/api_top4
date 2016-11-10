@@ -758,6 +758,31 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         switch($this->request['method'])
                         {
                             case 'credential':
+                                $entity_api_key_obj = new entity_api_key();
+                                $row = $entity_api_key_obj->get_api_key($this->content['account']['id']);
+                                $content['page_content'] = '';
+                                if (empty($row))
+                                {
+                                    $content['page_content'] .= '<h3>No API Keys Available</h3>';
+                                }
+                                else
+                                {
+                                    $content['page_content'] .= '<h3>API Keys</h3>';
+                                    $content['page_content'] .= '<div class="api_key_controller api_key_add_button_container"><a href="javascript:void(0)" class="general_style_input_button general_style_input_button_orange">Create Credential</a></div>';
+                                    $content['page_content'] .= '<div class="api_key_wrapper">';
+                                    $field_name = array(
+                                        'class_extra'=>'api_key_name_container',
+                                        'name'=>'Key',
+                                        'alternate_name'=>'Name',
+                                        'ip_restriction'=>'IP Restriction'
+                                    );
+                                    $content['page_content'] .= render_html($field_name,'element_console_credential');
+                                    foreach($row as $record_index=>$record)
+                                    {
+                                        $content['page_content'] .= render_html($record,'element_console_credential');
+                                    }
+                                    $content['page_content'] .= '</div>';
+                                }
                                 break;
                             case 'profile':
                                 break;
@@ -773,15 +798,33 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 $entity_api_method_obj = new entity_api_method();
                                 $this->content['account']['api_method'] = $entity_api_method_obj->list_available_method($method_variable);
 
-                                $content['page_content'] = '<p>Welcome, '.$this->content['account']['name'].', </p>';
-                                $content['page_content'] = '<p>Current accessible methods</p>';
+                                $content['page_content'] = '<h2><strong>Accessible API methods for account '.$this->content['account']['name'].': </strong></h2>';
 
                                 foreach ($this->content['account']['api_method'] as $api_index=>$api_method)
                                 {
                                     $content['page_content'] .= '<div class="api_method_container">';
                                     $content['page_content'] .= '<div class="api_method_name"><h3>'.$api_method['name'].'</h3></div>';
                                     $content['page_content'] .= '<div class="api_method_request_uri">'.URI_SITE_BASE.$this->content['format'].'/'.$api_method['request_uri'].'</div>';
-                                    $content['page_content'] .= render_html($api_method['field'],'element_api_method_field');
+//$content['page_content'] .=print_r($api_method['field'],true);
+                                    if (is_array($api_method['field']) AND !empty($api_method['field']))
+                                    {
+                                        $content['page_content'] .= '<div class="api_method_field_wrapper">';
+                                        $content['page_content'] .= '<div class="api_method_field_title"><strong>Parameters: </strong></div>';
+                                        $field_name = array(
+                                            'class_extra'=>'api_method_field_name_container',
+                                            'name'=>'Name',
+                                            'type'=>'Type',
+                                            'max_length'=>'Max Length',
+                                            'description'=>'Description'
+                                        );
+                                        $content['page_content'] .= render_html($field_name,'element_api_method_field');
+
+                                        foreach ($api_method['field'] as $field_index=>$field)
+                                        {
+                                            $content['page_content'] .= render_html($field,'element_api_method_field');
+                                        }
+                                        $content['page_content'] .= '</div>';
+                                    }
                                     $content['page_content'] .= '</div>';
                                 }
 
@@ -995,32 +1038,29 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     if (isset($this->request['method'])) $template_name_part[] = $this->request['method'];
                     if (isset($this->request['document'])) $template_name_part[] = $this->request['document'];
 
-                    if (!empty($template_name_part))
+                    $default_css = array();
+                    $default_js = array();
+
+                    while (!empty($template_name_part))
                     {
                         if (file_exists(PATH_CONTENT_CSS.implode('_',$template_name_part).'.css'))
                         {
-                            $this->content['field']['style'][] = ['value'=>'/css/'.implode('_',$template_name_part).'.min.css','option'=>['format'=>'html_tag']];
+                            array_unshift($default_css, ['value'=>'/css/'.implode('_',$template_name_part).'.min.css','option'=>['format'=>'html_tag']]);
                         }
                         if (file_exists(PATH_CONTENT_JS.implode('_',$template_name_part).'.js'))
                         {
-                            $this->content['field']['script'][] = ['value'=>'/js/'.implode('_',$template_name_part).'.min.js','option'=>['format'=>'html_tag']];
+                            array_unshift($default_js, ['value'=>'/js/'.implode('_',$template_name_part).'.min.js','option'=>['format'=>'html_tag']]);
                         }
-                    }
-
-                    while(!isset($this->content['template']))
-                    {
-                        if (file_exists(PATH_TEMPLATE.'page_'.implode('_',$template_name_part).FILE_EXTENSION_TEMPLATE))
+                        if (!isset($this->content['template']) AND file_exists(PATH_TEMPLATE.'page_'.implode('_',$template_name_part).FILE_EXTENSION_TEMPLATE))
                         {
                             $this->content['template'] = 'page_'.implode('_',$template_name_part);
                         }
-                        else
-                        {
-                            if (is_null(array_pop($template_name_part)))
-                            {
-                                $this->content['template'] = 'page_default';
-                            }
-                        }
+                        array_pop($template_name_part);
                     }
+
+                    $this->content['field']['style'] = array_merge($this->content['field']['style'],$default_css);
+                    $this->content['field']['script'] = array_merge($this->content['field']['script'],$default_js);
+                    if (!isset($this->content['template'])) $this->content['template'] = 'page_default';
                 }
                 $this->result['content'] = render_html($this->content['field'],$this->content['template']);
 
