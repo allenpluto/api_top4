@@ -768,7 +768,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 else
                                 {
                                     $content['page_content'] .= '<h3>API Keys</h3>';
-                                    $content['page_content'] .= '<div class="api_key_controller api_key_add_button_container"><a href="javascript:void(0)" class="general_style_input_button general_style_input_button_orange">Create Credential</a></div>';
+                                    $content['page_content'] .= '<div class="api_key_controller api_key_button_add_container"><a href="javascript:void(0)" class="api_key_button_add general_style_input_button general_style_input_button_orange">Create Credential</a></div>';
                                     $content['page_content'] .= '<div class="api_key_wrapper">';
                                     $field_name = array(
                                         'class_extra'=>'api_key_name_container',

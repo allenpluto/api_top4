@@ -28,6 +28,19 @@ class entity_api_method extends entity
         return $result;
     }
 
+    function insert_account(&$parameter = array())
+    {
+        if (empty($parameter['account']))
+        {
+            // TODO: Error Handling, Website uri not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Account Details not provided';
+            return false;
+        }
+        $entity_account = new entity();
+        return $entity_account->set($parameter['account']);
+    }
+
     function select_business_by_uri(&$parameter = array())
     {
         if (empty($parameter['uri']))
