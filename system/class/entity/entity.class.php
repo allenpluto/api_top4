@@ -378,6 +378,7 @@ class entity extends base
                 $row = $this->row;
             }
         }
+
         if (isset($parameter['table_fields']))
         {
             $table_fields = array();
@@ -454,6 +455,7 @@ class entity extends base
         $sql .= implode(',',$field_bind);
         unset($field_bind);
         $query = $this->_conn->prepare($sql);
+//print_r($sql);
         $new_row = array();
         foreach ($row as $record_index=>$record)
         {
@@ -488,9 +490,13 @@ class entity extends base
                 {
                     $bind_value[':'.$field_name] = $record[$field_name];
                 }
+                else
+                {
+                    $bind_value[':'.$field_name] = '';
+                }
             }
 
-            $bind_value = array_merge($parameter['bind_param'],$bind_value);
+            $bind_value = array_merge($bind_value,$parameter['bind_param']);
 
 //print_r('bind value<br>');
 //print_r($bind_value);
