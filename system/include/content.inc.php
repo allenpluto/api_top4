@@ -621,7 +621,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     return true;
                 }
                 $entity_api_obj = new entity_api($auth_id);
-                $entity_api_method_obj = new entity_api_method($this->request['method']);
+                $entity_api_method_obj = new entity_api_method($this->request['method'],['api_id'=>$auth_id]);
                 if (empty($entity_api_method_obj->id_group))
                 {
                     // TODO: Error Handling, api method not recognized
@@ -791,11 +791,11 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 $method_variable = [];
                                 if (!empty($this->request['option'])) $method_variable = $this->request['option'];
                                 if (!empty($this->request['value'])) $method_variable['value'] = $this->request['value'];
-                                $method_variable['api_id'] = $this->content['account']['id'];
+                                //$method_variable['api_id'] = $this->content['account']['id'];
                                 $method_variable['status'] = 'OK';
                                 $method_variable['message'] = '';
 
-                                $entity_api_method_obj = new entity_api_method();
+                                $entity_api_method_obj = new entity_api_method('',['api_id'=>$this->content['account']['id']]);
                                 $this->content['account']['api_method'] = $entity_api_method_obj->list_available_method($method_variable);
 
                                 $content['page_content'] = '<h2><strong>Accessible API methods for account '.$this->content['account']['name'].': </strong></h2>';
@@ -1458,8 +1458,8 @@ echo '</body>
         {
             print_r($this->result['content']);
         }
-        echo '<pre>';
-        print_r($this);
+        //echo '<pre>';
+        //print_r($this);
     }
 
     function get_result()

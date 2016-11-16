@@ -179,7 +179,7 @@ $entity->sync(['sync_type'=>'full_sync2']);
 print_r('Executing time full sync: '.(time() - $timestamp2).'<br>');*/
 
 // TEST ACCOUNT ENTITY
-/*$entity = new entity_account();
+$entity = new entity_api_method();
 $value = [
     'username'=>'shailen@top4.com.au',
     'first_name'=>'Shailendra',
@@ -200,9 +200,10 @@ $value = [
     'nickname'=>'sha',
     'personal_message'=>'shailendra message'
 ];
-$entity->set(['row'=>[$value]]);
+$api_parameter = ['row'=>[$value]];
+$entity->insert_account($api_parameter);
 echo '<pre>';
-print_r($global_message);*/
+print_r($global_message);
 
 // API Method INPUT
 // insert_account
@@ -371,11 +372,11 @@ print_r(message::get_instance()->display());*/
 
 // TEST CREATE API ACCOUNT AND KEY
 // Top4 - top4#2016, Haystack - needle#2016, Crazy Domain - dream#2016
-$entity = new entity_api(10003);
+/*$entity = new entity_api(10003);
 $entity->update(['password'=>'dream#2016']);
 $entity_key = new entity_api_key();
 $entity_key->generate_api_key(10003);
-print_r(message::get_instance()->display());
+print_r(message::get_instance()->display());*/
 
 /*$parameter = array();
 $parameter['sync_table'] = str_replace('entity','index',$entity->parameter['table']);

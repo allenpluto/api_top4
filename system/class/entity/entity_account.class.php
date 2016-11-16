@@ -24,8 +24,8 @@ class entity_account extends entity
 
     function set($parameter = array())
     {
-print_r($parameter);
-        $set_account_parameter = ['fields' => ['username', 'password','complementary_info','agree_tou','account_type','signup_as','other_company','other_company_phone','updated','entered'],'row'=>[]];
+//print_r($parameter);
+        $set_account_parameter = ['fields' => ['username', 'password','importID','complementary_info','agree_tou','account_type','signup_as','other_company','other_company_phone','updated','entered'],'row'=>[]];
         if (isset($parameter['row']))
         {
             foreach ($parameter['row'] as $row_index=>&$row)
@@ -44,7 +44,7 @@ print_r($parameter);
                     {
                         $row['password'] = substr(sha1(openssl_random_pseudo_bytes(20)),-8);
                         $set_account_row['password'] = md5($row['password']);
-                        //$set_account_row['plain_password'] = $row['password'];
+                        $set_account_row['plain_password'] = $row['password'];
                     }
                 }
                 $set_account_row['complementary_info'] = md5('http://www.top4.com.au/members/login.php'.$row['username'].$row['password']);
@@ -54,7 +54,7 @@ print_r($parameter);
         }
         $set_account_parameter = array_merge($parameter, $set_account_parameter);
 
-print_r($set_account_parameter);
+//print_r($set_account_parameter);
         $set_account_result = parent::set($set_account_parameter);
         if ($set_account_result !== FALSE AND isset($parameter['row']))
         {
@@ -72,9 +72,9 @@ print_r($set_account_parameter);
                     }
                 }
             }
-echo 'original parameter after set account:<br>';
-print_r($parameter);
-print_r($this->row);
+//echo 'original parameter after set account:<br>';
+//print_r($parameter);
+//print_r($this->row);
 
             $set_contact_parameter = array(
                 'fields' => ['account_id','first_name','last_name','company','address','address2','city','state','zip','country','latitude','longitude','phone','fax','email','url','updated','entered']
@@ -91,6 +91,8 @@ print_r($this->row);
             $entity_profile_obj = new entity_profile();
             $entity_profile_obj->set($set_profile_parameter);
         }
+
+
         return $this->row;
     }
 
@@ -113,7 +115,7 @@ print_r($this->row);
         }
         $param = array(
             'bind_param' => array(':username'=>$parameter['username'],':password'=>md5($parameter['password'])),
-            'where' => array('`username` = :username OR `alternate_name` = :name','`password` = :password')
+            'where' => array('`username` = :username OR `alternate_name` = :username','`password` = :password')
         );
         $row = $this->get($param);
         if (empty($this->id_group))

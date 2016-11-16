@@ -523,7 +523,16 @@ class entity extends base
                     $result = $query2->fetch(PDO::FETCH_ASSOC);
                     if ($query2->errorCode() == '00000')
                     {
-                        if ($result['new_id'] == 0) $record_primary_key = $bind_value[':'.$parameter['primary_key']];
+                        if ($result['new_id'] == 0)
+                        {
+                            if (isset($bind_value[':'.$parameter['primary_key']])) $record_primary_key = $bind_value[':'.$parameter['primary_key']];
+                            else
+                            {
+                                $query_errorInfo = $query2->errorInfo();
+                                $GLOBALS['global_message']->notice = 'Insert new record failed, probably has duplicate key';
+                                continue;
+                            }
+                        }
                         else
                         {
                             $record_primary_key = $result['new_id'];
