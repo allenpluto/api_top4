@@ -1,0 +1,72 @@
+.api_key_container > *:before
+{
+    display: inline-block;
+    width: 8em;
+    padding-right: 0.5em;
+
+    font-weight: bold;
+}
+.api_key_name:before {content: 'Key: ';}
+.api_key_alternate_name:before {content: 'Name: ';}
+.api_key_ip_restriction:before {content: 'IP Restriction: ';}
+
+.api_method_container
+{
+    padding:0.5em 0 2em 0;
+}
+
+.api_method_container > *
+{
+    padding-bottom: 0.5em;
+
+    font-size: 1.4em;
+}
+
+.api_method_request_uri
+{
+    font-style: italic;
+}
+
+.api_method_field_container
+{
+    padding: 0.2em 0;
+}
+
+.api_method_field_container:nth-child(even) {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.api_method_field_container > *
+{
+    padding: 0 0.5em;
+    vertical-align: top;
+}
+
+.api_method_field_container > *:before
+{
+    display: inline-block;
+    width: 6em;
+    padding-right: 0.5em;
+
+    font-weight: bold;
+}
+
+.field_title:before {content: 'Name: ';}
+.field_type:before {content: 'Type: ';}
+.field_mandatory:before {content: 'Mandatory: ';}
+.field_length:before {content: 'Length: ';}
+.field_description:before {content: 'Name: ';}
+
+.api_method_field_name_container {display: none;}
+
+@media only screen and (min-width:768px)
+{
+    .api_method_field_name_container {display: block; font-weight: bold;}
+    .api_method_field_container > * {display: inline-block;}
+    .api_method_field_container > *:before {display: none;}
+    .field_title {width: 9em;}
+    .field_type {width: 6em;}
+    .field_mandatory {width:7em;}
+    .field_length {width: 6em;}
+    .field_description {width: 20em;}
+}

@@ -21,7 +21,7 @@ class entity_api_method extends entity
     // General Public Accessible Functions
     function list_available_method($parameter = array())
     {
-        $row = $this->get(['where'=>'`tbl_entity_api_method`.id < 100 OR `tbl_entity_api_method`.id IN (SELECT api_method_id FROM tbl_rel_api_to_api_method WHERE api_id = :api_id)','bind_param'=>[':api_id'=>$parameter['api_id']],'id_group'=>array()]);
+        $row = $this->get(['where'=>'`tbl_entity_api_method`.id < 100 OR `tbl_entity_api_method`.id IN (SELECT api_method_id FROM tbl_rel_api_to_api_method WHERE api_id = :api_id)','bind_param'=>[':api_id'=>$this->api_id],'id_group'=>array()]);
         $result = [];
         foreach($row as $record_index=>$record)
         {
@@ -34,12 +34,12 @@ class entity_api_method extends entity
     function insert_account(&$parameter = array())
     {
         $entity_account = new entity_account();
-        $account_field_array = ['username','first_name','last_name','company','address','address2','city','state','zip','country','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
         $set_account_parameter = array('row'=>array());
 
         if (empty($parameter['username']) OR empty($parameter['first_name']) OR empty($parameter['last_name']))
         {
-            // TODO: Error Handling, Website uri not provided
+            // TODO: Error Handling, username, first_name or last_name not provided
             //$parameter['status'] = 'INVALID_REQUEST';
             //$parameter['message'] = 'New Account Details not provided, username, first_name and last_name are mandatory';
             $parameter = ['status'=>'INVALID_REQUEST','message'=>'New Account Details not provided, username, first_name and last_name are mandatory','username'=>$parameter['username'],'first_name'=>$parameter['first_name'],'last_name'=>$parameter['last_name']];
@@ -54,7 +54,7 @@ class entity_api_method extends entity
         $entity_account_check->get($entity_account_check_param);
         if (count($entity_account_check->row) > 0)
         {
-            $parameter = ['status'=>'REQUEST_DENIED','message'=>'Account Exists','username'=>$parameter['username']];
+            $parameter = ['status'=>'REQUEST_DENIED','message'=>'Account already exist','username'=>$parameter['username']];
             return false;
         }
         unset($entity_account_check);
@@ -68,6 +68,7 @@ class entity_api_method extends entity
             }
         }
         $set_account_row['importID'] = $this->api_id;
+        $set_account_row['country'] = 'Australia';
         $set_account_parameter['row'][] = $set_account_row;
 
         $account_insert_result = $entity_account->set($set_account_parameter);
@@ -110,7 +111,7 @@ class entity_api_method extends entity
                 // TODO: Error Handling, Website uri not provided
                 //$parameter['status'] = 'INVALID_REQUEST';
                 //$parameter['message'] = 'New Account Details not provided, username, first_name and last_name are mandatory';
-                $parameter['result'][] = ['status'=>'INVALID_REQUEST','message'=>'New Account Details not provided, username, first_name and last_name are mandatory','username'=>$parameter_row['username'],'first_name'=>$parameter_row['first_name'],'last_name'=>$parameter_row['last_name']];
+                $parameter['result'][] = ['status'=>'INVALID_REQUEST','message'=>'New Account Details not provided, username, first_name and last_name are mandatory'];
                 continue;
             }
 
@@ -180,17 +181,90 @@ class entity_api_method extends entity
     // Select Functions
     function select_account_by_username(&$parameter = array())
     {
-        $entity_account_check = new entity_account();
-        $entity_account_check_param = array(
+        if (empty($parameter['username']))
+        {
+            // TODO: Error Handling, username not provided
+            $parameter = ['status'=>'INVALID_REQUEST','message'=>'username not provided'];
+            return false;
+        }
+
+        $entity_account_obj = new entity_account();
+        $entity_account_param = array(
             'bind_param' => array(':username'=>$parameter['username']),
             'where' => array('`username` = :username')
         );
-        $entity_account_check->get($entity_account_check_param);
-        if (count($entity_account_check->row) > 0)
+        $result_row = $entity_account_obj->get($entity_account_param);
+        if (count($entity_account_obj->row) == 0)
         {
+            $parameter['status'] = 'ZERO_RESULTS';
+            $parameter['message'] = 'Account not available';
+            return false;
+        }
+        $field = ['username','first_name','last_name','company','address','address2','city','state','zip','country','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        foreach($result_row as $row_index=>$row)
+        {
+            if ($row['importID'] == $this->api_id)
+            {
+                $result_row = ['status'=>'OK'];
+                foreach ($row as $record_index=>$record)
+                {
+                    if (in_array($record_index,$field))
+                    {
+                        $result_row[$record_index] = $record;
+                    }
+                }
 
+                $parameter['result'][] = $result_row;
+            }
+            else
+            {
+                $parameter['result'][] = ['status'=>'REQUEST_DENIED','message'=>'User does not belong to current API Account, cannot view user details','username'=>$row['username']];
+            }
+        }
+    }
+
+    function select_account_by_token(&$parameter = array())
+    {
+        if (empty($parameter['token']))
+        {
+            // TODO: Error Handling, username not provided
+            $parameter = ['status'=>'INVALID_REQUEST','message'=>'token not provided'];
+            return false;
         }
 
+        $entity_account_obj = new entity_account();
+        $entity_account_param = array(
+            'bind_param' => array(':complementary_info'=>$parameter['token']),
+            'where' => array('`complementary_info` = :complementary_info')
+        );
+        $result_row = $entity_account_obj->get($entity_account_param);
+        if (count($entity_account_obj->row) == 0)
+        {
+            $parameter['status'] = 'ZERO_RESULTS';
+            $parameter['message'] = 'Account not available';
+            return false;
+        }
+        $field = ['username','first_name','last_name','company','address','address2','city','state','zip','country','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        foreach($result_row as $row_index=>$row)
+        {
+            if ($row['importID'] == $this->api_id)
+            {
+                $result_row = ['status'=>'OK'];
+                foreach ($row as $record_index=>$record)
+                {
+                    if (in_array($record_index,$field))
+                    {
+                        $result_row[$record_index] = $record;
+                    }
+                }
+
+                $parameter['result'][] = $result_row;
+            }
+            else
+            {
+                $parameter['result'][] = ['status'=>'REQUEST_DENIED','message'=>'User does not belong to current API Account, cannot view user details','username'=>$row['username']];
+            }
+        }
     }
 
     function select_business_by_uri(&$parameter = array())

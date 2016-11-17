@@ -1,40 +1,13 @@
 <?php
 // Class Object
-// Name: entity_account
-// Description: account table, stores all user account related information
+// Name: entity_listing
+// Description: Listing table, business listings
 
-class entity_account extends entity
+class entity_listing extends entity
 {
     var $parameter = array(
-        'table' => '`Account`',
-        'primary_key' => 'id',
-        'table_fields' => [
-            'id'=>'id',
-            'username'=>'username',
-            'password'=>'password',
-            'importID'=>'importID',
-            'complementary_info'=>'complementary_info',
-            'agree_tou'=>'agree_tou',
-            'account_type'=>'account_type',
-            'signup_as'=>'signup_as',
-            'other_company'=>'other_company',
-            'other_company_phone'=>'other_company_phone',
-            'updated'=>'updated',
-            'entered'=>'entered'
-        ]
+        'table' => '`Listing`'
     );
-
-    function __construct($value = null, $parameter = array())
-    {
-        $dbLocation = 'mysql:dbname=top4_main;host='.DATABASE_HOST;
-        $dbUser = DATABASE_USER;
-        $dbPass = DATABASE_PASSWORD;
-        $db = new PDO($dbLocation, $dbUser, $dbPass, array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES \'utf8\''));
-
-        $this->_conn = $db;
-
-        parent::__construct($value, $parameter);
-    }
 
     function get($parameter = array())
     {
@@ -75,38 +48,37 @@ class entity_account extends entity
     function set($parameter = array())
     {
 //print_r($parameter);
-        $set_account_parameter = ['fields' => ['username', 'password','importID','complementary_info','agree_tou','account_type','signup_as','other_company','other_company_phone','updated','entered'],'row'=>[]];
+        $set_listing_parameter = ['fields' => ['title','address','address2','city','state','zip_code','account_id','phone','alternate_phone','mobile_phone','fax','email','url','importID','category','updated','entered'],'row'=>[]];
         if (isset($parameter['row']))
         {
             foreach ($parameter['row'] as $row_index=>&$row)
             {
                 $row['updated'] = date('Y-m-d H:i:s');
                 $row['entered'] = $row['updated'];
-                $row['credit_points'] = 100;
-                $set_account_row = $row;
-                if (isset($set_account_row['password']))
+                $set_listing_row = $row;
+                if (isset($set_listing_row['password']))
                 {
-                    $set_account_row['password'] = md5($set_account_row['password']);
+                    $set_listing_row['password'] = md5($set_listing_row['password']);
                 }
                 else
                 {
                     if (!isset($row['id']))
                     {
                         $row['password'] = substr(sha1(openssl_random_pseudo_bytes(20)),-8);
-                        $set_account_row['password'] = md5($row['password']);
-                        $set_account_row['plain_password'] = $row['password'];
+                        $set_listing_row['password'] = md5($row['password']);
+                        $set_listing_row['plain_password'] = $row['password'];
                     }
                 }
-                $set_account_row['complementary_info'] = md5('http://www.top4.com.au/members/login.php'.$row['username'].$row['password']);
-                $set_account_row['agree_tou'] = 1;
-                $set_account_parameter['row'][] = $set_account_row;
+                $set_listing_row['complementary_info'] = md5('http://www.top4.com.au/members/login.php'.$row['username'].$row['password']);
+                $set_listing_row['agree_tou'] = 1;
+                $set_listing_parameter['row'][] = $set_listing_row;
             }
         }
-        $set_account_parameter = array_merge($parameter, $set_account_parameter);
+        $set_listing_parameter = array_merge($parameter, $set_listing_parameter);
 
-//print_r($set_account_parameter);
-        $set_account_result = parent::set($set_account_parameter);
-        if ($set_account_result !== FALSE AND isset($parameter['row']))
+//print_r($set_listing_parameter);
+        $set_listing_result = parent::set($set_listing_parameter);
+        if ($set_listing_result !== FALSE AND isset($parameter['row']))
         {
             foreach($parameter['row'] as $row_index=>&$row)
             {
@@ -116,30 +88,11 @@ class entity_account extends entity
                     {
                         $row['account_id'] = $result_row['id'];
                         $row['friendly_url'] = $result_row['id'];
-                        if (!empty($row['nickname'])) $row['friendly_url'] = $row['nickname'].' '. $row['friendly_url'];
-                        else $row['friendly_url'] = $row['first_name'].' '.$row['last_name'].' '.$row['friendly_url'];
+                        if (!empty($row['title'])) $row['friendly_url'] = $row['title'].' '. $row['friendly_url'];
                         $row['friendly_url'] = $this->format->file_name($row['friendly_url']);
                     }
                 }
             }
-//echo 'original parameter after set account:<br>';
-//print_r($parameter);
-//print_r($this->row);
-
-            $set_contact_parameter = [
-                'fields' => ['account_id','first_name','last_name','company','address','address2','city','state','zip','country','latitude','longitude','phone','fax','email','url','updated','entered']
-            ];
-            $set_contact_parameter = array_merge($parameter, $set_contact_parameter);
-            $entity_contact_obj = new entity_contact();
-            $entity_contact_obj->set($set_contact_parameter);
-
-
-            $set_profile_parameter = [
-                'fields' => ['account_id','nickname','personal_message','friendly_url','credit_points','updated','entered']
-            ];
-            $set_profile_parameter = array_merge($parameter, $set_profile_parameter);
-            $entity_profile_obj = new entity_profile();
-            $entity_profile_obj->set($set_profile_parameter);
         }
 
 

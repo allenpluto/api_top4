@@ -14,24 +14,3 @@
 .content_body > p {font-size: 1.4em;}
 
 
-.api_method_container
-{
-    padding:0.5em 0 2em 0;
-}
-
-.api_method_container > *
-{
-    font-size: 1.4em;
-}
-
-.api_method_field_container > *
-{
-    display: inline-block;
-}
-
-.api_method_field_container:nth-child(even) {background: rgba(255,255,255,0.8);}
-
-.field_title {width: 9em;}
-.field_type {width: 6em;}
-.field_max_length {width: 6em;}
-.field_description {width: 30em;}

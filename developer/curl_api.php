@@ -25,30 +25,6 @@ if (!isset($_GET['handler']))
 
     if ($method == 'insert_account')
     {
-        $post_value = ['row'=>
-            [
-                [
-                    'username'=>'shailen@top4.com.au',
-                    'first_name'=>'Shailendra',
-                    'last_name'=>'Shrestha',
-                    'company'=>'top4',
-                    'address'=>'303 windsor rd',
-                    'address2'=>'Unit B',
-                    'city'=>'Castle Hill',
-                    'state'=>'NSW',
-                    'zip'=>'2154',
-                    'country'=>'Australia',
-                    'latitude'=>'-33.7606721',
-                    'longitude'=>'150.9930178',
-                    'phone'=>'0431877555',
-                    'fax'=>'0431877554',
-                    'email'=>'shailen@top4.com.au',
-                    'url'=>'http://www.top4.com.au',
-                    'nickname'=>'sha',
-                    'personal_message'=>'shailendra message'
-                ]
-            ]
-        ];
         $post_value = [
             'username'=>'allen1@top4.com.au',
             'first_name'=>'Shailendra',

@@ -178,8 +178,18 @@ $timestamp2 = time();
 $entity->sync(['sync_type'=>'full_sync2']);
 print_r('Executing time full sync: '.(time() - $timestamp2).'<br>');*/
 
-// TEST ACCOUNT ENTITY
-$entity = new entity_api_method();
+// TEST Account ENTITY
+/*$entity_account_obj = new entity_account();
+$entity_account_param = array(
+    'bind_param' => array(':id_min'=>100,':id_max'=>200),
+    'where' => array('`id` > :id_min AND `id` < :id_max')
+);
+$entity_account_obj->get($entity_account_param);*/
+
+
+// TEST API Method ENTITY
+// insert_account method
+/*$entity = new entity_api_method();
 $value = [
     'username'=>'shailen@top4.com.au',
     'first_name'=>'Shailendra',
@@ -202,149 +212,157 @@ $value = [
 ];
 $api_parameter = ['row'=>[$value]];
 $entity->insert_account($api_parameter);
+print_r($global_message);*/
+// select_account_by_username method
+/*$entity = new entity_api_method();
+$value = ['username'=>'shailen@top4.com.au'];
+$entity->api_id = 10003;
+$result = $entity->select_account_by_username($value);
 echo '<pre>';
-print_r($global_message);
+print_r($value);
+print_r($global_message);*/
+
+// select_account_by_token method
+/*$entity = new entity_api_method();
+$value = ['token'=>'145d243fc763c2ad4c09ba2b250a60e7'];
+$entity->api_id = 10003;
+$result = $entity->select_account_by_token($value);
+echo '<pre>';
+print_r($value);
+print_r($global_message);*/
+
 
 // API Method INPUT
 // insert_account
-/*$input_parameter = [
+$input_parameter = [
     [
         'name'=>'username',
         'type'=>'String',
-        'max_length'=>100,
-        'mandatory'=>true,
+        'length'=>100,
+        'mandatory'=>'true',
         'description'=>'user unique identification, Email address, e.g. allen@top4.com.au'
     ],
     [
         'name'=>'first_name',
         'type'=>'String',
-        'max_length'=>50,
-        'mandatory'=>true,
+        'length'=>50,
+        'mandatory'=>'true',
         'description'=>'user first name, e.g. Allen'
     ],
     [
         'name'=>'last_name',
         'type'=>'String',
-        'max_length'=>50,
-        'mandatory'=>true,
+        'length'=>50,
+        'mandatory'=>'true',
         'description'=>'user last name, e.g. Shrestha'
     ],
     [
         'name'=>'password',
         'type'=>'String',
-        'max_length'=>20,
-        'mandatory'=>false,
+        'length'=>20,
+        'mandatory'=>'false',
         'description'=>'user password to login, if not provided, system will automatically generate a random password of 8 characters string'
     ],
     [
-        'name'=>'entered',
+        'name'=>'company',
         'type'=>'String',
-        'max_length'=>20,
-        'mandatory'=>false,
-        'description'=>'time user account created, date time in text, e.g. 2016-01-20 21:32:08'
-    ],
-    [
-        'name'=>'updated',
-        'type'=>'String',
-        'max_length'=>20,
-        'mandatory'=>false,
-        'description'=>'time user account updated, date time in text, e.g. 2016-01-20 21:32:08'
+        'length'=>50,
+        'mandatory'=>'false',
+        'description'=>'company name for user'
     ],
     [
         'name'=>'address',
         'type'=>'String',
-        'max_length'=>50,
-        'mandatory'=>false,
+        'length'=>50,
+        'mandatory'=>'false',
         'description'=>'street address, e.g. 339 Windsor Rd'
     ],
     [
         'name'=>'address2',
         'type'=>'String',
-        'max_length'=>50,
-        'mandatory'=>false,
+        'length'=>50,
+        'mandatory'=>'false',
         'description'=>'street address additional info, unit number, level, subpremise, e.g. Unit 2'
     ],
     [
         'name'=>'city',
         'type'=>'String',
-        'max_length'=>50,
-        'mandatory'=>false,
+        'length'=>50,
+        'mandatory'=>'false',
         'description'=>'suburb, e.g. Baulkham Hills'
     ],
     [
         'name'=>'state',
         'type'=>'String',
-        'max_length'=>50,
-        'mandatory'=>false,
+        'length'=>50,
+        'mandatory'=>'false',
         'description'=>'state, e.g. NSW'
     ],
     [
         'name'=>'zip',
         'type'=>'String',
-        'max_length'=>4,
-        'mandatory'=>false,
+        'length'=>4,
+        'mandatory'=>'false',
         'description'=>'postcode, e.g. 2153'
     ],
     [
         'name'=>'latitude',
         'type'=>'Decimal',
-        'max_length'=>11,
-        'scale'=>8,
-        'mandatory'=>false,
+        'length'=>'11,8',
+        'mandatory'=>'false',
         'description'=>'geo location latitude, e.g. -34.56314822'
     ],
     [
         'name'=>'longitude',
         'type'=>'Decimal',
-        'max_length'=>11,
-        'scale'=>8,
-        'mandatory'=>false,
+        'length'=>'11,8',
+        'mandatory'=>'false',
         'description'=>'geo location longitude, e.g. 150.47264858'
     ],
     [
         'name'=>'phone',
         'type'=>'String',
-        'max_length'=>50,
-        'mandatory'=>false,
+        'length'=>50,
+        'mandatory'=>'false',
         'description'=>'personal contact number, e.g. 0412499255'
     ],
     [
         'name'=>'fax',
         'type'=>'String',
-        'max_length'=>50,
-        'mandatory'=>false,
+        'length'=>50,
+        'mandatory'=>'false',
         'description'=>'personal contact fax, e.g. 0296552722'
     ],
     [
         'name'=>'email',
         'type'=>'String',
-        'max_length'=>50,
-        'mandatory'=>false,
+        'length'=>50,
+        'mandatory'=>'false',
         'description'=>'personal contact email, e.g. example@gmail.com'
     ],
     [
         'name'=>'url',
         'type'=>'String',
-        'max_length'=>50,
-        'mandatory'=>false,
+        'length'=>50,
+        'mandatory'=>'false',
         'description'=>'personal website, e.g. www.mywebsite.com'
     ],
     [
         'name'=>'nickname',
         'type'=>'String',
-        'max_length'=>50,
-        'mandatory'=>false,
+        'length'=>50,
+        'mandatory'=>'false',
         'description'=>'nickname, user alias on top4, e.g. Brilliant Scientist'
     ],
     [
         'name'=>'personal_message',
         'type'=>'String',
-        'max_length'=>500,
-        'mandatory'=>false,
+        'length'=>500,
+        'mandatory'=>'false',
         'description'=>'self introduction, e.g. Dr Shrestha has worked in digital marketing industry for over 15 years.'
     ]
 ];
-print_r(json_encode($input_parameter));*/
+print_r(json_encode($input_parameter));
 
 // TEST IMAGE ENTITY
 /*$entity = new entity_image();

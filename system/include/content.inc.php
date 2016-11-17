@@ -805,6 +805,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                     $content['page_content'] .= '<div class="api_method_container">';
                                     $content['page_content'] .= '<div class="api_method_name"><h3>'.$api_method['name'].'</h3></div>';
                                     $content['page_content'] .= '<div class="api_method_request_uri">'.URI_SITE_BASE.$this->content['format'].'/'.$api_method['request_uri'].'</div>';
+                                    $content['page_content'] .= '<div class="api_method_description">'.$api_method['description'].'</div>';
 //$content['page_content'] .=print_r($api_method['field'],true);
                                     if (is_array($api_method['field']) AND !empty($api_method['field']))
                                     {
@@ -814,7 +815,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                             'class_extra'=>'api_method_field_name_container',
                                             'name'=>'Name',
                                             'type'=>'Type',
-                                            'max_length'=>'Max Length',
+                                            'mandatory'=>'Mandatory',
+                                            'length'=>'Length',
                                             'description'=>'Description'
                                         );
                                         $content['page_content'] .= render_html($field_name,'element_api_method_field');

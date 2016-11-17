@@ -21,42 +21,46 @@ class entity extends base
     // By default, all entities can be constructed by a number (id), an array of numbers (ids), a string of numbers separate by comma (e.g. "10,11,12") or a string of friendly url
     function __construct($value = null, $parameter = array())
     {
+//print_r([$value, $parameter]);
         parent::__construct();
         if (!empty($parameter)) $this->set_parameter($parameter);
 
-        if ($GLOBALS['db']) $db = $GLOBALS['db'];
-        else $db = new db;
-        $this->_conn = $db->db_get_connection();
-
-        if (!isset($this->parameter['table']))
+        if (empty($this->_conn))
         {
-            $this->parameter['table'] = DATABASE_TABLE_PREFIX.get_class($this);
-        }
+            if ($GLOBALS['db']) $db = $GLOBALS['db'];
+            else $db = new db;
+            $this->_conn = $db->db_get_connection();
 
-        if (!isset($this->parameter['table_fields']))
-        {
-            $result = $db->db_get_columns($this->parameter['table']);
-            if ($result === false)
+            if (!isset($this->parameter['table']))
             {
-                return false;
+                $this->parameter['table'] = DATABASE_TABLE_PREFIX.get_class($this);
             }
-            else
-            {
-                $this->parameter['table_fields'] = $result;
-            }
-        }
 
-        // parameter['primary_key'] in entity need to be single column field, if it is not defined, default to id
-        if (!isset($this->parameter['primary_key']))
-        {
-            $result = $db->db_get_primary_key($this->parameter['table']);
-            if (empty($result[0]))
+            if (!isset($this->parameter['table_fields']))
             {
-                $this->parameter['primary_key'] = 'id';
+                $result = $db->db_get_columns($this->parameter['table']);
+                if ($result === false)
+                {
+                    return false;
+                }
+                else
+                {
+                    $this->parameter['table_fields'] = $result;
+                }
             }
-            else
+
+            // parameter['primary_key'] in entity need to be single column field, if it is not defined, default to id
+            if (!isset($this->parameter['primary_key']))
             {
-                $this->parameter['primary_key'] = $result[0];
+                $result = $db->db_get_primary_key($this->parameter['table']);
+                if (empty($result[0]))
+                {
+                    $this->parameter['primary_key'] = 'id';
+                }
+                else
+                {
+                    $this->parameter['primary_key'] = $result[0];
+                }
             }
         }
 
