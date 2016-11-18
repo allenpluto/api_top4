@@ -45,7 +45,38 @@ if (!isset($_GET['handler']))
             'nickname'=>'sha',
             'personal_message'=>'shailendra message'
         ];
-
+    }
+    if ($method == 'insert_business')
+    {
+        $post_value = [
+            'title'=>'Mr Shrestha Dental',
+            'latitude'=>'-33.7606721',
+            'longitude'=>'150.9930178',
+            'category'=>'http://schema.org/Dentist',
+            'abn'=>'123456',
+            'address'=>'303 windsor rd',
+            'address2'=>'Unit B',
+            'city'=>'Castle Hill',
+            'state'=>'NSW',
+            'zip'=>'2154',
+            'phone'=>'0431877555',
+            'alternate_phone'=>'0291877553',
+            'mobile_phone'=>'0431877555',
+            'fax'=>'0291877554',
+            'email'=>'shailen@thewebsitemarketinggroup.com.au',
+            'url'=>'http://www.top4.com.au',
+            'facebook_link'=>'https://www.facebook.com/bondikitchens',
+            'twitter_link'=>'',
+            'linkedin_link'=>'',
+            'blog_link'=>'',
+            'pinterest_link'=>'',
+            'googleplus_link'=>'https://plus.google.com/117352402953311869532/about',
+            'business_type'=>'small',
+            'description'=>'shailendra shrestha\'s dental clinic',
+            'long_description'=>'shailendra shrestha the man the legend, founder of Mr Shrestha Dental',
+            'keywords'=>'dental
+clinic'
+        ];
     }
 
     //$handler_uri = 'http://api.top4.com.au/json/'.$method;

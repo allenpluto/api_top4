@@ -186,6 +186,15 @@ $entity_account_param = array(
 );
 $entity_account_obj->get($entity_account_param);*/
 
+// TEST Listing ENTITY
+/*$entity_listing_obj = new entity_listing();
+
+$entity_listing_param = array(
+    'bind_param' => array(':id_min'=>92780,':id_max'=>92791),
+    'where' => array('`id` > :id_min AND `id` < :id_max')
+);
+$entity_listing_obj->get($entity_listing_param);
+print_r($entity_listing_obj);*/
 
 // TEST API Method ENTITY
 // insert_account method
@@ -210,9 +219,47 @@ $value = [
     'nickname'=>'sha',
     'personal_message'=>'shailendra message'
 ];
-$api_parameter = ['row'=>[$value]];
+$api_parameter = [$value];
 $entity->insert_account($api_parameter);
 print_r($global_message);*/
+
+// insert_business method
+/*$entity = new entity_api_method();
+$value = [
+    'title'=>'Mr Shrestha Dental',
+    'latitude'=>'-33.7606721',
+    'longitude'=>'150.9930178',
+    'category'=>'http://schema.org/Dentist',
+    'abn'=>'123456',
+    'address'=>'303 windsor rd',
+    'address2'=>'Unit B',
+    'city'=>'Castle Hill',
+    'state'=>'NSW',
+    'zip'=>'2154',
+    'phone'=>'0431877555',
+    'alternate_phone'=>'0291877553',
+    'mobile_phone'=>'0431877555',
+    'fax'=>'0291877554',
+    'email'=>'shailen@thewebsitemarketinggroup.com.au',
+    'url'=>'http://www.top4.com.au',
+    'facebook_link'=>'https://www.facebook.com/bondikitchens',
+    'twitter_link'=>'',
+    'linkedin_link'=>'',
+    'blog_link'=>'',
+    'pinterest_link'=>'',
+    'googleplus_link'=>'https://plus.google.com/117352402953311869532/about',
+    'business_type'=>'small',
+    'description'=>'shailendra shrestha\'s dental clinic',
+    'long_description'=>'shailendra shrestha the man the legend, founder of Mr Shrestha Dental',
+    'keywords'=>'dental
+clinic'
+];
+$entity->api_id = 10003;
+$entity->insert_business($value);
+print_r($value);
+print_r($entity);
+print_r($global_message);*/
+
 // select_account_by_username method
 /*$entity = new entity_api_method();
 $value = ['username'=>'shailen@top4.com.au'];
@@ -221,6 +268,7 @@ $result = $entity->select_account_by_username($value);
 echo '<pre>';
 print_r($value);
 print_r($global_message);*/
+
 
 // select_account_by_token method
 /*$entity = new entity_api_method();
@@ -234,7 +282,7 @@ print_r($global_message);*/
 
 // API Method INPUT
 // insert_account
-$input_parameter = [
+/*$input_parameter = [
     [
         'name'=>'username',
         'type'=>'String',
@@ -360,6 +408,192 @@ $input_parameter = [
         'length'=>500,
         'mandatory'=>'false',
         'description'=>'self introduction, e.g. Dr Shrestha has worked in digital marketing industry for over 15 years.'
+    ]
+];
+print_r(json_encode($input_parameter));*/
+// insert_business
+$input_parameter = [
+    [
+        'name'=>'title',
+        'type'=>'String',
+        'length'=>'200',
+        'mandatory'=>'true',
+        'description'=>'Business Name'
+    ],
+    [
+        'name'=>'latitude',
+        'type'=>'Decimal',
+        'length'=>'11,8',
+        'mandatory'=>'true',
+        'description'=>'Business Geo Location Latitude, e.g. -37.81936431'
+    ],
+    [
+        'name'=>'longitude',
+        'type'=>'Decimal',
+        'length'=>'11,8',
+        'mandatory'=>'true',
+        'description'=>'Business Geo Location Longitude, e.g. 144.99874667'
+    ],
+    [
+        'name'=>'category',
+        'type'=>'String',
+        'length'=>'200',
+        'mandatory'=>'true',
+        'description'=>'Business Category, any schema category that belong to http://schema.org/LocalBusiness, e.g. HomeAndConstructionBusiness,Plumber'
+    ],
+    [
+        'name'=>'abn',
+        'type'=>'String',
+        'length'=>'50',
+        'mandatory'=>'false',
+        'description'=>'Australian Business Number, 11 digits number without spacing or special characters, e.g. 43121890435'
+    ],
+    [
+        'name'=>'address',
+        'type'=>'String',
+        'length'=>'50',
+        'mandatory'=>'false',
+        'description'=>'Street Address only, street number and route name that Google can recognize, e.g. 331 Windsor Road'
+    ],
+    [
+        'name'=>'address2',
+        'type'=>'String',
+        'length'=>'50',
+        'mandatory'=>'false',
+        'description'=>'Additional address information, company name, unit number, level and etc. e.g. Level 2, Web Guys Agency'
+    ],
+    [
+        'name'=>'city',
+        'type'=>'String',
+        'length'=>'200',
+        'mandatory'=>'false',
+        'description'=>'Australian suburb name, please use the Australian POST standard name, e.g. CAROLINE SPRINGS'
+    ],
+    [
+        'name'=>'state',
+        'type'=>'String',
+        'length'=>'50',
+        'mandatory'=>'false',
+        'description'=>'Australian state, max 3 characters short name, e.g. NSW, VIC, QLD, WA, SA, TAS, ACT'
+    ],
+    [
+        'name'=>'zip',
+        'type'=>'String',
+        'length'=>'10',
+        'mandatory'=>'false',
+        'description'=>'Australian postcode, 4 digits number, e.g. 0810, 2153'
+    ],
+    [
+        'name'=>'phone',
+        'type'=>'String',
+        'length'=>'50',
+        'mandatory'=>'false',
+        'description'=>'Phone number, 6 - 10 digits number without spacing or special characters, e.g. 0293168372, 131612'
+    ],
+    [
+        'name'=>'alternate_phone',
+        'type'=>'String',
+        'length'=>'50',
+        'mandatory'=>'false',
+        'description'=>'Phone number, 6 - 10 digits number without spacing or special characters, e.g. 0293168372, 131612'
+    ],
+    [
+        'name'=>'mobile_phone',
+        'type'=>'String',
+        'length'=>'50',
+        'mandatory'=>'false',
+        'description'=>'Mobile Phone number, 10 digits number without spacing or special characters, e.g. 0432966233'
+    ],
+    [
+        'name'=>'fax',
+        'type'=>'String',
+        'length'=>'50',
+        'mandatory'=>'false',
+        'description'=>'Fax number, 6 - 10 digits number without spacing or special characters, e.g. 0293168372, 131612'
+    ],
+    [
+        'name'=>'email',
+        'type'=>'String',
+        'length'=>'50',
+        'mandatory'=>'false',
+        'description'=>'Email address'
+    ],
+    [
+        'name'=>'url',
+        'type'=>'String',
+        'length'=>'200',
+        'mandatory'=>'false',
+        'description'=>'Business website url, start with http or https, e.g. http://www.example.com.au/'
+    ],
+    [
+        'name'=>'facebook_link',
+        'type'=>'String',
+        'length'=>'200',
+        'mandatory'=>'false',
+        'description'=>'Business Facebook landing page, e.g. https://www.facebook.com/Example-Business/'
+    ],
+    [
+        'name'=>'twitter_link',
+        'type'=>'String',
+        'length'=>'200',
+        'mandatory'=>'false',
+        'description'=>'Business Twitter landing page, e.g. https://www.twitter.com/Example'
+    ],
+    [
+        'name'=>'linkedin_link',
+        'type'=>'String',
+        'length'=>'200',
+        'mandatory'=>'false',
+        'description'=>'Business LinkedIN landing page, e.g. https://www.linkedin.com/company/example-business'
+    ],
+    [
+        'name'=>'blog_link',
+        'type'=>'String',
+        'length'=>'200',
+        'mandatory'=>'false',
+        'description'=>'Business blog page, e.g. https://blog.example.com.au, https://exampleuser.wordpress.com/business/'
+    ],
+    [
+        'name'=>'pinterest_link',
+        'type'=>'String',
+        'length'=>'50',
+        'mandatory'=>'false',
+        'description'=>'Business Pinterest landing page, e.g. https://www.pinterest.com/example/'
+    ],
+    [
+        'name'=>'googleplus_link',
+        'type'=>'String',
+        'length'=>'200',
+        'mandatory'=>'false',
+        'description'=>'Business Googleplus landing page, e.g. https://plus.google.com/+ExampleBusiness/'
+    ],
+    [
+        'name'=>'business_type',
+        'type'=>'String',
+        'length'=>'20',
+        'mandatory'=>'false',
+        'description'=>'Business Type, small (0-10 people), medium (10-50 people), large (51+ people), brand, default to small e.g. medium'
+    ],
+    [
+        'name'=>'description',
+        'type'=>'String',
+        'length'=>'200',
+        'mandatory'=>'false',
+        'description'=>'Short Description, short summary for business, use for introduction, meta description..., e.g. XXXX is Australia’s leading XXXX brand and is focused on innovative solutions and impeccable design specialising in ....'
+    ],
+    [
+        'name'=>'long_description',
+        'type'=>'String',
+        'length'=>'2000',
+        'mandatory'=>'false',
+        'description'=>'Long Description, main body content of business, use for overview'
+    ],
+    [
+        'name'=>'keywords',
+        'type'=>'String',
+        'length'=>'500',
+        'mandatory'=>'false',
+        'description'=>'Keywords phrases, separate by line breaker'
     ]
 ];
 print_r(json_encode($input_parameter));
