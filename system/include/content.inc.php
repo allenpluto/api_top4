@@ -834,6 +834,45 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $this->content['field']['content'] = render_html($content,'element_console_body');
 
                         break;
+                    case 'logout':
+                        if (!isset($_COOKIE['session_id']))
+                        {
+                            // session_id is not set, redirect to login page
+                            $this->result['status'] = 301;
+                            $this->result['header']['Location'] =  URI_SITE_BASE.'login';
+                            return true;
+                        }
+                        // TODO: session_id is set, check if it is already logged in
+                        $entity_api_session_obj = new entity_api_session();
+                        $method_variable = ['status' => 'OK', 'message' => '', 'api_session_id' => $_COOKIE['session_id']];
+                        $session = $entity_api_session_obj->validate_api_session_id($method_variable);
+                        if ($session === false)
+                        {
+                            // If session_id is not valid, redirect to login page
+                            $this->result['status'] = 301;
+                            $this->result['header']['Location'] =  URI_SITE_BASE.'login';
+                            return true;
+                        }
+                        else
+                        {
+                            $entity_api_obj = new entity_api($session['account_id']);
+                            if (empty($entity_api_obj->row))
+                            {
+                                // If session_id is not valid, redirect to login page
+                                $this->result['status'] = 301;
+                                $this->result['header']['Location'] =  URI_SITE_BASE.'login';
+                                return true;
+                            }
+                            else
+                            {
+                                // If session is valid, delete the session then redirect to login
+                                $entity_api_session_obj->delete();
+                                setcookie('session_id', '', 1);
+                                $this->result['status'] = 301;
+                                $this->result['header']['Location'] =  URI_SITE_BASE.'login';
+                                return true;
+                            }
+                        }
                     case 'default':
                     default:
                         // If page is login, check for user login session

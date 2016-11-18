@@ -45,8 +45,7 @@
 .api_method_field_container > *:before
 {
     display: inline-block;
-    width: 6em;
-    padding-right: 0.5em;
+    width: 7em;
 
     font-weight: bold;
 }
@@ -55,18 +54,34 @@
 .field_type:before {content: 'Type: ';}
 .field_mandatory:before {content: 'Mandatory: ';}
 .field_length:before {content: 'Length: ';}
-.field_description:before {content: 'Name: ';}
+.field_description:before {content: 'Description: ';}
 
 .api_method_field_name_container {display: none;}
+
+@media only screen and (max-width:319px)
+{
+    .api_method_container > * {font-size: 1.2em;}
+
+}
 
 @media only screen and (min-width:768px)
 {
     .api_method_field_name_container {display: block; font-weight: bold;}
     .api_method_field_container > * {display: inline-block;}
     .api_method_field_container > *:before {display: none;}
+}
+
+@media only screen and (min-width:768px) and (max-width:991px)
+{
     .field_title {width: 9em;}
     .field_type {width: 6em;}
     .field_mandatory {width:7em;}
     .field_length {width: 6em;}
     .field_description {width: 20em;}
+}
+
+@media only screen and (min-width:992px)
+{
+    .api_method_field_container > * {width: 15%;}
+    .api_method_field_container > .field_description {width: 35%;}
 }
