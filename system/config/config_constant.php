@@ -10,7 +10,8 @@ define('FOLDER_JS', 'js');
 define('FOLDER_JSON', 'json');
 
 // URI
-define('URI_SITE_BASE',URI_BASE.FOLDER_SITE_BASE.'/');
+if (FOLDER_SITE_BASE != '') define('URI_SITE_BASE',URI_BASE.FOLDER_SITE_BASE.'/');
+else define('URI_SITE_BASE',URI_BASE);
 
 define('URI_ASSET', URI_SITE_BASE);
 define('URI_CSS', URI_ASSET . FOLDER_CSS . '/');

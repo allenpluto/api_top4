@@ -12,14 +12,20 @@ class entity_api_key extends entity
             'where' => array('`account_id` = :account_id')
         );
         $row = $this->get($get_parameter);
+        $result_row = array();
         if (is_array($row))
         {
             foreach($row as $record_index=>&$record)
             {
-                if (isset($record['ip_restriction'])) $record['ip_restriction'] = explode(',',$record['ip_restriction']);
+                $result_record = array();
+                $result_record['name'] = $record['name'];
+                $result_record['alternate_name'] = $record['alternate_name'];
+                $result_record['ip_restriction'] = array();
+                if (!empty($record['ip_restriction'])) $result_record['ip_restriction'] = explode(',',$record['ip_restriction']);
+                $result_row[] = $result_record;
             }
         }
-        return $row;
+        return $result_row;
     }
 
     function generate_api_key($account_id)
@@ -42,7 +48,9 @@ class entity_api_key extends entity
             'table_fields'=>['account_id','name']
         ];
 //print_r($parameter);
-        $this->set($parameter);
+        if ($this->set($parameter) === false) return false;
+
+        return $api_key;
     }
 
     function validate_api_key(&$parameter = array())
@@ -69,23 +77,28 @@ class entity_api_key extends entity
         {
             if (hash('crc32b',2000-$record['account_id']) == $crc32b_dec)
             {
-$parameter['status'] = 'OK';
-return $record['account_id'];
+//$parameter['status'] = 'OK';
+//return $record['account_id'];
 
                 $ip_restriction = explode(',',$record['ip_restriction']);
-                if (in_array($parameter['remote_ip'], $ip_restriction))
+                foreach ($ip_restriction as $ip_index=>$ip_pattern)
                 {
-                    $parameter['status'] = 'OK';
-                    $parameter['message'] = NULL;
-                    return $record['account_id'];
+                    $ip_pattern = str_replace('.','\.',$ip_pattern);
+                    $ip_pattern = str_replace('*','(\d*)',$ip_pattern);
+                    $ip_pattern = '/'.$ip_pattern.'/';
+print_r([$ip_pattern,$parameter['remote_ip']]);
+                    if (preg_match($ip_pattern,$parameter['remote_ip']))
+                    {
+print_r('<br>pattern matched<br>');
+                        $parameter['status'] = 'OK';
+                        $parameter['message'] = NULL;
+                        return $record['account_id'];
+                    }
                 }
-                else
-                {
-                    // TODO: Error, requested ip not accepted
-                    $parameter['status'] = 'REQUEST_DENIED';
-                    $parameter['message'] = 'Invalid ip address ['.$parameter['remote_ip'].']';
-                    return false;
-                }
+                // TODO: Error, requested ip not accepted
+                $parameter['status'] = 'REQUEST_DENIED';
+                $parameter['message'] = 'Invalid ip address ['.$parameter['remote_ip'].']';
+                return false;
             }
             else
             {

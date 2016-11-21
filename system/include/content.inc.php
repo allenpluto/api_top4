@@ -103,7 +103,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
         $request_uri = trim(preg_replace('/^[\/]?'.FOLDER_SITE_BASE.'[\/]/','',$value),'/');
         $request_path = explode('/',$request_uri);
 
-        $type = ['css','image','js','json','xml'];
+        $type = ['ajax','css','image','js','json','xml'];
         $request_path_part = array_shift($request_path);
         if (in_array($request_path_part,$type))
         {
@@ -193,6 +193,38 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 $this->request['file_path'] .= $file_name;
                 $this->request['file_uri'] .= $file_name;
                 unset($file_name);
+                break;
+            case 'ajax':
+                if (empty($request_path))
+                {
+                    $this->request['method'] = 'check_connection';
+                }
+                else
+                {
+                    $this->request['method'] = array_shift($request_path);
+                }
+                if (!empty($request_path))
+                {
+                    $this->request['value'] = array_shift($request_path);
+                }
+                if (!empty($request_path))
+                {
+                    // TODO: More unrecognized value passed through URI
+                    $this->message->error = 'Decoding: URI parts unrecognized ['.implode('/',$request_path).']';
+                    $this->result = [
+                        'status'=>'INVALID_REQUEST',
+                        'message'=>'Illegal Request URI'
+                    ];
+                    return true;
+                }
+                $this->request['remote_ip'] = get_remote_ip();
+
+                $this->request['http_referer_host'] = '';
+                $option['format'] = 'json';
+                if (isset($_SERVER['HTTP_REFERER']))
+                {
+                    $this->request['http_referer_host'] = parse_url($_SERVER['HTTP_REFERER'], PHP_URL_HOST);
+                }
                 break;
             case 'json':
             case 'xml':
@@ -594,6 +626,109 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 
                 // If image quality is not specified, use the fast generate setting
                 if (!isset($this->content['target_file']['quality'])) $this->content['target_file']['quality'] = $this->preference->image['quality']['spd'];
+                break;
+            case 'ajax':
+                if (!isset($_COOKIE['session_id']))
+                {
+                    // TODO: Error Handling, session validation failed, session_id not set
+                    $this->message->notice = 'Session ID Not Set';
+                    $this->content['api_result'] = [
+                        'status'=>'REQUEST_DENIED',
+                        'message'=>'Session ID Not Set'
+                    ];
+                    return true;
+                }
+                $entity_api_session_obj = new entity_api_session();
+                $method_variable = ['status'=>'OK','message'=>'','api_session_id'=>$_COOKIE['session_id']];
+                $session = $entity_api_session_obj->validate_api_session_id($method_variable);
+                if ($session == false)
+                {
+                    // TODO: Error Handling, session validation failed, session_id invalid
+                    $this->message->notice = 'Session Validation Failed';
+                    $this->content['api_result'] = [
+                        'status'=>'REQUEST_DENIED',
+                        'message'=>'Session Validation Failed'
+                    ];
+                    return true;
+                }
+                $entity_api_obj = new entity_api($session['account_id']);
+                if (empty($entity_api_obj->row))
+                {
+                    // TODO: Error Handling, session validation failed, session_id is valid, but cannot read corresponding account
+                    $this->message->error = 'Session Validation Succeed, but cannot find related api account';
+                    $this->content['api_result'] = [
+                        'status'=>'REQUEST_DENIED',
+                        'message'=>'Cannot get account info, it might be suspended or temporarily inaccessible'
+                    ];
+                    return true;
+                }
+                $this->content['account'] = end($entity_api_obj->row);
+
+                switch($this->request['method'])
+                {
+                    case 'credential_add':
+                        $entity_api_key_obj = new entity_api_key();
+                        $add_key_result = $entity_api_key_obj->generate_api_key($this->content['account']['id']);
+                        if ($add_key_result === false)
+                        {
+                            $this->content['api_result'] = [
+                                'status'=>'REQUEST_DENIED',
+                                'message'=>'Fail to create new api key, please try again later'
+                            ];
+                            return true;
+                        }
+                        $this->content['api_result'] = [
+                            'status'=>'OK',
+                            'message'=>'',
+                            'api_key'=>$add_key_result
+                        ];
+                        $entity_api_key_obj = new entity_api_key();
+                        $this->content['api_result']['result'] = $entity_api_key_obj->get_api_key($this->content['account']['id']);
+                        break;
+                    case 'credential_delete':
+                        if (!isset($this->request['option']['api_key']))
+                        {
+                            // TODO: Error Handling, target api_key not set
+                            $this->message->notice = 'API KEY Not Provided, unable to delete';
+                            $this->content['api_result'] = [
+                                'status'=>'INVALID_REQUEST',
+                                'message'=>'API KEY Not Provided'
+                            ];
+                            return true;
+                        }
+
+                        $entity_api_key_obj = new entity_api_key();
+                        $get_parameter = array(
+                            'bind_param' => array(':name'=>$this->request['option']['api_key']),
+                            'where' => array('`name` = :name')
+                        );
+                        $row = $this->get($get_parameter);
+                        if (empty($row))
+                        {
+                            // TODO: Error Handling, target api_key does not exist
+                            $this->message->notice = 'API KEY Does Not Exist, unable to delete';
+                            $this->content['api_result'] = [
+                                'status'=>'REQUEST_DENIED',
+                                'message'=>'API KEY Does Not Exist'
+                            ];
+                        }
+                        foreach ($row as $record_index=>$record)
+                        {
+
+                        }
+
+                        break;
+                    case 'credential_update':
+                        break;
+                    case 'check_connection':
+                    default:
+                        $this->content['api_result'] = [
+                            'status'=>'OK',
+                            'message'=>'API Connection Test Success'
+                        ];
+
+                }
+
                 break;
             case 'json':
             case 'xml':
