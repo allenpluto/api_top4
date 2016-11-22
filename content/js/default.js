@@ -1231,6 +1231,13 @@ $.fn.overlay_popup = function(user_option){
                     }).appendTo(overlay_container);
                 }
 
+                if (option['title'])
+                {
+                    $('<div />', {
+                        'class': 'overlay_title'
+                    }).html(option['title']).prependTo(overlay_container);
+                }
+
                 if (option['close_button'])
                 {
                     $('<div />', {

@@ -5,13 +5,9 @@
 
 class entity_api_key extends entity
 {
-    function get_api_key($account_id)
+    function get($parameter = array())
     {
-        $get_parameter = array(
-            'bind_param' => array(':account_id'=>$account_id),
-            'where' => array('`account_id` = :account_id')
-        );
-        $row = $this->get($get_parameter);
+        $row = parent::get($parameter);
         $result_row = array();
         if (is_array($row))
         {
@@ -26,6 +22,15 @@ class entity_api_key extends entity
             }
         }
         return $result_row;
+    }
+
+    function get_api_key($account_id)
+    {
+        $get_parameter = array(
+            'bind_param' => array(':account_id'=>$account_id),
+            'where' => array('`account_id` = :account_id')
+        );
+        return $this->get($get_parameter);
     }
 
     function generate_api_key($account_id)
@@ -51,6 +56,11 @@ class entity_api_key extends entity
         if ($this->set($parameter) === false) return false;
 
         return $api_key;
+    }
+
+    function update_api_key($api_key)
+    {
+
     }
 
     function validate_api_key(&$parameter = array())

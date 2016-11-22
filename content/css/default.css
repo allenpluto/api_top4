@@ -414,6 +414,7 @@ img {display:block;max-width:100%;}
 .off_canvas_menu_item_credential > a:before {content: '\f084';}
 .off_canvas_menu_item_dashboard > a:before {content: '\f0ae';}
 .off_canvas_menu_item_profile > a:before {content: '\f007';}
+.off_canvas_menu_item_logout > a:before {content: '\f08b';}
 
 .off_canvas_trigger
 {
@@ -427,6 +428,88 @@ img {display:block;max-width:100%;}
     background-size:55% 55%;    
     
     cursor:pointer;
+}
+
+/*# Overlay Popup #*/
+.overlay_wrapper
+{
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    background: #444444;
+    background: rgba(0,0,0,0.3);
+
+    z-index: 2000;
+}
+
+.overlay_container
+{
+    display: block;
+    margin-top: 6rem;
+
+    background: #ffffff;
+
+    border-radius: 5px;
+}
+
+.overlay_title
+{
+    display: block;
+
+    background: #222222;
+    background: -webkit-linear-gradient(top,#222222,#000000);
+    background: -moz-linear-gradient(top,#222222,#000000);
+    background: -ms-linear-gradient(top,#222222,#000000);
+    background: -o-linear-gradient(top,#222222,#000000);
+    background: linear-gradient(top,#222222,#000000);
+
+    border-radius: 5px 5px 0 0;
+
+    color: #ffffff;
+    font-size: 1.6em;
+    padding: 0.5em 15px;
+}
+
+.overlay_content
+{
+    padding: 15px;
+
+    font-size: 1.4em;
+}
+
+.overlay_info
+{
+    padding: 0.2em 0.5em;
+
+    border-radius: 3px;
+
+    font-size: 0.8em;
+    font-style: italic;
+    font-weight: bold;
+}
+
+.overlay_info_success
+{
+    background: #aaffaa;
+    color: #226622;
+}
+
+.overlay_info_error
+{
+    background: #ffaaaa;
+    color: #662222;
+}
+
+.overlay_info a
+{
+    text-decoration: underline;
 }
 
 /*# Ajax Loading #*/

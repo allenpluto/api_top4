@@ -343,6 +343,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             $this->result['status'] = 301;
                             $this->result['header']['Location'] =  URI_SITE_BASE.$this->request['module'].'/'.end($method);
                         }
+                        $this->request['remote_ip'] = get_remote_ip();
                         break;
                     default:
                         $this->request['document'] = $request_path_part;
@@ -682,11 +683,10 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             'message'=>'',
                             'api_key'=>$add_key_result
                         ];
-                        $entity_api_key_obj = new entity_api_key();
-                        $this->content['api_result']['result'] = $entity_api_key_obj->get_api_key($this->content['account']['id']);
+                        $this->content['api_result']['result'] = $entity_api_key_obj->get();
                         break;
                     case 'credential_delete':
-                        if (!isset($this->request['option']['api_key']))
+                        if (!isset($this->request['option']['name']))
                         {
                             // TODO: Error Handling, target api_key not set
                             $this->message->notice = 'API KEY Not Provided, unable to delete';
@@ -699,26 +699,83 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 
                         $entity_api_key_obj = new entity_api_key();
                         $get_parameter = array(
-                            'bind_param' => array(':name'=>$this->request['option']['api_key']),
+                            'bind_param' => array(':name'=>$this->request['option']['name']),
                             'where' => array('`name` = :name')
                         );
-                        $row = $this->get($get_parameter);
-                        if (empty($row))
+                        $row = $entity_api_key_obj->get($get_parameter);
+                        if (empty($row) OR count($row) == 0)
                         {
                             // TODO: Error Handling, target api_key does not exist
                             $this->message->notice = 'API KEY Does Not Exist, unable to delete';
                             $this->content['api_result'] = [
-                                'status'=>'REQUEST_DENIED',
-                                'message'=>'API KEY Does Not Exist'
+                                'status'=>'ZERO_RESULTS',
+                                'message'=>'API KEY Does Not Exist Anymore'
+                            ];
+                            return true;
+                        }
+                        if ($entity_api_key_obj->delete())
+                        {
+                            $this->content['api_result'] = [
+                                'status'=>'OK',
+                                'message'=>'API KEY Deleted',
+                                'result'=>$row
                             ];
                         }
-                        foreach ($row as $record_index=>$record)
+                        else
                         {
-
+                            $this->content['api_result'] = [
+                                'status'=>'SERVER_ERROR',
+                                'message'=>'Database delete request failed, try again later'
+                            ];
                         }
 
                         break;
                     case 'credential_update':
+                        if (!isset($this->request['option']['name']))
+                        {
+                            // TODO: Error Handling, target api_key not set
+                            $this->message->notice = 'API KEY Not Provided, unable to delete';
+                            $this->content['api_result'] = [
+                                'status'=>'INVALID_REQUEST',
+                                'message'=>'API KEY Not Provided'
+                            ];
+                            return true;
+                        }
+
+                        $entity_api_key_obj = new entity_api_key();
+                        $get_parameter = array(
+                            'bind_param' => array(':name'=>$this->request['option']['name']),
+                            'where' => array('`name` = :name')
+                        );
+                        $row = $entity_api_key_obj->get($get_parameter);
+                        if (empty($row) OR count($row) == 0)
+                        {
+                            // TODO: Error Handling, target api_key does not exist
+                            $this->message->notice = 'API KEY Does Not Exist, unable to delete';
+                            $this->content['api_result'] = [
+                                'status'=>'ZERO_RESULTS',
+                                'message'=>'API KEY Does Not Exist Anymore'
+                            ];
+                            return true;
+                        }
+                        $update_value = array(
+                            'alternate_name'=>$this->request['option']['alternate_name'],
+                            'ip_restriction'=>$this->request['option']['ip_restriction']
+                        );
+                        if ($entity_api_key_obj->update($update_value))
+                        {
+                            $this->content['api_result'] = [
+                                'status'=>'OK',
+                                'message'=>'API KEY Details Updated',
+                            ];
+                        }
+                        else
+                        {
+                            $this->content['api_result'] = [
+                                'status'=>'SERVER_ERROR',
+                                'message'=>'Database update request failed, try again later'
+                            ];
+                        }
                         break;
                     case 'check_connection':
                     default:
@@ -904,6 +961,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 {
                                     $content['page_content'] .= '<h3>API Keys</h3>';
                                     $content['page_content'] .= '<div class="api_key_controller api_key_button_add_container"><a href="javascript:void(0)" class="api_key_button_add general_style_input_button general_style_input_button_orange">Create Credential</a></div>';
+                                    $content['page_content'] .= '<div class="api_key_hidden_container"><input name="remote_ip" type="hidden" value="'.$this->request['remote_ip'].'" ></div>';
                                     $content['page_content'] .= '<div class="api_key_wrapper">';
                                     $field_name = array(
                                         'class_extra'=>'api_key_name_container',

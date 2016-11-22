@@ -698,18 +698,23 @@ class entity extends base
             }
             else
             {
+                if (count($this->row) > 1)
+                {
+                    $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): '.get_class($this).' UPDATE entity with multiple row';
+                    return false;
+                }
                 $value = $this->row[0];
                 $this->row = null;
             }
         }
         if (!$this->_initialized)
         {
-            $GLOBALS['global_message']->error = __FILE__.'(line '.__LINE__.'): '.get_class($this).' cannot perform delete before it is initialized with get() or set() function';
+            $GLOBALS['global_message']->error = __FILE__.'(line '.__LINE__.'): '.get_class($this).' cannot perform upgrade before it is initialized with get() or set() function';
             return false;
         }
         if (empty($this->id_group))
         {
-            $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): '.get_class($this).' cannot perform delete with empty id_group';
+            $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): '.get_class($this).' cannot perform upgrade with empty id_group';
             return array();
         }
         $parameter = array_merge($this->parameter,$parameter);
