@@ -8,29 +8,55 @@ class entity_api_key extends entity
     function get($parameter = array())
     {
         $row = parent::get($parameter);
-        $result_row = array();
         if (is_array($row))
         {
             foreach($row as $record_index=>&$record)
             {
+                if (!empty($record['ip_restriction'])) $record['ip_restriction'] = explode(',',$record['ip_restriction']);
+            }
+            return $row;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    function set($parameter = array())
+    {
+        if (isset($parameter['row']))
+        {
+            foreach($parameter['row'] as $record_index=>&$record)
+            {
+                if (!empty($record['ip_restriction'])) $record['ip_restriction'] = implode(',',$record['ip_restriction']);
+            }
+        }
+        return parent::set($parameter);
+
+    }
+
+    function update($value = array(), $parameter = array())
+    {
+        if (!empty($value['ip_restriction'])) $value['ip_restriction'] = implode(',',$value['ip_restriction']);
+        return parent::update($value,$parameter);
+
+    }
+    function get_api_key($parameter = array())
+    {
+        $row = $this->get($parameter);
+        $result_row = array();
+        if (is_array($row))
+        {
+            foreach($row as $record_index=>$record)
+            {
                 $result_record = array();
                 $result_record['name'] = $record['name'];
                 $result_record['alternate_name'] = $record['alternate_name'];
-                $result_record['ip_restriction'] = array();
-                if (!empty($record['ip_restriction'])) $result_record['ip_restriction'] = explode(',',$record['ip_restriction']);
+                $result_record['ip_restriction'] = $record['ip_restriction'];
                 $result_row[] = $result_record;
             }
         }
         return $result_row;
-    }
-
-    function get_api_key($account_id)
-    {
-        $get_parameter = array(
-            'bind_param' => array(':account_id'=>$account_id),
-            'where' => array('`account_id` = :account_id')
-        );
-        return $this->get($get_parameter);
     }
 
     function generate_api_key($account_id)
@@ -48,19 +74,8 @@ class entity_api_key extends entity
             $api_key_part[] = $sub_hash;
         }
         $api_key = implode('-',$api_key_part);
-        $parameter = [
-            'row'=>[['account_id'=>$account_id,'name'=>$api_key]],
-            'table_fields'=>['account_id','name']
-        ];
-//print_r($parameter);
-        if ($this->set($parameter) === false) return false;
 
         return $api_key;
-    }
-
-    function update_api_key($api_key)
-    {
-
     }
 
     function validate_api_key(&$parameter = array())
@@ -90,11 +105,10 @@ class entity_api_key extends entity
 //$parameter['status'] = 'OK';
 //return $record['account_id'];
 
-                $ip_restriction = explode(',',$record['ip_restriction']);
-                foreach ($ip_restriction as $ip_index=>$ip_pattern)
+                foreach ($record['ip_restriction'] as $ip_index=>$ip_pattern)
                 {
                     $ip_pattern = str_replace('.','\.',$ip_pattern);
-                    $ip_pattern = str_replace('*','(\d*)',$ip_pattern);
+                    $ip_pattern = str_replace('*','([0-9a-f]*)',$ip_pattern);
                     $ip_pattern = '/'.$ip_pattern.'/';
 print_r([$ip_pattern,$parameter['remote_ip']]);
                     if (preg_match($ip_pattern,$parameter['remote_ip']))

@@ -59,10 +59,14 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
             //$this->result['status'] = 'Fail';
             return false;
         }
+//print_r('generate_rendering: <br>');
+//print_r(filesize($this->content['target_file']['path']));
+//print_r($this);
 if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml')
 {
     file_put_contents(PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_access_log.txt','RESULT: '.$this->result['content']."\n\n",FILE_APPEND);
 }
+//exit();
     }
 
     private function request_decoder($value = '')
@@ -669,8 +673,47 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 {
                     case 'credential_add':
                         $entity_api_key_obj = new entity_api_key();
-                        $add_key_result = $entity_api_key_obj->generate_api_key($this->content['account']['id']);
-                        if ($add_key_result === false)
+                        $new_api_key = $entity_api_key_obj->generate_api_key($this->content['account']['id']);
+
+                        $set_value = array(
+                            'account_id'=>$this->content['account']['id'],
+                            'name'=>$new_api_key,
+                            'alternate_name'=>$this->content['account']['name'].' API Key ',
+                            'ip_restriction'=>array()
+                        );
+
+                        $get_entity_api_key_obj = new entity_api_key();
+                        $get_parameter = array(
+                            'bind_param' => array(':account_id'=>$this->content['account']['id']),
+                            'where' => array('`account_id` = :account_id')
+                        );
+                        $row = $get_entity_api_key_obj->get($get_parameter);
+                        if (empty($row))
+                        {
+                            $set_value['alternate_name'] .= '1';
+                        }
+                        else
+                        {
+                            $set_value['alternate_name'] .= count($row);
+                        }
+
+                        $remote_ip = $this->request['option']['remote_ip'];
+                        if ($remote_ip == '::1')
+                        {
+                            $remote_ip = '127.0.0.1';
+                        }
+                        $reg_pattern = '/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/';
+                        if (preg_match($reg_pattern,$remote_ip))
+                        {
+                            $set_value['ip_restriction'][] = $remote_ip;
+                        }
+
+                        $set_parameter = [
+                            'row'=>[$set_value],
+                            'table_fields'=>array_keys($set_value)
+                        ];
+
+                        if ($entity_api_key_obj->set($set_parameter) === false)
                         {
                             $this->content['api_result'] = [
                                 'status'=>'REQUEST_DENIED',
@@ -681,9 +724,9 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $this->content['api_result'] = [
                             'status'=>'OK',
                             'message'=>'',
-                            'api_key'=>$add_key_result
+                            'api_key'=>$new_api_key
                         ];
-                        $this->content['api_result']['result'] = $entity_api_key_obj->get();
+                        $this->content['api_result']['result'] = $entity_api_key_obj->get_api_key();
                         break;
                     case 'credential_delete':
                         if (!isset($this->request['option']['name']))
@@ -702,7 +745,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             'bind_param' => array(':name'=>$this->request['option']['name']),
                             'where' => array('`name` = :name')
                         );
-                        $row = $entity_api_key_obj->get($get_parameter);
+                        $row = $entity_api_key_obj->get_api_key($get_parameter);
                         if (empty($row) OR count($row) == 0)
                         {
                             // TODO: Error Handling, target api_key does not exist
@@ -734,7 +777,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         if (!isset($this->request['option']['name']))
                         {
                             // TODO: Error Handling, target api_key not set
-                            $this->message->notice = 'API KEY Not Provided, unable to delete';
+                            $this->message->notice = 'API KEY Not Provided, unable to update';
                             $this->content['api_result'] = [
                                 'status'=>'INVALID_REQUEST',
                                 'message'=>'API KEY Not Provided'
@@ -751,10 +794,10 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         if (empty($row) OR count($row) == 0)
                         {
                             // TODO: Error Handling, target api_key does not exist
-                            $this->message->notice = 'API KEY Does Not Exist, unable to delete';
+                            $this->message->notice = 'API KEY Does Not Exist, unable to update';
                             $this->content['api_result'] = [
-                                'status'=>'ZERO_RESULTS',
-                                'message'=>'API KEY Does Not Exist Anymore'
+                                'status'=>'INVALID_REQUEST',
+                                'message'=>'API KEY Does Not Exist'
                             ];
                             return true;
                         }
@@ -762,6 +805,19 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             'alternate_name'=>$this->request['option']['alternate_name'],
                             'ip_restriction'=>$this->request['option']['ip_restriction']
                         );
+                        if (end($row)['alternate_name'] == $update_value['alternate_name'])
+                        {
+                            if (implode(',',end($row)['ip_restriction']) == implode(',',$update_value['ip_restriction']))
+                            {
+                                // TODO: Error Handling, all value same, nothing to update
+                                $this->message->notice = 'alternate_name and ip_restriction are the same as current record, nothing to update';
+                                $this->content['api_result'] = [
+                                    'status'=>'ZERO_RESULTS',
+                                    'message'=>'Nothing updated'
+                                ];
+                                return true;
+                            }
+                        }
                         if ($entity_api_key_obj->update($update_value))
                         {
                             $this->content['api_result'] = [
@@ -951,33 +1007,55 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         {
                             case 'credential':
                                 $entity_api_key_obj = new entity_api_key();
-                                $row = $entity_api_key_obj->get_api_key($this->content['account']['id']);
+                                $get_parameter = array(
+                                    'bind_param' => array(':account_id'=>$this->content['account']['id']),
+                                    'where' => array('`account_id` = :account_id')
+                                );
+                                $row = $entity_api_key_obj->get_api_key($get_parameter);
                                 $content['page_content'] = '';
-                                if (empty($row))
+                                $content['page_content'] .= '<h3>API Keys</h3>';
+
+                                $content['page_content'] .= '<div class="api_key_controller api_key_button_add_container"><a href="javascript:void(0)" class="api_key_button_add general_style_input_button general_style_input_button_orange">Create Credential</a></div>';
+                                $content['page_content'] .= '<div class="api_key_hidden_container"><input name="remote_ip" type="hidden" value="'.$this->request['remote_ip'].'" ></div>';
+                                $content['page_content'] .= '<div class="api_key_message_container ajax_info">'.(empty($row)?'No API Key Available, click "Create Credential" button to create one':'').'</div>';
+                                $content['page_content'] .= '<div class="api_key_wrapper'.(empty($row)?' api_key_wrapper_empty':'').'">';
+                                $field_name = array(
+                                    'class_extra'=>'api_key_name_container',
+                                    'name'=>'Key',
+                                    'alternate_name'=>'Name',
+                                    'ip_restriction'=>'IP Restriction'
+                                );
+                                $content['page_content'] .= render_html($field_name,'element_console_credential');
+                                foreach($row as $record_index=>$record)
                                 {
-                                    $content['page_content'] .= '<h3>No API Keys Available</h3>';
+                                    $content['page_content'] .= render_html($record,'element_console_credential');
                                 }
-                                else
-                                {
-                                    $content['page_content'] .= '<h3>API Keys</h3>';
-                                    $content['page_content'] .= '<div class="api_key_controller api_key_button_add_container"><a href="javascript:void(0)" class="api_key_button_add general_style_input_button general_style_input_button_orange">Create Credential</a></div>';
-                                    $content['page_content'] .= '<div class="api_key_hidden_container"><input name="remote_ip" type="hidden" value="'.$this->request['remote_ip'].'" ></div>';
-                                    $content['page_content'] .= '<div class="api_key_wrapper">';
-                                    $field_name = array(
-                                        'class_extra'=>'api_key_name_container',
-                                        'name'=>'Key',
-                                        'alternate_name'=>'Name',
-                                        'ip_restriction'=>'IP Restriction'
-                                    );
-                                    $content['page_content'] .= render_html($field_name,'element_console_credential');
-                                    foreach($row as $record_index=>$record)
-                                    {
-                                        $content['page_content'] .= render_html($record,'element_console_credential');
-                                    }
-                                    $content['page_content'] .= '</div>';
-                                }
+                                $content['page_content'] .= '</div>';
                                 break;
                             case 'profile':
+                                $content['page_content'] = '<h3>'.$this->content['account']['name'].'</h3>';
+                                $content['page_content'] .= '<div class="api_profile_hidden_container"><input name="alternate_name" type="hidden" value="'.$this->content['account']['alternate_name'].'" ></div>';
+                                $content['page_content'] .= '<div class="api_profile_message_container ajax_info"></div>';
+
+                                $content['page_content'] .= '<div class="api_profile_container">';
+                                $content['page_content'] .= '<div class="api_profile_row api_profile_row_alternate_name">';
+                                $content['page_content'] .= '<div class="api_profile_row_label">Nickname</div>';
+                                $content['page_content'] .= '
+										<div class="tool_tip_wrapper tool_tip_bottom_right_wrapper">
+											<div class="tool_tip_mask general_style_colour_orange font_icon">&#xf059;</div>
+											<div class="tool_tip_container">
+												<div class="tool_tip">
+													<div class="tool_close"></div>
+													<div class="tool_tip_title">Nickname</div>
+													<div class="tool_tip_content">User Alias, pick a familiar nickname, make login easier</div>
+												</div>
+											</div>
+										</div>';
+                                $content['page_content'] .= '<div class="api_profile_row_content">';
+                                $content['page_content'] .= '<div class="form_inline_editor"><div class="form_inline_editor_text">'.$this->content['account']['alternate_name'].'</div><input class="form_inline_editor_input" name="alternate_name" type="text" placeholder="Nickname, e.g. superhero86" value="'.$this->content['account']['alternate_name'].'"></div>';
+                                $content['page_content'] .= '</div>';
+
+                                $content['page_content'] .= '</div>';
                                 break;
                             case 'dashboard':
                             default:
@@ -1455,6 +1533,14 @@ echo '</body>
                     return false;
                 }
 
+                // Try up to 10 times to delete the source file
+                $unlink_retry_counter = 10;
+                while (!unlink($this->content['source_file']['path']) AND $unlink_retry_counter > 0)
+                {
+                    sleep(1);
+                    $unlink_retry_counter--;
+                }
+
                 $this->content['target_file']['last_modified'] = filemtime($this->content['target_file']['path']);
                 $this->content['target_file']['content_length'] = filesize($this->content['target_file']['path']);
 
@@ -1463,14 +1549,6 @@ echo '</body>
                     // TODO: Error Handling, Fail to generate target file
                     $this->message->error = 'Rendering: Fail to generate target file';
                     return false;
-                }
-
-                // Try up to 3 times to delete the source file
-                $unlink_retry_counter = 10;
-                while (!unlink($this->content['source_file']['path']) AND $unlink_retry_counter > 0)
-                {
-                    sleep(1);
-                    $unlink_retry_counter--;
                 }
 
                 $this->result['header']['Last-Modified'] = gmdate('D, d M Y H:i:s',$this->content['target_file']['last_modified']).' GMT';

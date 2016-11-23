@@ -851,7 +851,7 @@ $.fn.form_textarea_counter = function(user_option){
 };
 
 // Tool Tip
-$.fn.form_tool_tip = function(user_option){
+$.fn.tool_tip = function(user_option){
     var default_option = {
         'multi_display': 0,
         'auto_close_delay': 0
@@ -861,22 +861,22 @@ $.fn.form_tool_tip = function(user_option){
 
     return this.each(function(){
         var tool_tip_wrapper = $(this);
-        tool_tip_wrapper.find('.form_row_tip_mask').click(function(){
-            if (!tool_tip_wrapper.hasClass('form_row_tip_display'))
+        tool_tip_wrapper.find('.tool_tip_mask').click(function(){
+            if (!tool_tip_wrapper.hasClass('tool_tip_display'))
             {
                 if (option['multi_display'] != 1)
                 {
-                    $('.form_row_tip_wrapper').removeClass('form_row_tip_display');
+                    $('.tool_tip_wrapper').removeClass('tool_tip_display');
                 }
-                tool_tip_wrapper.find('.form_row_tip_container').fadeIn(300,function(){
-                    tool_tip_wrapper.addClass('form_row_tip_display');
+                tool_tip_wrapper.find('.tool_tip_container').fadeIn(300,function(){
+                    tool_tip_wrapper.addClass('tool_tip_display');
                     $(this).attr('style','');
                     if (option['auto_close_delay'] > 0)
                     {
                         var tool_tip_container = $(this);
                         setTimeout(function(){
                             tool_tip_container.fadeOut(300,function(){
-                                tool_tip_wrapper.removeClass('form_row_tip_display');
+                                tool_tip_wrapper.removeClass('tool_tip_display');
                                 $(this).attr('style','');
                             });
                         },option['auto_close_delay']);
@@ -886,16 +886,16 @@ $.fn.form_tool_tip = function(user_option){
             }
             else
             {
-                tool_tip_wrapper.find('.form_row_tip_container').fadeOut(300,function(){
-                    tool_tip_wrapper.removeClass('form_row_tip_display');
+                tool_tip_wrapper.find('.tool_tip_container').fadeOut(300,function(){
+                    tool_tip_wrapper.removeClass('tool_tip_display');
                     $(this).attr('style','');
                 });
             }
         });
 
-        tool_tip_wrapper.find('.form_row_close').click(function(){
-            tool_tip_wrapper.find('.form_row_tip_container').fadeOut(500,function(){
-                tool_tip_wrapper.removeClass('form_row_tip_display');
+        tool_tip_wrapper.find('.tool_close').click(function(){
+            tool_tip_wrapper.find('.tool_tip_container').fadeOut(500,function(){
+                tool_tip_wrapper.removeClass('tool_tip_display');
                 $(this).attr('style','');
             });
         });

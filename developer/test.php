@@ -412,7 +412,7 @@ print_r($global_message);*/
 ];
 print_r(json_encode($input_parameter));*/
 // insert_business
-$input_parameter = [
+/*$input_parameter = [
     [
         'name'=>'title',
         'type'=>'String',
@@ -596,7 +596,7 @@ $input_parameter = [
         'description'=>'Keywords phrases, separate by line breaker'
     ]
 ];
-print_r(json_encode($input_parameter));
+print_r(json_encode($input_parameter));*/
 
 // TEST IMAGE ENTITY
 /*$entity = new entity_image();

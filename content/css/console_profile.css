@@ -1,0 +1,4 @@
+.api_profile_container {font-size: 1.4em;}
+.api_profile_row > * {display: inline-block;vertical-align: top;}
+.api_profile_row_label {width: 8em;font-weight: bold;}
+.api_profile_row_tip {position: relative;}

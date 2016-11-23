@@ -11,11 +11,11 @@
     font-style:normal;
 }
 
+.font_icon {font-family:'FontAwesome';}
 .font_icon:before
 {
     display:inline-block;
-    
-    font-family:'FontAwesome';
+
     text-align:center;
 }
 
@@ -484,34 +484,6 @@ img {display:block;max-width:100%;}
     font-size: 1.4em;
 }
 
-.overlay_info
-{
-    padding: 0.2em 0.5em;
-
-    border-radius: 3px;
-
-    font-size: 0.8em;
-    font-style: italic;
-    font-weight: bold;
-}
-
-.overlay_info_success
-{
-    background: #aaffaa;
-    color: #226622;
-}
-
-.overlay_info_error
-{
-    background: #ffaaaa;
-    color: #662222;
-}
-
-.overlay_info a
-{
-    text-decoration: underline;
-}
-
 /*# Ajax Loading #*/
 .ajax_loader_container
 {
@@ -583,6 +555,104 @@ img {display:block;max-width:100%;}
     background-size: 2rem 2rem;
 
     content: ' ';
+}
+
+.ajax_info
+{
+    padding: 0.2em 0.5em;
+
+    border-radius: 3px;
+
+    font-style: italic;
+    font-weight: bold;
+}
+
+.ajax_info_success
+{
+    background: #aaffaa;
+    color: #226622;
+}
+
+.ajax_info_error
+{
+    background: #ffaaaa;
+    color: #662222;
+}
+
+.ajax_info a
+{
+    text-decoration: underline;
+}
+
+/*# Tool Tip #*/
+.tool_tip_wrapper
+{
+    display: inline-block;
+    position: relative;
+
+}
+
+.tool_tip_container
+{
+    display: block;
+    width: 20em;
+    position: absolute;
+    padding: 1em 1.5em;
+    bottom: 100%;
+    left: -0.85em;
+    margin-bottom: 0.5em;
+
+    background: #fcf9d3;
+
+    border-radius: 3px;
+
+    z-index: 100;
+}
+.tool_tip_bottom_right_wrapper .tool_tip_container
+{
+    top:100%;
+    bottom:auto;
+    margin-top: 1.5em;
+    margin-bottom: 0;
+}
+
+.tool_tip_container:before
+{
+    display: block;
+    width: 0;
+    height: 0;
+    position: absolute;
+    bottom: 100%;
+    left: 1em;
+
+    border-width: 1em 0.6em;
+    border-style: solid;
+    border-color: transparent;
+    border-top-color: #fcf9d3;
+    content: ' ';
+}
+
+.tool_tip_bottom_right_wrapper .tool_tip_container:before
+{
+    border-top-color: transparent;
+    border-bottom-color: #fcf9d3;
+}
+
+.tool_tip_mask
+{
+    width: 1.5em;
+    height: 1.5em;
+
+    text-align: center;
+    line-height: 1.5em;
+
+    cursor: pointer;
+}
+
+.tool_tip_title
+{
+    font-weight: bold;
+    padding-bottom: 0.5em;
 }
 
 /*# Expandable Elements #*/
