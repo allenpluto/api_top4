@@ -639,7 +639,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     $this->message->notice = 'Session ID Not Set';
                     $this->content['api_result'] = [
                         'status'=>'REQUEST_DENIED',
-                        'message'=>'Session ID Not Set'
+                        'message'=>'Session Timeout. Please login again to continue'
                     ];
                     return true;
                 }
@@ -823,6 +823,105 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             $this->content['api_result'] = [
                                 'status'=>'OK',
                                 'message'=>'API KEY Details Updated',
+                            ];
+                        }
+                        else
+                        {
+                            $this->content['api_result'] = [
+                                'status'=>'SERVER_ERROR',
+                                'message'=>'Database update request failed, try again later'
+                            ];
+                        }
+                        break;
+                    case 'profile_update_alternate_name':
+                        if (!isset($this->request['option']['alternate_name']))
+                        {
+                            // TODO: Error Handling, alternate_name not set
+                            $this->message->notice = 'Update api alternate_name with null value';
+                            $this->content['api_result'] = [
+                                'status'=>'INVALID_REQUEST',
+                                'message'=>'Nickname cannot be null'
+                            ];
+                            return true;
+                        }
+                        if ($this->request['option']['alternate_name'] == $this->content['account']['alternate_name'])
+                        {
+                            // TODO: Error Handling, update value same as current record
+                            $this->message->notice = 'Update api alternate_name failed, update value same as current record';
+                            $this->content['api_result'] = [
+                                'status'=>'OK',
+                                'message'=>$this->content['account']['alternate_name'].' is already set as account nickname'
+                            ];
+                            return true;
+                        }
+
+                        if (!empty($this->request['option']['alternate_name']))
+                        {
+                            // If alternate_name is not empty string, check if somebody already using it
+                            $get_entity_api_obj = new entity_api();
+                            $get_parameter = array(
+                                'bind_param' => array(':alternate_name'=>$this->request['option']['alternate_name']),
+                                'where' => array('`alternate_name` = :alternate_name','`id` <> '.$this->content['account']['id'])
+                            );
+                            $row = $get_entity_api_obj->get($get_parameter);
+                            if (count($row) > 0)
+                            {
+                                // TODO: Error Handling, username already exist
+                                $this->message->notice = 'Api alternate_name already exists';
+                                $this->content['api_result'] = [
+                                    'status'=>'REQUEST_DENIED',
+                                    'message'=>'Nickname '.$this->request['option']['alternate_name'].' is already exist, please choose a different name '.json_encode($row)
+                                ];
+                                return true;
+                            }
+                        }
+
+                        $update_entity_api_obj = new entity_api($this->content['account']['id']);
+                        $update_value = ['alternate_name'=>$this->request['option']['alternate_name']];
+                        if ($update_entity_api_obj->update($update_value))
+                        {
+                            $this->content['api_result'] = [
+                                'status'=>'OK',
+                                'message'=>'Nickname updated'
+                            ];
+                        }
+                        else
+                        {
+                            $this->content['api_result'] = [
+                                'status'=>'SERVER_ERROR',
+                                'message'=>'Database update request failed, try again later'
+                            ];
+                        }
+                        break;
+                    case 'profile_update_password':
+                        if (empty($this->request['option']['password']))
+                        {
+                            // TODO: Error Handling, password not set
+                            $this->message->notice = 'Update api password with empty value';
+                            $this->content['api_result'] = [
+                                'status'=>'INVALID_REQUEST',
+                                'message'=>'Password cannot be empty'
+                            ];
+                            return true;
+                        }
+                        if (hash('sha256',hash('crc32b',$this->request['option']['password'])) == $this->content['account']['password'])
+                        {
+                            // TODO: Error Handling, update value same as current record
+                            $this->message->notice = 'Update api password failed, update value same as current record';
+                            $this->content['api_result'] = [
+                                'status'=>'OK',
+                                'message'=>$this->content['account']['alternate_name'].' is already set as account nickname'
+                            ];
+                            return true;
+                        }
+
+                        $update_entity_api_obj = new entity_api($this->content['account']['id']);
+                        $update_value = ['password'=>$this->request['option']['password']];
+                        if ($update_entity_api_obj->update($update_value))
+                        {
+                            $this->content['api_result'] = [
+                                'status'=>'OK',
+                                'message'=>'Password updated'
                             ];
                         }
                         else
@@ -1038,10 +1137,11 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 $content['page_content'] .= '<div class="api_profile_message_container ajax_info"></div>';
 
                                 $content['page_content'] .= '<div class="api_profile_container">';
+
                                 $content['page_content'] .= '<div class="api_profile_row api_profile_row_alternate_name">';
-                                $content['page_content'] .= '<div class="api_profile_row_label">Nickname</div>';
+                                $content['page_content'] .= '<div class="api_profile_row_label">Nickname';
                                 $content['page_content'] .= '
-										<div class="tool_tip_wrapper tool_tip_bottom_right_wrapper">
+										<div class="api_profile_row_tool_tip tool_tip_wrapper tool_tip_bottom_right_wrapper">
 											<div class="tool_tip_mask general_style_colour_orange font_icon">&#xf059;</div>
 											<div class="tool_tip_container">
 												<div class="tool_tip">
@@ -1051,8 +1151,29 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 												</div>
 											</div>
 										</div>';
+                                $content['page_content'] .= '</div>';
                                 $content['page_content'] .= '<div class="api_profile_row_content">';
-                                $content['page_content'] .= '<div class="form_inline_editor"><div class="form_inline_editor_text">'.$this->content['account']['alternate_name'].'</div><input class="form_inline_editor_input" name="alternate_name" type="text" placeholder="Nickname, e.g. superhero86" value="'.$this->content['account']['alternate_name'].'"></div>';
+                                $content['page_content'] .= '<div class="inline_editor">'.($this->content['account']['alternate_name']?'<div class="inline_editor_text">'.$this->content['account']['alternate_name']:'<div class="inline_editor_text inline_editor_text_empty">[N/A]').'</div><input class="inline_editor_input" name="alternate_name" type="text" placeholder="Nickname, e.g. superhero86" value="'.$this->content['account']['alternate_name'].'"></div>';
+                                $content['page_content'] .= '</div>';
+                                $content['page_content'] .= '</div>';
+
+                                $content['page_content'] .= '<div class="api_profile_row api_profile_row_password">';
+                                $content['page_content'] .= '<div class="api_profile_row_label">Password';
+                                $content['page_content'] .= '
+										<div class="api_profile_row_tool_tip tool_tip_wrapper tool_tip_bottom_right_wrapper">
+											<div class="tool_tip_mask general_style_colour_orange font_icon">&#xf059;</div>
+											<div class="tool_tip_container">
+												<div class="tool_tip">
+													<div class="tool_close"></div>
+													<div class="tool_tip_title">Password</div>
+													<div class="tool_tip_content">Minimum 8 characters. At least 1 alphabet and 1 number.</div>
+												</div>
+											</div>
+										</div>';
+                                $content['page_content'] .= '</div>';
+                                $content['page_content'] .= '<div class="api_profile_row_content">';
+                                $content['page_content'] .= '<a href="javascript:void(0)" class="api_profile_button_change_password general_style_input_button general_style_input_button_gray">Change Password</a>';
+                                $content['page_content'] .= '</div>';
                                 $content['page_content'] .= '</div>';
 
                                 $content['page_content'] .= '</div>';
@@ -1105,45 +1226,6 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $this->content['field']['content'] = render_html($content,'element_console_body');
 
                         break;
-                    case 'logout':
-                        if (!isset($_COOKIE['session_id']))
-                        {
-                            // session_id is not set, redirect to login page
-                            $this->result['status'] = 301;
-                            $this->result['header']['Location'] =  URI_SITE_BASE.'login';
-                            return true;
-                        }
-                        // TODO: session_id is set, check if it is already logged in
-                        $entity_api_session_obj = new entity_api_session();
-                        $method_variable = ['status' => 'OK', 'message' => '', 'api_session_id' => $_COOKIE['session_id']];
-                        $session = $entity_api_session_obj->validate_api_session_id($method_variable);
-                        if ($session === false)
-                        {
-                            // If session_id is not valid, redirect to login page
-                            $this->result['status'] = 301;
-                            $this->result['header']['Location'] =  URI_SITE_BASE.'login';
-                            return true;
-                        }
-                        else
-                        {
-                            $entity_api_obj = new entity_api($session['account_id']);
-                            if (empty($entity_api_obj->row))
-                            {
-                                // If session_id is not valid, redirect to login page
-                                $this->result['status'] = 301;
-                                $this->result['header']['Location'] =  URI_SITE_BASE.'login';
-                                return true;
-                            }
-                            else
-                            {
-                                // If session is valid, delete the session then redirect to login
-                                $entity_api_session_obj->delete();
-                                setcookie('session_id', '', 1);
-                                $this->result['status'] = 301;
-                                $this->result['header']['Location'] =  URI_SITE_BASE.'login';
-                                return true;
-                            }
-                        }
                     case 'default':
                     default:
                         // If page is login, check for user login session
@@ -1182,6 +1264,47 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                         $this->result['status'] = 301;
                                         $this->result['header']['Location'] =  URI_SITE_BASE.'console/credential';
 
+                                        return true;
+                                    }
+                                }
+                            }
+                            if ($this->request['document'] == 'logout')
+                            {
+                                if (!isset($_COOKIE['session_id']))
+                                {
+                                    // session_id is not set, redirect to login page
+                                    $this->result['status'] = 301;
+                                    $this->result['header']['Location'] =  URI_SITE_BASE.'login';
+                                    return true;
+                                }
+                                // TODO: session_id is set, check if it is already logged in
+                                $entity_api_session_obj = new entity_api_session();
+                                $method_variable = ['status' => 'OK', 'message' => '', 'api_session_id' => $_COOKIE['session_id']];
+                                $session = $entity_api_session_obj->validate_api_session_id($method_variable);
+                                if ($session === false)
+                                {
+                                    // If session_id is not valid, redirect to login page
+                                    $this->result['status'] = 301;
+                                    $this->result['header']['Location'] =  URI_SITE_BASE.'login';
+                                    return true;
+                                }
+                                else
+                                {
+                                    $entity_api_obj = new entity_api($session['account_id']);
+                                    if (empty($entity_api_obj->row))
+                                    {
+                                        // If session_id is not valid, redirect to login page
+                                        $this->result['status'] = 301;
+                                        $this->result['header']['Location'] =  URI_SITE_BASE.'login';
+                                        return true;
+                                    }
+                                    else
+                                    {
+                                        // If session is valid, delete the session then redirect to login
+                                        $entity_api_session_obj->delete();
+                                        setcookie('session_id', '', 1);
+                                        $this->result['status'] = 301;
+                                        $this->result['header']['Location'] =  URI_SITE_BASE.'login';
                                         return true;
                                     }
                                 }

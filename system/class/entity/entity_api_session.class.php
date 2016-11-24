@@ -34,7 +34,6 @@ class entity_api_session extends entity
         }
         return end($this->row);
     }
-
     function validate_api_session_id(&$parameter = array())
     {
         $key_part = explode('-',$parameter['api_session_id']);
@@ -56,7 +55,17 @@ class entity_api_session extends entity
             $this->message->notice = 'Invalid session id '.$parameter['api_session_id'].'.';
             return false;
         }
-        else return end($row);
+
+        $session = end($row);
+        if(hash('crc32b',2000-$session['account_id']) != $crc32b_dec)
+        {
+            // TODO: Error Handling, invalid api key
+            $parameter['status'] = 'REQUEST_DENIED';
+            $parameter['message'] = 'Please login again';
+            $this->message->notice = 'Session id is not genius '.$parameter['api_session_id'].'.';
+            return false;
+        }
+        return $session;
     }
 }
 

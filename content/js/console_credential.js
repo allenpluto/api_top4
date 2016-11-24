@@ -79,6 +79,7 @@ var update_credential_data = {
         var overlay_wrapper = $('#api_key_update_form_overlay_wrapper');
         var ajax_info = overlay_wrapper.find('.overlay_info');
         var update_form = overlay_wrapper.find('.update_form');
+
         var api_key_container = overlay_trigger.closest('.api_key_container');
         update_form.append('<div class="update_row update_row_key"><div class="update_row_label">API Key</div><div class="update_row_value">'+api_key_container.find('.api_key_name').html()+'</div></div>');
         update_form.append('<div class="update_row update_row_name"><div class="update_row_label">Name</div><div class="update_row_value"><input name="alternate_name" type="text" value="'+api_key_container.find('.api_key_alternate_name').html()+'" ></div></div>');

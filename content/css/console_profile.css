@@ -1,4 +1,127 @@
-.api_profile_container {font-size: 1.4em;}
-.api_profile_row > * {display: inline-block;vertical-align: top;}
-.api_profile_row_label {width: 8em;font-weight: bold;}
-.api_profile_row_tip {position: relative;}
+.api_profile_row
+{
+    padding-bottom: 1em;
+}
+.api_profile_row > *
+{
+    display: inline-block;
+    vertical-align: top;
+}
+.api_profile_row_label
+{
+    width: 8em;
+    padding: 0.5em 0;
+
+    font-size: 1.6em;
+    font-weight: bold;
+}
+.api_profile_row_tool_tip .tool_tip_container
+{
+    font-size: 12px;
+}
+.api_profile_row_content
+{
+    width: 30em;
+    max-width: 100%;
+}
+
+.api_profile_row_content .inline_editor
+{
+    font-size: 1.4em;
+}
+.api_profile_row_content .inline_editor_text
+{
+    padding:0;
+
+    border-width: 2px;
+
+    line-height: 2.4;
+}
+
+.api_profile_row_content .inline_editor_input
+{
+    width: 100%;
+    padding: 0.5em 1em;
+
+    border:2px solid #cccccc;
+    border-radius: 3px;
+
+    font-size: 1em;
+    line-height: 1.4;
+}
+
+.api_profile_button_change_password
+{
+    display: inline-block;
+    width: 100%;
+
+    font-size: 1.4em;
+}
+
+#change_password_form_overlay_wrapper > .overlay_container
+{
+    max-width: 500px;
+}
+
+.change_password_message_container
+{
+    padding: 1em 0;
+}
+
+.change_password_form_container
+{
+    padding: 1em 0 3em 0;
+}
+
+.change_password_row
+{
+    padding-bottom: 1em;
+}
+
+.change_password_row > * {display: inline-block;}
+.change_password_row_label
+{
+    width: 10em;
+
+    border: 1px solid transparent;
+
+    font-weight: bold;
+    line-height: 2.4;
+}
+.change_password_row_value
+{
+    width: 20em;
+    max-width: 100%;
+}
+.change_password_row_value > input
+{
+    width: 100%;
+    padding: 0.5em 1em;
+
+    border:2px solid #cccccc;
+    border-radius: 3px;
+
+    font-size: 1em;
+    line-height: 1.4;
+}
+
+
+.change_password_button_container
+{
+    text-align: center;
+}
+
+#change_password_form_overlay_wrapper .general_style_input_button
+{
+    display: inline-block;
+    width: 100%;
+    margin: 0 0 0.5em 0;
+}
+
+@media only screen and (min-width:480px) {
+    #change_password_form_overlay_wrapper .general_style_input_button
+    {
+        width: 10em;
+        margin: 0 0.5em 0.5em 0.5em;
+    }
+}

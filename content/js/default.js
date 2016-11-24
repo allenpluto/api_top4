@@ -236,30 +236,74 @@ $.fn.expandable_content = function(user_option){
     });
 };
 
-$.fn.form_inline_editor = function(user_option){
+// Inline Editor
+$.fn.inline_editor = function(user_option){
     var default_option = {
-        'default_text': $(this).find('.form_inline_editor_input').attr('placeholder')
-    }; // Need to fix here
+        'default_text': 'placeholder'
+    };
+
     // Extend our default option with user provided.
     var option = $.extend(default_option, user_option);
 
+    if (typeof option['callback_function'] !== 'function')
+    {
+        option['callback_function'] = function(inline_editor_input, original_value) {
+            // default callback_function, unset original_value
+            inline_editor_input.parent().removeData('original_value');
+        };
+    }
+
     return this.each(function() {
         var inline_editor = $(this);
-        inline_editor.find('.form_inline_editor_text').click(function(){
-            $(this).parent().addClass('form_inline_editor_edit_mode');
-            $(this).parent().find('.form_inline_editor_input').focus().select();
+        inline_editor.find('.inline_editor_text').click(function(){
+            $(this).parent().addClass('inline_editor_edit_mode');
+            $(this).parent().find('.inline_editor_input').focus().select();
         });
 
-        inline_editor.find('.form_inline_editor_input').blur(function(){
-            $(this).parent().removeClass('form_inline_editor_edit_mode');
+        inline_editor.find('.inline_editor_input').keydown(function(event){
+            switch (event.which)
+            {
+                case 13:
+                    // Key Enter Pressed
+                    $(this).blur();
+            }
+        });
+
+        inline_editor.find('.inline_editor_input').focus(function(){
+            $(this).parent().data('original_value',$(this).val());
+        });
+
+        inline_editor.find('.inline_editor_input').blur(function(){
+            $(this).parent().removeClass('inline_editor_edit_mode');
+
+            if ($(this).parent().data('original_value') == $(this).val())
+            {
+                // Nothing changed
+                $(this).parent().removeData('original_value');
+                return true;
+            }
+
             if ($(this).val())
             {
-                $(this).parent().find('.form_inline_editor_text').html($(this).val());
+                $(this).parent().find('.inline_editor_text').removeClass('inline_editor_text_empty').html($(this).val());
             }
             else
             {
-                $(this).parent().find('.form_inline_editor_text').html(option['default_text']);
+                var default_text = '';
+                switch (option['default_text'])
+                {
+                    case 'title':
+                    case 'placeholder':
+                        default_text = $(this).attr(option['default_text']);
+                        break;
+                    default:
+                        default_text = option['default_text'];
+                }
+                if (!default_text) default_text = 'N/A';
+                $(this).parent().find('.inline_editor_text').addClass('inline_editor_text_empty').html('['+default_text+']');
             }
+
+            option['callback_function']($(this),$(this).parent().data('original_value'));
         });
     });
 };
@@ -850,58 +894,6 @@ $.fn.form_textarea_counter = function(user_option){
     });
 };
 
-// Tool Tip
-$.fn.tool_tip = function(user_option){
-    var default_option = {
-        'multi_display': 0,
-        'auto_close_delay': 0
-    };
-    // Extend our default option with user provided.
-    var option = $.extend(default_option, user_option);
-
-    return this.each(function(){
-        var tool_tip_wrapper = $(this);
-        tool_tip_wrapper.find('.tool_tip_mask').click(function(){
-            if (!tool_tip_wrapper.hasClass('tool_tip_display'))
-            {
-                if (option['multi_display'] != 1)
-                {
-                    $('.tool_tip_wrapper').removeClass('tool_tip_display');
-                }
-                tool_tip_wrapper.find('.tool_tip_container').fadeIn(300,function(){
-                    tool_tip_wrapper.addClass('tool_tip_display');
-                    $(this).attr('style','');
-                    if (option['auto_close_delay'] > 0)
-                    {
-                        var tool_tip_container = $(this);
-                        setTimeout(function(){
-                            tool_tip_container.fadeOut(300,function(){
-                                tool_tip_wrapper.removeClass('tool_tip_display');
-                                $(this).attr('style','');
-                            });
-                        },option['auto_close_delay']);
-
-                    }
-                });
-            }
-            else
-            {
-                tool_tip_wrapper.find('.tool_tip_container').fadeOut(300,function(){
-                    tool_tip_wrapper.removeClass('tool_tip_display');
-                    $(this).attr('style','');
-                });
-            }
-        });
-
-        tool_tip_wrapper.find('.tool_close').click(function(){
-            tool_tip_wrapper.find('.tool_tip_container').fadeOut(500,function(){
-                tool_tip_wrapper.removeClass('tool_tip_display');
-                $(this).attr('style','');
-            });
-        });
-    });
-};
-
 $.fn.gallery_popup = function(user_option){
     var default_option = {
         'parent':$('body'),
@@ -1155,6 +1147,7 @@ $.fn.gallery_popup = function(user_option){
     });
 };
 
+// Overlay Popup
 $.fn.overlay_popup = function(user_option){
     var default_option = {
         'parent':$('body'),
@@ -1255,6 +1248,70 @@ $.fn.overlay_popup = function(user_option){
                 overlay_wrapper.find('.overlay_close').click(function(){
                     overlay_wrapper.fadeOut(500,function(){$(this).remove();});
                 });
+            });
+        });
+    });
+};
+
+// Tool Tip
+$.fn.tool_tip = function(user_option){
+    var default_option = {
+        'multi_display': 0,
+        'auto_close_delay': 0
+    };
+    // Extend our default option with user provided.
+    var option = $.extend(default_option, user_option);
+
+    return this.each(function(){
+        var tool_tip_wrapper = $(this);
+        tool_tip_wrapper.find('.tool_tip_mask').click(function(){
+            if (tool_tip_wrapper.data('tool_tip_timeout'))
+            {
+                clearTimeout(tool_tip_wrapper.data('tool_tip_timeout'));
+                tool_tip_wrapper.removeData('tool_tip_timeout')
+            }
+            if (!tool_tip_wrapper.hasClass('tool_tip_display'))
+            {
+                if (option['multi_display'] != 1)
+                {
+                    $('.tool_tip_wrapper.tool_tip_display').each(function(index,element){
+                        if ($(this).data('tool_tip_timeout'))
+                        {
+                            clearTimeout($(this).data('tool_tip_timeout'));
+                            $(this).removeData('tool_tip_timeout')
+                        }
+                    });
+                    $('.tool_tip_wrapper').removeClass('tool_tip_display');
+                }
+                tool_tip_wrapper.find('.tool_tip_container').fadeIn(300,function(){
+                    tool_tip_wrapper.addClass('tool_tip_display');
+                    $(this).attr('style','');
+                    if (option['auto_close_delay'] > 0)
+                    {
+                        var tool_tip_container = $(this);
+                        var tool_tip_timeout = setTimeout(function(){
+                            tool_tip_container.fadeOut(300,function(){
+                                tool_tip_wrapper.removeClass('tool_tip_display');
+                                $(this).attr('style','');
+                            });
+                        },option['auto_close_delay']);
+                        tool_tip_wrapper.data('tool_tip_timeout',tool_tip_timeout);
+                    }
+                });
+            }
+            else
+            {
+                tool_tip_wrapper.find('.tool_tip_container').fadeOut(300,function(){
+                    tool_tip_wrapper.removeClass('tool_tip_display');
+                    $(this).attr('style','');
+                });
+            }
+        });
+
+        tool_tip_wrapper.find('.tool_close').click(function(){
+            tool_tip_wrapper.find('.tool_tip_container').fadeOut(500,function(){
+                tool_tip_wrapper.removeClass('tool_tip_display');
+                $(this).attr('style','');
             });
         });
     });

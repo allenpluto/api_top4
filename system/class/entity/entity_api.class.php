@@ -26,7 +26,7 @@ class entity_api extends entity
         {
             $value['password'] = hash('sha256',hash('crc32b',$value['password']));
         }
-        parent::update($value, $parameter);
+        return parent::update($value, $parameter);
     }
 
     function authenticate($parameter = array())
