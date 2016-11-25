@@ -48,7 +48,7 @@ class entity_api extends entity
             $this->message->notice = 'invalid login';
             return false;
         }
-        if (count($this->id_group))
+        if (count($this->id_group) > 1)
         {
             // TODO: Error, Multiple accounts match, should never happen
             $this->message->warning = 'multiple login matched';

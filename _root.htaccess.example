@@ -1,12 +1,12 @@
-ErrorDocument 404 /allen_frame_trial/404.html
-ErrorDocument 403 /allen_frame_trial/404.html
+#ErrorDocument 404 /allen_frame_trial/404.php
+#ErrorDocument 403 /allen_frame_trial/404.php
 
 Options +FollowSymlinks
 Options -Indexes
 DirectorySlash Off
 
 RewriteEngine On
-RewriteBase /allen_frame_trial/
+RewriteBase /
 
 # Force remove trailing slash
 RewriteRule ^(.*)/$ $1?slash_remove=$1 [L,R=301]
@@ -19,15 +19,28 @@ RewriteRule (.*)(?:/screen/[^/]*)(.*) ./$1$2?screen=%1 [QSA,L,R=301]
 RewriteCond %{REQUEST_URI} /sort/([^/]*)
 RewriteRule (.*)(?:/sort/[^/]*)(.*) ./$1$2?sort=%1 [QSA,L,R=301]
 
-#RewriteCond %{REQUEST_URI} (^/allen_frame_trial/$)
+#RewriteCond %{REQUEST_URI} (^/$)
 #RewriteRule (.*) asset/html/index.html?request_uri=%1&target_uri=$1 [QSA,NC,L]
 
 # Redirect all request to cache folder
 RewriteCond %{QUERY_STRING} !request_uri=
-RewriteCond %{REQUEST_URI} !^/allen_frame_trial/(asset|content|404)
+RewriteCond %{REQUEST_URI} !(/(asset|content|developer|login)/|404\.php)
 RewriteCond %{REQUEST_URI} (.*)
 RewriteRule (.*) asset/$1?request_uri=%1&rewrite_base=$1 [QSA,NC,L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 #RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule (.*) load.php?final_request=$1 [QSA,NC,L]
+
+#RewriteCond %{REQUEST_FILENAME} !-f
+#RewriteCond %{REQUEST_FILENAME} !-d
+#RewriteRule ^(.*)$ developer/test.php?request_uri=$1 [L,QSA]
+
+#RewriteCond %{REQUEST_FILENAME} !-f
+#RewriteCond %{REQUEST_FILENAME} !-d
+#RewriteRule ^([0-9a-z_-]+)/([0-9a-z_-]+)/(.+)$ index.php?namespace=$1&instance=$2&extra_parameter=$3 [L,QSA]
+#RewriteRule ^default/([0-9a-z_-]*)$ $1 [R=301,L,QSA]
+#RewriteRule ^([0-9a-z_-]+)/([0-9a-z_-]*)$ index.php?namespace=$1&instance=$2 [L,QSA]
+#RewriteRule ^home$ . [R=301,L,QSA]
+#RewriteRule ^([0-9a-z_-]+)$ index.php?namespace=default&instance=$1 [L,QSA]
+#RewriteRule ^()$ index.php?namespace=default&instance=home [L,QSA]

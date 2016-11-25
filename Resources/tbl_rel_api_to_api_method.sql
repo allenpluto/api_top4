@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 4.0.10.14
+-- version 4.0.4
 -- http://www.phpmyadmin.net
 --
--- Host: localhost:3306
--- Generation Time: Oct 25, 2016 at 05:18 PM
--- Server version: 5.6.33
--- PHP Version: 5.6.20
+-- Host: localhost
+-- Generation Time: Nov 25, 2016 at 05:19 AM
+-- Server version: 5.6.12-log
+-- PHP Version: 5.4.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
@@ -17,7 +17,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8 */;
 
 --
--- Database: `top4_domain1`
+-- Database: `allen_frame_trial`
 --
 
 -- --------------------------------------------------------
@@ -31,8 +31,8 @@ CREATE TABLE IF NOT EXISTS `tbl_rel_api_to_api_method` (
   `api_id` int(11) NOT NULL,
   `api_method_id` int(11) NOT NULL,
   `enter_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `relationship` varchar(100) NOT NULL DEFAULT 'authorized manager',
+  `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `relationship` varchar(100) NOT NULL DEFAULT 'allow',
   PRIMARY KEY (`api_id`,`api_method_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -41,7 +41,13 @@ CREATE TABLE IF NOT EXISTS `tbl_rel_api_to_api_method` (
 --
 
 INSERT INTO `tbl_rel_api_to_api_method` (`api_id`, `api_method_id`, `enter_time`, `update_time`, `relationship`) VALUES
-(10002, 402, '2016-10-21 03:57:30', '2016-10-21 03:57:30', 'allow');
+(10001, 401, '2016-10-24 00:00:05', '2016-10-24 00:00:05', 'allow'),
+(10001, 420, '2016-10-24 00:00:05', '2016-10-24 00:00:05', 'allow'),
+(10002, 420, '2016-10-21 03:57:30', '2016-10-21 03:57:30', 'allow'),
+(10003, 100, '2016-11-15 06:12:26', '2016-11-15 06:12:26', 'allow'),
+(10003, 101, '2016-11-15 06:12:16', '2016-11-15 06:12:16', 'allow'),
+(10003, 410, '2016-11-15 06:21:30', '2016-11-15 06:21:30', 'allow'),
+(10003, 411, '2016-11-15 06:21:30', '2016-11-15 06:21:30', 'allow');
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

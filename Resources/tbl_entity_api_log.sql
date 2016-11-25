@@ -29,7 +29,7 @@ SET time_zone = "+00:00";
 DROP TABLE IF EXISTS `tbl_entity_api_log`;
 CREATE TABLE IF NOT EXISTS `tbl_entity_api_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `friendly_url` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
+  `friendly_url` varchar(200) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `name` varchar(200) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `alternate_name` varchar(200) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `description` varchar(500) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',

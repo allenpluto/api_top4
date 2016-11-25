@@ -2,7 +2,7 @@ Options +FollowSymlinks
 DirectorySlash Off
 
 RewriteEngine On
-RewriteBase /allen_frame_trial/
+RewriteBase /
 
 # If the file is directly accessed, redirect to site root
 RewriteCond %{QUERY_STRING} !request_uri=
@@ -17,7 +17,11 @@ RewriteRule (.*) .%1 [L,R=301]
 # If static file does not exist, redirect to root handler
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_URI} /asset/(image|css|js)
-RewriteRule (image|css|js)/(.*) ./load.php?data_type=%1 [QSA,L]
+RewriteRule (image|css|js)/(.*) ./load.php [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} /asset/(json|xml)
+RewriteRule (json|xml)/(.*) ./load.php [QSA,L]
 
 # If it is not a static resource, then check if it is a html page
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -39,8 +43,7 @@ RewriteCond %{QUERY_STRING} screen=([\d]+)
 RewriteRule (.*) asset/html/$1/page_%1.html?asset_redirect=$1/page_%1.html [QSA,L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_URI} !^(.*)/asset/(image|css|js)
-RewriteCond %{REQUEST_URI} (.*)
+RewriteCond %{REQUEST_URI} !/asset/(image|css|js)
 RewriteCond %{QUERY_STRING} !sort=
 RewriteCond %{QUERY_STRING} !screen=
 RewriteRule (.*) asset/html/$1/index.html?asset_redirect=html/$1/index.html [QSA,L]

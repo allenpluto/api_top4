@@ -437,7 +437,9 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     'path' => PATH_ASSET.$file_relative_path.$this->request['document'].'.src.'.$this->request['file_type'],
                     'source' => 'local_file'
                 ];
+                $source_file_relative_path =  $file_relative_path .  $this->request['document'].'.src.'.$this->request['file_type'];
                 $file_relative_path .= $this->request['document'].'.'.$this->request['file_type'];
+
 
                 if (!file_exists(dirname($this->content['source_file']['path']))) mkdir(dirname($this->content['source_file']['path']), 0755, true);
 
@@ -496,14 +498,22 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 }
                 else
                 {
-                    if (file_exists(PATH_ASSET.$file_relative_path))
+                    if (file_exists(PATH_ASSET.$source_file_relative_path))
+                    {
+                        $this->content['source_file']['original_file'] = PATH_ASSET.$source_file_relative_path;
+                        $this->content['source_file']['content_length'] = filesize($this->content['source_file']['original_file']);
+                        $this->content['source_file']['last_modified'] = filemtime($this->content['source_file']['original_file']);
+                    }
+                    elseif (file_exists(PATH_ASSET.$file_relative_path))
                     {
                         $this->content['source_file']['original_file'] = PATH_ASSET.$file_relative_path;
+                        $this->content['source_file']['content_length'] = filesize($this->content['source_file']['original_file']);
                         $this->content['source_file']['last_modified'] = filemtime($this->content['source_file']['original_file']);
                     }
                     elseif (file_exists(PATH_CONTENT.$file_relative_path))
                     {
                         $this->content['source_file']['original_file'] = PATH_CONTENT.$file_relative_path;
+                        $this->content['source_file']['content_length'] = filesize($this->content['source_file']['original_file']);
                         $this->content['source_file']['last_modified'] = filemtime($this->content['source_file']['original_file']);
                     }
                     else
@@ -696,7 +706,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         }
                         else
                         {
-                            $set_value['alternate_name'] .= count($row);
+                            $set_value['alternate_name'] .= count($row)+1;
                         }
 
                         $remote_ip = $this->request['option']['remote_ip'];
