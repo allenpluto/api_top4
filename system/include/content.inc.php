@@ -340,6 +340,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         if (in_array($request_path_part,$method))
                         {
                             $this->request['method'] = $request_path_part;
+                            $this->request['file_path'] .= $this->request['module'].DIRECTORY_SEPARATOR.$this->request['method'].DIRECTORY_SEPARATOR.'index.html';
+                            $this->request['file_uri'] .= $this->request['module'].'/'.$this->request['method'];
                         }
                         else
                         {
@@ -923,6 +925,16 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 'status'=>'OK',
                                 'message'=>'Password updated'
                             ];
+
+                            // On successful update password, force all session expire
+                            $entity_api_session_obj = new entity_api_session();
+                            $get_parameter = array(
+                                'bind_param' => array(':name'=>$_COOKIE['session_id']),
+                                'where' => array('`name` <> :name','`account_id` = '.$this->content['account']['id'])
+                            );
+                            $entity_api_session_obj->get($get_parameter);
+                            $entity_api_session_obj->delete();
+
                         }
                         else
                         {
@@ -1245,7 +1257,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 if ($session === false)
                                 {
                                     // If session_id is not valid, unset it and continue login process
-                                    setcookie('session_id', '', 1);
+                                    $this->result['cookie'] = ['session_id'=>['value'=>'','time'=>1]];
                                 }
                                 else
                                 {
@@ -1255,7 +1267,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                         // TODO: Error Handling, session validation failed, session_id is valid, but cannot read corresponding account
                                         $this->message->error = 'Session Validation Succeed, but cannot find related api account';
                                         // If session_id is not valid, unset it and continue login process
-                                        setcookie('session_id', '', 1);
+                                        $this->result['cookie'] = ['session_id'=>['value'=>'','time'=>1]];
                                     }
                                     else
                                     {
@@ -1264,47 +1276,6 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                         $this->result['status'] = 301;
                                         $this->result['header']['Location'] =  URI_SITE_BASE.'console/credential';
 
-                                        return true;
-                                    }
-                                }
-                            }
-                            if ($this->request['document'] == 'logout')
-                            {
-                                if (!isset($_COOKIE['session_id']))
-                                {
-                                    // session_id is not set, redirect to login page
-                                    $this->result['status'] = 301;
-                                    $this->result['header']['Location'] =  URI_SITE_BASE.'login';
-                                    return true;
-                                }
-                                // TODO: session_id is set, check if it is already logged in
-                                $entity_api_session_obj = new entity_api_session();
-                                $method_variable = ['status' => 'OK', 'message' => '', 'api_session_id' => $_COOKIE['session_id']];
-                                $session = $entity_api_session_obj->validate_api_session_id($method_variable);
-                                if ($session === false)
-                                {
-                                    // If session_id is not valid, redirect to login page
-                                    $this->result['status'] = 301;
-                                    $this->result['header']['Location'] =  URI_SITE_BASE.'login';
-                                    return true;
-                                }
-                                else
-                                {
-                                    $entity_api_obj = new entity_api($session['account_id']);
-                                    if (empty($entity_api_obj->row))
-                                    {
-                                        // If session_id is not valid, redirect to login page
-                                        $this->result['status'] = 301;
-                                        $this->result['header']['Location'] =  URI_SITE_BASE.'login';
-                                        return true;
-                                    }
-                                    else
-                                    {
-                                        // If session is valid, delete the session then redirect to login
-                                        $entity_api_session_obj->delete();
-                                        setcookie('session_id', '', 1);
-                                        $this->result['status'] = 301;
-                                        $this->result['header']['Location'] =  URI_SITE_BASE.'login';
                                         return true;
                                     }
                                 }
@@ -1342,7 +1313,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                                     'status'=>'REQUEST_DENIED',
                                                     'message'=>'Login Failed, please try again'
                                                 ];
-                                                setcookie('session_id', '', 1);
+                                                $this->result['cookie'] = ['session_id'=>['value'=>'','time'=>1]];
                                             }
                                             else
                                             {
@@ -1355,7 +1326,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                                         'status'=>'REQUEST_DENIED',
                                                         'message'=>'Login Failed, please try again'
                                                     ];
-                                                    setcookie('session_id', '', 1);
+                                                    $this->result['cookie'] = ['session_id'=>['value'=>'','time'=>1]];
                                                 }
                                                 else
                                                 {
@@ -1381,7 +1352,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                                 'status'=>'REQUEST_DENIED',
                                                 'message'=>'Login Failed, invalid username or password'
                                             ];
-                                            setcookie('session_id', '', 1);
+                                            $this->result['cookie'] = ['session_id'=>['value'=>'','time'=>1]];
                                         }
                                         else
                                         {
@@ -1408,6 +1379,37 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 }
                             }
                         }
+                        if ($this->request['document'] == 'logout')
+                        {
+                            // success of fail, logout page always redirect to login page after process complete
+                            $this->result['status'] = 301;
+                            $this->result['header']['Location'] =  URI_SITE_BASE.'login';
+
+                            if (!isset($_COOKIE['session_id']))
+                            {
+                                // session_id is not set, redirect to login page
+                                return true;
+                            }
+                            $this->result['cookie'] = ['session_id'=>['value'=>'','time'=>1]];
+
+                            $entity_api_session_obj = new entity_api_session();
+                            $get_parameter = array(
+                                'bind_param' => array(':name'=>$_COOKIE['session_id']),
+                                'where' => array('`name` = :name')
+                            );
+                            $entity_api_session_obj->get($get_parameter);
+                            /*$method_variable = ['status' => 'OK', 'message' => '', 'api_session_id' => $_COOKIE['session_id']];
+                            $session = $entity_api_session_obj->validate_api_session_id($method_variable);
+                            if ($session === false)
+                            {
+                                // If session_id is not valid, redirect to login page
+                                return true;
+                            }*/
+
+                            // If session is valid, delete the session then redirect to login
+                            $entity_api_session_obj->delete();
+                            return true;
+                        }
 
                         if (isset($this->request['option']['field']))
                         {
@@ -1424,7 +1426,9 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             $page_obj = new view_web_page($this->request['document']);
                             if (empty($page_obj->id_group))
                             {
-                                $this->result['status'] = 404;
+                                //$this->result['status'] = 404;
+                                $this->result['status'] = 301;
+                                $this->result['header']['Location'] =  URI_SITE_BASE.'login';
                                 return false;
                             }
                             if (count($page_obj->id_group) > 1)
@@ -1501,95 +1505,6 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 
 
                 return true;
-                /*$this->content['resource'] = [];
-                $this->content['resource'][] = ['value'=>'/js/jquery.min.js','option'=>['source'=>PATH_CONTENT_JS.'jquery-1.11.3.js','format'=>'html_tag']];
-                $this->content['resource'][] = ['value'=>'/js/default.min.js','option'=>['format'=>'html_tag']];
-                $this->content['resource'][] = ['value'=>'/js/default-top4.js','option'=>['source'=>'http://dev.top4.com.au/scripts/default.js','format'=>'html_tag']];
-                $this->content['resource'][] = ['value'=>'/css/default.min.css','option'=>['format'=>'html_tag']];
-//echo '<pre>resource_render<br>';
-echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>';
-                foreach($this->content['resource'] as $resource_index=>&$resource)
-                {
-                    $resource_obj =  new content($resource);
-                    $resource['result'] = $resource_obj->get_result();
-                    echo $resource['result'];
-                    $resource['message'] = $resource_obj->message->display();
-                    //print_r($resource_obj);
-                    //print_r($resource_obj->message->display());
-                    unset($resource_obj);
-                }
-echo '</head>
-
-<body>
-<div class="font_icon font_icon_map">Map Icon</div>
-';
-                $this->content['resource2'] = [];
-                $this->content['resource2'][] = ['value'=>'/image/10/chiaro-bathroom-package-10013.m.jpg','option'=>['format'=>'html_tag','html_tag'=>['attr'=>['class'=>'font_icon_map']]]];
-                $this->content['resource2'][] = ['value'=>'/image/wardrobe.m.jpg','option'=>['source'=>'http://mobile.top4.com.au/asset/image/xxl/354_photo_296388.jpg','format'=>'file_uri']];
-                foreach($this->content['resource2'] as $resource_index=>&$resource)
-                {
-                    $resource_obj =  new content($resource);
-                    $resource['result'] = $resource_obj->get_result();
-                    echo $resource['result'];
-                    $resource['message'] = $resource_obj->message->display();
-                    //print_r($resource_obj);
-                    //print_r($resource_obj->message->display());
-                    unset($resource_obj);
-                }
-echo '</body>
-</html>';
-                echo '<pre>resource_render<br>';
-                print_r($this->content['resource']);
-                print_r($this->content['resource2']);
-                print_r($this->message->display());
-                exit();*/
-
-
-
-                //$this->content['script'][] = array('type'=>'local_file', 'file_name'=>'jquery-1.11.3');
-                //$this->content['script'][] = array('type'=>'local_file', 'file_name'=>'default');
-
-                switch($this->request['module'])
-                {
-                    case 'listing':
-                        break;
-                    case '':
-                    default:
-                        if (!isset($this->request['document']))
-                        {
-                            include(PATH_SITE_BASE.'404.php');
-                            //header("HTTP/1.0 404 Not Found");
-                            //header('Location: '.URI_SITE_BASE.'404.php');
-                        }
-                        $page_obj = new view_web_page($this->request['document']);
-                        if (empty($page_obj->id_group))
-                        {
-                            include(PATH_SITE_BASE.'404.php');
-                            // If page does not exist in database
-                            //header("HTTP/1.0 404 Not Found");
-                            //header('Location: '.URI_SITE_BASE.'404.php');
-                        }
-                        if (count($page_obj->id_group) > 1)
-                        {
-                            $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): multiple web page resources loaded '.implode(',',$page_obj->id_group);
-                        }
-                        $page_fetched_value = $page_obj->fetch_value(['page_size'=>1]);
-                        if (empty($page_fetched_value))
-                        {
-                            // SQL Error? Page id doesn't exist in database any more?
-                            $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): unknown error cannot load desired page';
-                            // TODO: Error Handling, cannot fetch page content
-                            include(PATH_SITE_BASE.'404.php');
-                        }
-                        else
-                        {
-                            $this->request['field'] = $page_fetched_value[0];
-                            $this->request['template'] = 'page_default';
-                        }
-
-                }
         }
 
         //print_r($page_field);
@@ -1866,7 +1781,7 @@ echo '</body>
         {
             foreach($this->result['cookie'] as $cookie_name=>$cookie_content)
             {
-                setcookie($cookie_name,$cookie_content['value'],time() + $cookie_content['time']);
+                setcookie($cookie_name,$cookie_content['value'],time() + $cookie_content['time'],'/'.(FOLDER_SITE_BASE != ''?(FOLDER_SITE_BASE.'/'):''));
             }
         }
         /*if (isset($_SESSION))
