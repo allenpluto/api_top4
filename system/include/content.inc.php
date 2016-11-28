@@ -370,6 +370,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $this->request['document'] = $request_path_part;
                         $this->request['file_path'] .= $this->request['document'].DIRECTORY_SEPARATOR.'index.html';
                         $this->request['file_uri'] .= $this->request['document'];
+
+                        $this->request['remote_ip'] = get_remote_ip();
                 }
 
                 break;
@@ -1393,33 +1395,51 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                         {
 //print_r('<br>Account ID: '.$api_account['id']);
 //print_r($api_account);
+                                            $session_expire = 86400;
+                                            if (!empty($login_param['remember_me']))
+                                            {
+                                                $session_expire = $session_expire*30;
+                                            }
                                             $entity_api_session_obj = new entity_api_session();
-                                            $session_param = array_merge($session_param, ['account_id'=>$api_account['id'],'expire_time'=>date('Y-m-d H:i:s',time()+86400*7)]);
+                                            $session_param = array_merge($session_param, ['account_id'=>$api_account['id'],'expire_time'=>date('Y-m-d H:i:s',time()+$session_expire)]);
                                             $session = $entity_api_session_obj->generate_api_session_id($session_param);
 
                                             if (empty($session))
                                             {
                                                 // TODO: Error Handling, create session id failed
                                                 $this->message->error = 'Building: Fail to create session id';
+                                                $this->content['login_result'] = [
+                                                    'status'=>'REQUEST_DENIED',
+                                                    'message'=>'Login Failed, fail to create new session'
+                                                ];
                                             }
                                             else
                                             {
-                                                $this->result['cookie'] = ['session_id'=>['value'=>$session['name'],'time'=>$session['expire_time']]];
+                                                $this->result['cookie'] = ['session_id'=>['value'=>$session['name'],'time'=>time()+$session_expire]];
                                                 $this->result['status'] = 301;
                                                 $this->result['header']['Location'] =  URI_SITE_BASE.'console';
-                                                return true;
                                             }
                                         }
                                     }
                                 }
+                                // Record login event
+                                $entity_api_log_obj = new entity_api_log();
+                                $log_record = ['name'=>'Login','remote_ip'=>$this->request['remote_ip'],'request_uri'=>$_SERVER['REQUEST_URI']];
+                                $log_record = array_merge($log_record,$this->content['login_result']);
+                                if (isset($api_account['id']))
+                                {
+                                    $log_record['account_id'] = $api_account['id'];
+                                    $log_record['description'] =  $api_account['name'].' '.$log_record['name'];
+                                }
+                                if (isset($session['name'])) $log_record['content'] = $session['name'];
+                                $entity_api_log_obj->set_log($log_record);
                             }
                         }
                         if ($this->request['document'] == 'logout')
                         {
-                            // success of fail, logout page always redirect to login page after process complete
+                            // success or fail, logout page always redirect to login page after process complete
                             $this->result['status'] = 301;
                             $this->result['header']['Location'] =  URI_SITE_BASE.'login';
-
                             if (!isset($_COOKIE['session_id']))
                             {
                                 // session_id is not set, redirect to login page
@@ -1440,6 +1460,17 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 // If session_id is not valid, redirect to login page
                                 return true;
                             }*/
+                            if (count($entity_api_session_obj->row) > 0)
+                            {
+                                // Record logout event
+                                $session_record = end($entity_api_session_obj->row);
+                                $entity_api_log_obj = new entity_api_log();
+                                $log_record = ['name'=>'Logout','account_id'=>$session_record['account_id'],'status'=>'OK','message'=>'Session close by user','content'=>$session_record['name'],'remote_ip'=>$this->request['remote_ip'],'request_uri'=>$_SERVER['REQUEST_URI']];
+                                $entity_api_log_obj->set_log($log_record);
+print_r($session_record);
+print_r($entity_api_log_obj);
+                            }
+exit();
 
                             // If session is valid, delete the session then redirect to login
                             $entity_api_session_obj->delete();
@@ -1816,7 +1847,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
         {
             foreach($this->result['cookie'] as $cookie_name=>$cookie_content)
             {
-                setcookie($cookie_name,$cookie_content['value'],time() + $cookie_content['time'],'/'.(FOLDER_SITE_BASE != ''?(FOLDER_SITE_BASE.'/'):''));
+                setcookie($cookie_name,$cookie_content['value'],intval($cookie_content['time']),'/'.(FOLDER_SITE_BASE != ''?(FOLDER_SITE_BASE.'/'):''));
             }
         }
         /*if (isset($_SESSION))
