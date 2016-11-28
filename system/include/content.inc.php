@@ -215,7 +215,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 {
                     // TODO: More unrecognized value passed through URI
                     $this->message->error = 'Decoding: URI parts unrecognized ['.implode('/',$request_path).']';
-                    $this->result = [
+                    $this->content['api_result'] = [
                         'status'=>'INVALID_REQUEST',
                         'message'=>'Illegal Request URI'
                     ];
@@ -232,6 +232,22 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 break;
             case 'json':
             case 'xml':
+                include_once(PATH_PREFERENCE.'api'.FILE_EXTENSION_INCLUDE);
+                $this->request['remote_ip'] = get_remote_ip();
+
+                if (!empty($this->preference->api['force_ssl']))
+                {
+                    if ($_SERVER['REQUEST_SCHEME'] != 'https')
+                    {
+                        // TODO: More unrecognized value passed through URI
+                        $this->message->warning = 'API SSL Access Required';
+                        $this->content['api_result'] = [
+                            'status'=>'INVALID_REQUEST',
+                            'message'=>'API Requests require SSL (uri should start with https://)'
+                        ];
+                        return true;
+                    }
+                }
                 if (empty($request_path))
                 {
                     $this->request['method'] = 'list_available_method';
@@ -248,13 +264,12 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 {
                     // TODO: More unrecognized value passed through URI
                     $this->message->error = 'Decoding: URI parts unrecognized ['.implode('/',$request_path).']';
-                    $this->result = [
+                    $this->content['api_result'] = [
                         'status'=>'INVALID_REQUEST',
                         'message'=>'Illegal Request URI'
                     ];
                     return true;
                 }
-                $this->request['remote_ip'] = get_remote_ip();
                 break;
             case 'html':
             default:
@@ -645,6 +660,11 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 if (!isset($this->content['target_file']['quality'])) $this->content['target_file']['quality'] = $this->preference->image['quality']['spd'];
                 break;
             case 'ajax':
+                if (isset($this->content['api_result']['status']) AND $this->content['api_result']['status'] != 'OK')
+                {
+                    // ajax request failed before building content
+                    return true;
+                }
                 if (!isset($_COOKIE['session_id']))
                 {
                     // TODO: Error Handling, session validation failed, session_id not set
@@ -966,6 +986,11 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 break;
             case 'json':
             case 'xml':
+                if (isset($this->content['api_result']['status']) AND $this->content['api_result']['status'] != 'OK')
+                {
+                    // ajax request failed before building content
+                    return true;
+                }
                 if (empty($_SERVER['HTTP_AUTH_KEY']))
                 {
                     // TODO: Error Handling, api key authentication failed
@@ -1027,7 +1052,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $this->content['api_result'] = [
                             'status'=>'REQUEST_DENIED',
                             'message'=>'User ['.end($entity_api_obj->row)['name'].'] does not have the permission to use the method ['.$this->request['method'].']',
-                            'available_methods'=>$available_functions
+                            'available_methods'=>$available_function_name
                         ];
                         return true;
                     }

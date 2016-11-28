@@ -110,10 +110,10 @@ class entity_api_key extends entity
                     $ip_pattern = str_replace('.','\.',$ip_pattern);
                     $ip_pattern = str_replace('*','([0-9a-f]*)',$ip_pattern);
                     $ip_pattern = '/'.$ip_pattern.'/';
-print_r([$ip_pattern,$parameter['remote_ip']]);
+//print_r([$ip_pattern,$parameter['remote_ip']]);
                     if (preg_match($ip_pattern,$parameter['remote_ip']))
                     {
-print_r('<br>pattern matched<br>');
+//print_r('<br>pattern matched<br>');
                         $parameter['status'] = 'OK';
                         $parameter['message'] = NULL;
                         return $record['account_id'];
