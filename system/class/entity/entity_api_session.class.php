@@ -44,7 +44,7 @@ class entity_api_session extends entity
         }
         $get_parameter = array(
             'bind_param' => array(':name'=>$parameter['api_session_id']),
-            'where' => array('`name` = :name AND `expire_time` > NOW()')
+            'where' => array('`name` = :name')
         );
         $row = $this->get($get_parameter);
         if (empty($row))
@@ -57,6 +57,28 @@ class entity_api_session extends entity
         }
 
         $session = end($row);
+        if (strtotime($session['expire_time']) < strtotime(gmdate('Y-m-d H:i:s ')))
+        {
+            // TODO: Error Handling, invalid api key
+            $parameter['status'] = 'REQUEST_DENIED';
+            $parameter['message'] = 'Session Time Out, please login again';
+            $this->message->notice = 'Session expired '.$parameter['api_session_id'].'.';
+
+            // Create Log on session timeout
+            $entity_api_log_obj = new entity_api_log();
+            $log_record = ['name'=>'Logout','account_id'=>$session['account_id'],'status'=>'OK','message'=>'Session timeout, force close. Request Time ['.gmdate('Y-m-d H:i:s ').strtotime(gmdate('Y-m-d H:i:s ')).'], Session Expired at ['.$session['expire_time'].' '.strtotime($session['expire_time']).']','content'=>$session['name'],'remote_ip'=>$parameter['remote_ip'],'request_uri'=>$_SERVER['REQUEST_URI']];
+            $entity_api_obj = new entity_api($session['account_id']);
+            if (count($entity_api_obj->row) > 0)
+            {
+                $log_record['description'] = end($entity_api_obj->row)['name'];
+            }
+            $entity_api_log_obj->set_log($log_record);
+
+            $this->delete();
+
+            return false;
+        }
+
         if(hash('crc32b',2000-$session['account_id']) != $crc32b_dec)
         {
             // TODO: Error Handling, invalid api key

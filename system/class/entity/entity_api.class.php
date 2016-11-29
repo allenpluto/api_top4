@@ -39,7 +39,7 @@ class entity_api extends entity
         }
         $param = array(
             'bind_param' => array(':name'=>$parameter['username'],':password'=>hash('sha256',hash('crc32b',$parameter['password']))),
-            'where' => array('`name` = :name OR `alternate_name` = :name','`password` = :password')
+            'where' => array('(`name` = :name OR `alternate_name` = :name)','`password` = :password')
         );
         $row = $this->get($param);
         if (empty($this->id_group))

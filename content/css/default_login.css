@@ -86,6 +86,7 @@ input[type="submit"]:active
 }
 
 .login_form_container {display:block;max-width: 40rem;}
+.login_form_message {margin-bottom: 1.5em;font-size: 1.2em;}
 .login_form_container input {width: 100%;}
 
 @media only screen and (min-width:768px)

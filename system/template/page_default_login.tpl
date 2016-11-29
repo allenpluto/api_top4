@@ -7,6 +7,7 @@
         <h1><span class="body_title_logo"><svg width="100%" height="100%"><image xlink:href="content/image/the-new-australian-social-business-directory_logo.svg" src="content/image/the-new-australian-social-business-directory_logo_small.png" alt="Top4 - The New Australian Social Business Directory" width="100%" height="100%" /></svg></span> API Console</h1>
     </div>
     <div class="container login_form_container">
+        <div class="login_form_message">[[*post_result_message]]</div>
         <form class="login_form" method="post" action="">
             <input type="hidden" name="complementary" value="[[*complementary]]">
             <input type="text" name="username" value="[[*username]]" placeholder="Username">

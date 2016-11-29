@@ -351,6 +351,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         }
                         break;
                     case 'console':
+                        include_once(PATH_PREFERENCE.'api'.FILE_EXTENSION_INCLUDE);
+
                         $method = ['profile','credential','dashboard'];
                         if (in_array($request_path_part,$method))
                         {
@@ -678,7 +680,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     return true;
                 }
                 $entity_api_session_obj = new entity_api_session();
-                $method_variable = ['status'=>'OK','message'=>'','api_session_id'=>$_COOKIE['session_id']];
+                $method_variable = ['status'=>'OK','message'=>'','api_session_id'=>$_COOKIE['session_id'],'remote_ip'=>$this->request['option']['remote_ip']];
                 $session = $entity_api_session_obj->validate_api_session_id($method_variable);
                 if ($session == false)
                 {
@@ -904,7 +906,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 $this->message->notice = 'Api alternate_name already exists';
                                 $this->content['api_result'] = [
                                     'status'=>'REQUEST_DENIED',
-                                    'message'=>'Nickname '.$this->request['option']['alternate_name'].' is already exist, please choose a different name '.json_encode($row)
+                                    'message'=>'Nickname '.$this->request['option']['alternate_name'].' is already used, please choose a different name '.json_encode($row)
                                 ];
                                 return true;
                             }
@@ -1097,6 +1099,9 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 break;
             case 'html':
             default:
+                $this->content['field'] = array();
+                $this->content['field']['base'] = URI_SITE_BASE;
+
                 switch($this->request['module'])
                 {
                     case 'console':
@@ -1111,7 +1116,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         }
 
                         $entity_api_session_obj = new entity_api_session();
-                        $method_variable = ['status'=>'OK','message'=>'','api_session_id'=>$_COOKIE['session_id']];
+                        $method_variable = ['status'=>'OK','message'=>'','api_session_id'=>$_COOKIE['session_id'],'remote_ip'=>$this->request['remote_ip']];
                         $session = $entity_api_session_obj->validate_api_session_id($method_variable);
                         if ($session == false)
                         {
@@ -1134,11 +1139,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         }
                         $this->content['account'] = end($entity_api_obj->row);
 
-                        $this->result['cookie'] = ['session_id'=>['value'=>$session['name'],'time'=>$session['expire_time']]];
+                        $this->result['cookie'] = ['session_id'=>['value'=>$session['name'],'time'=>strtotime($session['expire_time'])]];
 
-                        $this->content['field'] = [];
-
-                        $this->content['field']['base'] = URI_SITE_BASE;
                         $this->content['field']['robots'] = 'noindex, nofollow';
 
                         $this->content['field']['style'] = [
@@ -1245,7 +1247,9 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 {
                                     $content['page_content'] .= '<div class="api_method_container">';
                                     $content['page_content'] .= '<div class="api_method_name"><h3>'.$api_method['name'].'</h3></div>';
-                                    $content['page_content'] .= '<div class="api_method_request_uri">'.URI_SITE_BASE.$this->content['format'].'/'.$api_method['request_uri'].'</div>';
+                                    $api_site_base = URI_SITE_BASE;
+                                    if (!empty($this->preference->api['force_ssl'])) $api_site_base = str_replace('http://','https://',$api_site_base);
+                                    $content['page_content'] .= '<div class="api_method_request_uri">'.$api_site_base.$this->content['format'].'/'.$api_method['request_uri'].'</div>';
                                     $content['page_content'] .= '<div class="api_method_description">'.$api_method['description'].'</div>';
 //$content['page_content'] .=print_r($api_method['field'],true);
                                     if (is_array($api_method['field']) AND !empty($api_method['field']))
@@ -1287,7 +1291,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 //exit();
                                 // TODO: session_id is set, check if it is already logged in
                                 $entity_api_session_obj = new entity_api_session();
-                                $method_variable = ['status'=>'OK','message'=>'','api_session_id'=>$_COOKIE['session_id']];
+                                $method_variable = ['status'=>'OK','message'=>'','api_session_id'=>$_COOKIE['session_id'],'remote_ip'=>$this->request['remote_ip']];
                                 $session = $entity_api_session_obj->validate_api_session_id($method_variable);
 //print_r($session === false);
 //exit();
@@ -1309,7 +1313,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                     else
                                     {
                                         // If session is valid, redirect to console
-                                        $this->result['cookie'] = ['session_id'=>['value'=>$session['name'],'time'=>$session['expire_time']]];
+                                        $this->result['cookie'] = ['session_id'=>['value'=>$session['name'],'time'=>strtotime($session['expire_time'])]];
                                         $this->result['status'] = 301;
                                         $this->result['header']['Location'] =  URI_SITE_BASE.'console/credential';
 
@@ -1325,8 +1329,9 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 //exit();
                                 if (isset($this->request['option']['username']))
                                 {
-                                    $this->content['login_result'] = [
+                                    $this->content['post_result'] = [
                                         'status'=>'OK',
+                                        'message'=>''
                                     ];
 
                                     $login_param = [];
@@ -1346,7 +1351,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                             {
                                                 // TODO: Error Handling, complementary info error
                                                 $this->message->notice = 'Building: Login Failed';
-                                                $this->content['login_result'] = [
+                                                $this->content['post_result'] = [
                                                     'status'=>'REQUEST_DENIED',
                                                     'message'=>'Login Failed, please try again'
                                                 ];
@@ -1359,7 +1364,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                                 {
                                                     // TODO: Error Handling, complementary info not in json format
                                                     $this->message->notice = 'Building: Login Failed';
-                                                    $this->content['login_result'] = [
+                                                    $this->content['post_result'] = [
                                                         'status'=>'REQUEST_DENIED',
                                                         'message'=>'Login Failed, please try again'
                                                     ];
@@ -1373,11 +1378,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                             }
                                         }
                                     }
-//echo '<pre>';
-//print_r($this->content['login_result']);
-//print_r($login_param);
-//exit();
-                                    if ($this->content['login_result']['status'] == 'OK')
+
+                                    if ($this->content['post_result']['status'] == 'OK')
                                     {
                                         $entity_api_obj = new entity_api();
                                         $api_account = $entity_api_obj->authenticate($login_param);
@@ -1385,7 +1387,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                         {
                                             // TODO: Error Handling, login failed
                                             $this->message->notice = 'Building: Login Failed';
-                                            $this->content['login_result'] = [
+                                            $this->content['post_result'] = [
                                                 'status'=>'REQUEST_DENIED',
                                                 'message'=>'Login Failed, invalid username or password'
                                             ];
@@ -1393,22 +1395,21 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                         }
                                         else
                                         {
-//print_r('<br>Account ID: '.$api_account['id']);
-//print_r($api_account);
+
                                             $session_expire = 86400;
                                             if (!empty($login_param['remember_me']))
                                             {
                                                 $session_expire = $session_expire*30;
                                             }
                                             $entity_api_session_obj = new entity_api_session();
-                                            $session_param = array_merge($session_param, ['account_id'=>$api_account['id'],'expire_time'=>date('Y-m-d H:i:s',time()+$session_expire)]);
+                                            $session_param = array_merge($session_param, ['account_id'=>$api_account['id'],'expire_time'=>gmdate('Y-m-d H:i:s',time()+$session_expire)]);
                                             $session = $entity_api_session_obj->generate_api_session_id($session_param);
 
                                             if (empty($session))
                                             {
                                                 // TODO: Error Handling, create session id failed
                                                 $this->message->error = 'Building: Fail to create session id';
-                                                $this->content['login_result'] = [
+                                                $this->content['post_result'] = [
                                                     'status'=>'REQUEST_DENIED',
                                                     'message'=>'Login Failed, fail to create new session'
                                                 ];
@@ -1422,19 +1423,30 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                         }
                                     }
                                 }
+                                if ($this->content['post_result']['status'] != 'OK')
+                                {
+                                    // If login failed, show error message
+                                    $this->content['field']['post_result_message'] = '<div class="ajax_info ajax_info_error">'.$this->content['post_result']['message']."</div>";
+                                }
+
                                 // Record login event
                                 $entity_api_log_obj = new entity_api_log();
                                 $log_record = ['name'=>'Login','remote_ip'=>$this->request['remote_ip'],'request_uri'=>$_SERVER['REQUEST_URI']];
-                                $log_record = array_merge($log_record,$this->content['login_result']);
+                                $log_record = array_merge($log_record,$this->content['post_result']);
                                 if (isset($api_account['id']))
                                 {
                                     $log_record['account_id'] = $api_account['id'];
-                                    $log_record['description'] =  $api_account['name'].' '.$log_record['name'];
+                                    $log_record['description'] =  $api_account['name'];
+                                }
+                                else
+                                {
+                                    $log_record['description'] =  $this->request['option']['username'];
                                 }
                                 if (isset($session['name'])) $log_record['content'] = $session['name'];
                                 $entity_api_log_obj->set_log($log_record);
                             }
                         }
+
                         if ($this->request['document'] == 'logout')
                         {
                             // success or fail, logout page always redirect to login page after process complete
@@ -1464,22 +1476,31 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             {
                                 // Record logout event
                                 $session_record = end($entity_api_session_obj->row);
+
                                 $entity_api_log_obj = new entity_api_log();
                                 $log_record = ['name'=>'Logout','account_id'=>$session_record['account_id'],'status'=>'OK','message'=>'Session close by user','content'=>$session_record['name'],'remote_ip'=>$this->request['remote_ip'],'request_uri'=>$_SERVER['REQUEST_URI']];
+//echo '<pre>';
+                                $entity_api_obj = new entity_api($session_record['account_id']);
+//print_r($entity_api_obj);
+//exit();
+                                if (count($entity_api_obj->row) > 0)
+                                {
+                                    $log_record['description'] = end($entity_api_obj->row)['name'];
+                                }
                                 $entity_api_log_obj->set_log($log_record);
-print_r($session_record);
-print_r($entity_api_log_obj);
+//print_r($session_record);
+//print_r($entity_api_log_obj);
                             }
-exit();
 
                             // If session is valid, delete the session then redirect to login
                             $entity_api_session_obj->delete();
+//exit();
                             return true;
                         }
-
+//exit();
                         if (isset($this->request['option']['field']))
                         {
-                            $this->content['field'] = $this->request['option']['field'];
+                            $this->content['field'] = array_merge($this->content['field'],$this->request['option']['field']);
                         }
                         else
                         {
@@ -1510,7 +1531,7 @@ exit();
                                 $this->result['status'] = 404;
                                 return false;
                             }
-                            $this->content['field'] = end($page_fetched_value);
+                            $this->content['field'] = array_merge($this->content['field'],end($page_fetched_value));
                             $this->content['field']['style'] = [
                                 ['value'=>'/css/default.min.css','option'=>['format'=>'html_tag']]
                             ];
@@ -1830,7 +1851,7 @@ exit();
                 $this->result['header']['Content-Type'] = 'text/xml';
                 break;
             case 'html':
-                if (!isset($this->content['field'])) $this->content['field'] = '';
+                if (!isset($this->content['field'])) $this->content['field'] = array();
                 if (!isset($this->content['template'])) $this->content['template'] = '';
                 $this->result['content'] = render_html($this->content['field'],$this->content['template']);
                 $this->result['header']['Last-Modified'] = gmdate('D, d M Y H:i:s').' GMT';
@@ -1847,9 +1868,14 @@ exit();
         {
             foreach($this->result['cookie'] as $cookie_name=>$cookie_content)
             {
-                setcookie($cookie_name,$cookie_content['value'],intval($cookie_content['time']),'/'.(FOLDER_SITE_BASE != ''?(FOLDER_SITE_BASE.'/'):''));
+                setcookie($cookie_name,$cookie_content['value'],$cookie_content['time'],'/'.(FOLDER_SITE_BASE != ''?(FOLDER_SITE_BASE.'/'):''));
             }
         }
+//echo '<pre>';
+//unset($this->content['field']['content']);
+//unset($this->content['account']['api_method']);
+//unset($this->result['content']);
+//print_r($this);
         /*if (isset($_SESSION))
         {
             echo '<pre>';
@@ -1874,8 +1900,9 @@ exit();
         {
             print_r($this->result['content']);
         }
-        //echo '<pre>';
-        //print_r($this);
+//echo '<pre>';
+//print_r($_COOKIE);
+//print_r(date('Y-m-d H:i:s',$this->result['cookie']['session_id']['time']));
     }
 
     function get_result()
