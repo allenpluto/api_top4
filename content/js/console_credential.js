@@ -21,13 +21,10 @@ var delete_credential_data = {
                 'data': post_value,
                 'timeout': 10000
             }).always(function(callback_obj, status, info_obj) {
-                console.log(status);
                 if (status == 'success')
                 {
                     var data = callback_obj;
                     var xhr = info_obj;
-                    console.log(data);
-                    console.log($('base').attr('href'));
                     if (data.status == 'OK')
                     {
                         overlay_trigger.closest('.api_key_container').animate({
@@ -58,8 +55,6 @@ var delete_credential_data = {
                 }
                 else
                 {
-                    console.log(callback_obj);
-                    console.log(info_obj);
                     var xhr = callback_obj;
                     var error = info_obj;
 
@@ -154,13 +149,10 @@ var update_credential_data = {
                 'data': post_value,
                 'timeout': 10000
             }).always(function(callback_obj, status, info_obj) {
-                console.log(status);
                 if (status == 'success')
                 {
                     var data = callback_obj;
                     var xhr = info_obj;
-                    console.log(data);
-                    console.log($('base').attr('href'));
                     if (data.status == 'OK')
                     {
                         overlay_trigger.closest('.api_key_container').find('.api_key_alternate_name').html(post_value['alternate_name']);
@@ -189,8 +181,6 @@ var update_credential_data = {
                 }
                 else
                 {
-                    console.log(callback_obj);
-                    console.log(info_obj);
                     var xhr = callback_obj;
                     var error = info_obj;
 
@@ -219,13 +209,10 @@ $('.api_key_button_add').click(function(event){
         'data': post_value,
         'timeout': 10000
     }).always(function(callback_obj, status, info_obj) {
-        console.log(status);
         if (status == 'success')
         {
             var data = callback_obj;
             var xhr = info_obj;
-console.log(data);
-console.log($('base').attr('href'));
             if (data.status == 'OK')
             {
                 //$('.api_key_wrapper .api_key_container').not('.api_key_name_container').remove();
@@ -272,8 +259,6 @@ console.log($('base').attr('href'));
         }
         else
         {
-console.log(callback_obj);
-console.log(info_obj);
             var xhr = callback_obj;
             var error = info_obj;
 

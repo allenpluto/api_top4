@@ -119,8 +119,6 @@ var change_password_data = {
 $('.inline_editor').inline_editor({
     'default_text':'N/A',
     'callback_function':function(inline_editor_input, original_value) {
-console.log('call back function:');
-console.log([inline_editor_input.val(), original_value]);
         var base_uri = $('base').attr('href');
         if (!base_uri) base_uri = '/';
 
@@ -143,12 +141,10 @@ console.log([inline_editor_input.val(), original_value]);
             'data': post_value,
             'timeout': 10000
         }).always(function(callback_obj, status, info_obj) {
-            console.log(status);
             if (status == 'success')
             {
                 var data = callback_obj;
                 var xhr = info_obj;
-console.log(data);
                 if (data.status == 'OK')
                 {
                     ajax_info.removeClass('ajax_info_error').addClass('ajax_info_success').html(data.message);

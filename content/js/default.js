@@ -24,8 +24,6 @@ $.fn.ajax_loader = function(user_option) {
         $(window).scroll(function() {
             if($(window).scrollTop() + $(window).height() - $(document).height() > - 100) {
                 var ajax_loader_option = ajax_loader_container.data('option');
-//console.log(ajax_loader_container.data('option'));
-//console.log(ajax_loader_container.data('option').page_count);
                 if (!ajax_loader_container.hasClass('ajax_loader_container_complete') && !ajax_loader_container.hasClass('ajax_loader_container_loading')) {
                     ajax_loader_container.addClass('ajax_loader_container_loading');
                     var next_page_id_group = {};
@@ -52,7 +50,6 @@ $.fn.ajax_loader = function(user_option) {
                             post_value[option_key] = option_value;
                         }
                     });
-                    //console.log(post_value);
                     $.ajax({
                         'type': 'POST',
                         'url': 'listing/ajax-load',
@@ -60,8 +57,6 @@ $.fn.ajax_loader = function(user_option) {
                         'timeout': 10000
                     }).always(function (callback_obj, status, info_obj) {
                         ajax_loader_container.removeClass('ajax_loader_container_loading');
-//console.log(status);
-//console.log(callback_obj);
                         if (status == 'success') {
                             var data = callback_obj;
                             var xhr = info_obj;
@@ -78,14 +73,12 @@ $.fn.ajax_loader = function(user_option) {
                                 }
                             }
                             data = $.parseJSON(data);
-//console.log(data);
 
                             ajax_loader_container.append(data.html);
                             data.style.forEach(function(element, index){
                                 if (element.type == 'text_content')
                                 {
                                     style_tag.append(element.content);
-//console.log(style_tag);
                                 }
                             });
                             data.script.forEach(function(element, index){
@@ -106,7 +99,6 @@ $.fn.ajax_loader = function(user_option) {
                             ajax_loader_container.children('.clear').appendTo(ajax_loader_container);
                             ajax_loader_container.children('.ajax_loader_bottom').appendTo(ajax_loader_container);
                             ajax_loader_container.data('option').page_number++;
-//console.log([ajax_loader_container.data('option').page_number,ajax_loader_container.data('option').page_count]);
                             if (ajax_loader_container.data('option').page_number >= ajax_loader_container.data('option').page_count-1)
                             {
                                 ajax_loader_container.addClass('ajax_loader_container_complete');
@@ -307,40 +299,6 @@ $.fn.inline_editor = function(user_option){
         });
     });
 };
-
-/*// Image Editor
-$.fn.form_image_editor = function(user_option){
-    var default_option = {
-        'trigger': '.form_image_editor_trigger',
-        'source': '.form_image_editor_source',
-        'result': '.form_image_editor_result'
-    };
-    // Extend our default option with user provided.
-    var option = $.extend(default_option, user_option);
-
-    return this.each(function() {
-        var image_editor = $(this);
-        var image_source = '';
-console.log('fe1');
-        
-        image_source = image_editor.find(option['source']).val();
-        if (image_editor.data('source'))
-        {
-            image_source = image_editor.data('source');
-        }
-        if (!image_source)
-        {
-            image_source = '/images/no_image_found.jpg';
-        }
-        image_editor.find(option['trigger']).overlay_popup({
-            'html_content': '<img src="'+image_source+'" />',
-            'init_function':function(overlay_trigger){
-console.log('fe2');
-console.log(image_editor.find(option['source']));
-            }
-        });
-    });
-};*/
 
 // Image Uploader
 $.fn.form_image_uploader = function(user_option){
@@ -1247,6 +1205,11 @@ $.fn.overlay_popup = function(user_option){
                     });
                 });
 
+                //$('#fix').on('touchmove',function(e){
+                //    if(!$('.scroll').has($(e.target)).length)
+                //        e.preventDefault();
+                //});
+
                 overlay_wrapper.click(function(event){
                     if ($(event.target).is($(this)) && (option['close_on_click_wrapper'] == true))
                     {
@@ -1563,85 +1526,6 @@ function FrameOnload(){
     });
 
     $('.touch_slider_container').touch_slider();
-
-    /*var temp = 0;
-    $(window).scroll(function() {
-        if($(window).scrollTop() + $(window).height() - $(document).height() > - 100) {
-            if (Math.abs(temp - ($(window).scrollTop() + $(window).height())) > 20)
-            {
-                //console.log($('.listing_block_wrapper').data('id_group'));
-                console.log($('.listing_block_wrapper').data('page_number'));
-                if ($('.listing_block_wrapper').data('page_number') < $('.listing_block_wrapper').data('page_count'))
-                {
-                    var post_value = {
-                        'id_group':$('.listing_block_wrapper').data('id_group'),
-                        'page_size':$('.listing_block_wrapper').data('page_size'),
-                        'page_number':$('.listing_block_wrapper').data('page_number')+1
-                    };
-                    $.ajax({
-                        'type': 'POST',
-                        'url': 'listing/ajax_load',
-                        'data': post_value,
-                        'timeout': 10000
-                        /*'success': function(result_string) {
-                            $('.listing_block_wrapper').append(result_string);
-                            $('.listing_block_wrapper').data('page_number',  $('.listing_block_wrapper').data('page_number')+1);
-                        },
-                        'error': function(request, status, error) {
-                            if (status == 'timeout')
-                            {
-                                overlay_info.removeClass('overlay_info_success').addClass('overlay_info_error').html('<p>Get Rating Page Failed, Try again later</p>');
-                            }
-                            else
-                            {
-                                overlay_info.removeClass('overlay_info_success').addClass('overlay_info_error').html('<p>Get Rating Page Failed, Error Unknown, Try again later</p>');
-                            }
-                        },
-                        'complete': function(url, options)
-                        {
-
-                            temp = $(window).scrollTop() + $(window).height();
-                            console.log(temp);
-                            $('.system_debug').html(temp);
-
-                        }*//*
-                    }).always(function(callback_obj, status, info_obj) {
-console.log(status);
-                        if (status == 'success')
-                        {
-                            var data = callback_obj;
-                            var xhr = info_obj;
-
-                            $('.listing_block_wrapper').append(callback_obj);
-                            $('.listing_block_wrapper').data('page_number',  $('.listing_block_wrapper').data('page_number')+1);
-                        }
-                        else
-                        {
-                            var xhr = callback_obj;
-                            var error = info_obj;
-
-                            if (status == 'timeout')
-                            {
-                                overlay_info.removeClass('overlay_info_success').addClass('overlay_info_error').html('<p>Get Rating Page Failed, Try again later</p>');
-                            }
-                            else
-                            {
-                                overlay_info.removeClass('overlay_info_success').addClass('overlay_info_error').html('<p>Get Rating Page Failed, Error Unknown, Try again later</p>');
-                            }
-                        }
-
-                        temp = $(window).scrollTop() + $(window).height();
-                        console.log(temp);
-                        $('.system_debug').html(temp);
-                    });
-                }
-
-                temp = $(window).scrollTop() + $(window).height();
-                console.log(temp);
-                $('.system_debug').html(temp);
-            }
-        }
-    });*/
 }
 function BodyOnload(){
 }
