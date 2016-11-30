@@ -108,7 +108,7 @@ class entity_image extends entity
                 if (isset($record['data']))
                 {
                     $file_name = $format->file_name((!empty($record['friendly_url'])?$record['friendly_url']:$record['name']).'-'.$record['id']);
-                    // TODO: Generate re-sized thumbnail
+                    // Generate re-sized thumbnail
                     // if (!empty($parameter['size'])) $file_name .= '.'.$parameter['size'];
                     switch($record['mime'])
                     {

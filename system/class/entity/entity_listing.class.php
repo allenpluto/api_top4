@@ -25,7 +25,7 @@ class entity_listing extends entity
 
         if (count($this->row) == 0)
         {
-            // TODO: Error Handling, ZERO_RESULTS
+            // Error Handling, ZERO_RESULTS
             $this->message->notice = 'No listing fits the get conditions';
             return false;
         }

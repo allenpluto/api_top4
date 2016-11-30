@@ -21,7 +21,6 @@ class entity extends base
     // By default, all entities can be constructed by a number (id), an array of numbers (ids), a string of numbers separate by comma (e.g. "10,11,12") or a string of friendly url
     function __construct($value = null, $parameter = array())
     {
-//print_r([$value, $parameter]);
         parent::__construct();
         if (!empty($parameter)) $this->set_parameter($parameter);
 
@@ -190,7 +189,6 @@ class entity extends base
     // Select id_group by conditions
     function get($parameter = array())
     {
-//print_r($parameter);
         $format = format::get_obj();
         if (isset($parameter['id_group']))
         {
@@ -363,8 +361,6 @@ class entity extends base
     // INSERT/UPDATE multiple rows of data, return id_group of inserted/updated rows
     function set($parameter = array())
     {
-//print_r('set function');
-//print_r($parameter);
         if (isset($parameter['row']))
         {
             $row = $parameter['row'];
@@ -442,9 +438,6 @@ class entity extends base
         }
 
         $id_group = array();
-//print_r('sql');
-//print_r($parameter);
-//print_r($row);
 
         $sql = 'INSERT INTO '.$parameter['table'].' (`'.implode('`,`',$parameter['table_fields']).'`) VALUES (:'.implode(',:',$parameter['table_fields']).') ON DUPLICATE KEY UPDATE ';
         $field_bind = array();
@@ -459,7 +452,7 @@ class entity extends base
         $sql .= implode(',',$field_bind);
         unset($field_bind);
         $query = $this->_conn->prepare($sql);
-//print_r($sql);
+
         $new_row = array();
         foreach ($row as $record_index=>$record)
         {
@@ -501,9 +494,6 @@ class entity extends base
             }
 
             $bind_value = array_merge($bind_value,$parameter['bind_param']);
-
-//print_r('bind value<br>');
-//print_r($bind_value);
 
             if (count($bind_value) != count($parameter['table_fields']))
             {

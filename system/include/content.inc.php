@@ -13,8 +13,7 @@ class content extends base {
     function __construct($parameter = array())
     {
         parent::__construct();
-//echo '<pre>Init server<br>';
-//print_r($_SERVER);
+
         $this->request = array();
         $this->result = array(
             'status'=>200,
@@ -25,16 +24,14 @@ class content extends base {
         // Analyse uri structure and validate input variables, store separate input parts into $request
         if ($this->request_decoder($parameter) === false)
         {
-            // TODO: Error Log, error during reading input uri and parameters
+            // Error Log, error during reading input uri and parameters
             $this->message->error = 'Fail: Error during request_decoder';
-            //$this->result['status'] = 'Fail';
         }
 //echo '<pre>';
 //print_r('request_decoder: <br>');
 //print_r($this);
 if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml')
 {
-    //print_r($this);
     file_put_contents(PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_access_log.txt','REQUEST: '.$this->request['remote_ip'].' ['.date('D, d M Y H:i:s').']'.$_SERVER['REQUEST_URI']."\n",FILE_APPEND);
 }
 
@@ -43,9 +40,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
         // If any further complicate process required, leave it to render
         if ($this->result['status'] == 200 AND $this->build_content() === false)
         {
-            // TODO: Error Log, error during building data object
+            // Error Log, error during building data object
             $this->message->error = 'Fail: Error during build_content';
-            //$this->result['status'] = 'Fail';
         }
 //print_r('build_content: <br>');
 //print_r($this);
@@ -54,10 +50,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
         // As some rendering methods may only need the raw data without going through all the file copy, modify, generate processes
         if ($this->result['status'] == 200 AND $this->generate_rendering() === false)
         {
-            // TODO: Error Log, error during rendering
+            // Error Log, error during rendering
             $this->message->error = 'Fail: Error during render';
-            //$this->result['status'] = 'Fail';
-            return false;
         }
 //print_r('generate_rendering: <br>');
 //print_r(filesize($this->content['target_file']['path']));
@@ -130,7 +124,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
             case 'js':
                 if (empty($request_path))
                 {
-                    // TODO: Folder forbid direct access
+                    // Folder forbid direct access
                     $this->result['status'] = 403;
                     return false;
                 }
@@ -182,7 +176,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 
                 if ($file_name != $decoded_file_name)
                 {
-                    // TODO: Error Handling, decoded file name is not consistent to requested file name
+                    // Error Handling, decoded file name is not consistent to requested file name
                     $this->result['status'] = 404;
                     return false;
                 }
@@ -213,7 +207,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 }
                 if (!empty($request_path))
                 {
-                    // TODO: More unrecognized value passed through URI
+                    // More unrecognized value passed through URI
                     $this->message->error = 'Decoding: URI parts unrecognized ['.implode('/',$request_path).']';
                     $this->content['api_result'] = [
                         'status'=>'INVALID_REQUEST',
@@ -239,7 +233,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 {
                     if ($_SERVER['REQUEST_SCHEME'] != 'https')
                     {
-                        // TODO: More unrecognized value passed through URI
+                        // More unrecognized value passed through URI
                         $this->message->warning = 'API SSL Access Required';
                         $this->content['api_result'] = [
                             'status'=>'INVALID_REQUEST',
@@ -262,7 +256,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 }
                 if (!empty($request_path))
                 {
-                    // TODO: More unrecognized value passed through URI
+                    // More unrecognized value passed through URI
                     $this->message->error = 'Decoding: URI parts unrecognized ['.implode('/',$request_path).']';
                     $this->content['api_result'] = [
                         'status'=>'INVALID_REQUEST',
@@ -362,7 +356,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         }
                         else
                         {
-                            // TODO: Error Handling, trying to access console without module specified or unrecognized module
+                            // Error Handling, trying to access console without module specified or unrecognized module
                             $this->result['status'] = 301;
                             $this->result['header']['Location'] =  URI_SITE_BASE.$this->request['module'].'/'.end($method);
                         }
@@ -424,7 +418,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     $this->content['html_tag']['attr']['src'] = $this->request['file_uri'];
                     if (!isset($this->content['html_tag']['attr']['type'])) $this->content['html_tag']['attr']['type'] = 'text/javascript';
                 default:
-                    // TODO: Error Handling, tag name not given
+                    // Error Handling, tag name not given
                     if (!isset($this->content['html_tag']['name'])) $this->content['html_tag']['name'] = 'div';
             }
         }
@@ -485,7 +479,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         // External source file
                         $file_header = @get_headers($this->content['source_file']['original_file'],true);
                         if (strpos( $file_header[0], '200 OK' ) === false) {
-                            // TODO: Error Handling, fail to get external source file header
+                            // Error Handling, fail to get external source file header
                             $this->message->error = 'Source File not accessible - '.$file_header[0];
                             return false;
                         }
@@ -504,7 +498,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             $this->content['source_file']['content_length'] = $file_header['Content-Length'];
                             if ($this->content['source_file']['content_length'] > 10485760)
                             {
-                                // TODO: Error Handling, source file too big
+                                // Error Handling, source file too big
                                 $this->message->error = 'Source File too big ( > 10MB )';
                                 return false;
                             }
@@ -542,7 +536,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $document_id = end($document_name_part);
                         if (empty($document_id) OR !is_numeric($document_id))
                         {
-                            // TODO: Error Handling, fail to get source file from database, last part of file name is not a valid id
+                            // Error Handling, fail to get source file from database, last part of file name is not a valid id
                             $this->message->error = 'Building: fail to get source file from database, file not in standard format';
                             $this->result['status'] = 404;
                             return false;
@@ -550,7 +544,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $entity_class = 'entity_'.$this->request['data_type'];
                         if (!class_exists($entity_class))
                         {
-                            // TODO: Error Handling, last ditch failed, source file does not exist in database either
+                            // Error Handling, last ditch failed, source file does not exist in database either
                             $this->message->error = 'Building: cannot find source file';
                             $this->result['status'] = 404;
                             return false;
@@ -558,7 +552,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $entity_obj = new $entity_class($document_id);
                         if (empty($entity_obj->row))
                         {
-                            // TODO: Error Handling, fail to get source file from database, cannot find matched record
+                            // Error Handling, fail to get source file from database, cannot find matched record
                             $this->message->error = 'Building: fail to get source file from database, invalid id';
                             $this->result['status'] = 404;
                             return false;
@@ -567,7 +561,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 
                         if (empty($record['data']))
                         {
-                            // TODO: Error Handling, image record found, but image data is not stored in database
+                            // Error Handling, image record found, but image data is not stored in database
                             $this->message->error = 'Building: fail to get source file from database, image data not stored';
                             $this->result['status'] = 404;
                             return false;
@@ -671,7 +665,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 }
                 if (!isset($_COOKIE['session_id']))
                 {
-                    // TODO: Error Handling, session validation failed, session_id not set
+                    // Error Handling, session validation failed, session_id not set
                     $this->message->notice = 'Session ID Not Set';
                     $this->content['api_result'] = [
                         'status'=>'REQUEST_DENIED',
@@ -680,11 +674,12 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     return true;
                 }
                 $entity_api_session_obj = new entity_api_session();
-                $method_variable = ['status'=>'OK','message'=>'','api_session_id'=>$_COOKIE['session_id'],'remote_ip'=>$this->request['option']['remote_ip']];
+                $method_variable = ['status'=>'OK','message'=>'','api_session_id'=>$_COOKIE['session_id'],'remote_ip'=>$this->request['remote_ip']];
+                if (isset($this->request['option']['remote_ip'])) $method_variable['remote_ip'] = $this->request['option']['remote_ip'];
                 $session = $entity_api_session_obj->validate_api_session_id($method_variable);
                 if ($session == false)
                 {
-                    // TODO: Error Handling, session validation failed, session_id invalid
+                    // Error Handling, session validation failed, session_id invalid
                     $this->message->notice = 'Session Validation Failed';
                     $this->content['api_result'] = [
                         'status'=>'REQUEST_DENIED',
@@ -695,7 +690,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 $entity_api_obj = new entity_api($session['account_id']);
                 if (empty($entity_api_obj->row))
                 {
-                    // TODO: Error Handling, session validation failed, session_id is valid, but cannot read corresponding account
+                    // Error Handling, session validation failed, session_id is valid, but cannot read corresponding account
                     $this->message->error = 'Session Validation Succeed, but cannot find related api account';
                     $this->content['api_result'] = [
                         'status'=>'REQUEST_DENIED',
@@ -767,7 +762,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     case 'credential_delete':
                         if (!isset($this->request['option']['name']))
                         {
-                            // TODO: Error Handling, target api_key not set
+                            // Error Handling, target api_key not set
                             $this->message->notice = 'API KEY Not Provided, unable to delete';
                             $this->content['api_result'] = [
                                 'status'=>'INVALID_REQUEST',
@@ -784,7 +779,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $row = $entity_api_key_obj->get_api_key($get_parameter);
                         if (empty($row) OR count($row) == 0)
                         {
-                            // TODO: Error Handling, target api_key does not exist
+                            // Error Handling, target api_key does not exist
                             $this->message->notice = 'API KEY Does Not Exist, unable to delete';
                             $this->content['api_result'] = [
                                 'status'=>'ZERO_RESULTS',
@@ -812,7 +807,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     case 'credential_update':
                         if (!isset($this->request['option']['name']))
                         {
-                            // TODO: Error Handling, target api_key not set
+                            // Error Handling, target api_key not set
                             $this->message->notice = 'API KEY Not Provided, unable to update';
                             $this->content['api_result'] = [
                                 'status'=>'INVALID_REQUEST',
@@ -829,7 +824,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $row = $entity_api_key_obj->get($get_parameter);
                         if (empty($row) OR count($row) == 0)
                         {
-                            // TODO: Error Handling, target api_key does not exist
+                            // Error Handling, target api_key does not exist
                             $this->message->notice = 'API KEY Does Not Exist, unable to update';
                             $this->content['api_result'] = [
                                 'status'=>'INVALID_REQUEST',
@@ -845,7 +840,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         {
                             if (implode(',',end($row)['ip_restriction']) == implode(',',$update_value['ip_restriction']))
                             {
-                                // TODO: Error Handling, all value same, nothing to update
+                                // Error Handling, all value same, nothing to update
                                 $this->message->notice = 'alternate_name and ip_restriction are the same as current record, nothing to update';
                                 $this->content['api_result'] = [
                                     'status'=>'ZERO_RESULTS',
@@ -872,7 +867,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     case 'profile_update_alternate_name':
                         if (!isset($this->request['option']['alternate_name']))
                         {
-                            // TODO: Error Handling, alternate_name not set
+                            // Error Handling, alternate_name not set
                             $this->message->notice = 'Update api alternate_name with null value';
                             $this->content['api_result'] = [
                                 'status'=>'INVALID_REQUEST',
@@ -882,7 +877,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         }
                         if ($this->request['option']['alternate_name'] == $this->content['account']['alternate_name'])
                         {
-                            // TODO: Error Handling, update value same as current record
+                            // Error Handling, update value same as current record
                             $this->message->notice = 'Update api alternate_name failed, update value same as current record';
                             $this->content['api_result'] = [
                                 'status'=>'OK',
@@ -902,7 +897,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             $row = $get_entity_api_obj->get($get_parameter);
                             if (count($row) > 0)
                             {
-                                // TODO: Error Handling, username already exist
+                                // Error Handling, username already exist
                                 $this->message->notice = 'Api alternate_name already exists';
                                 $this->content['api_result'] = [
                                     'status'=>'REQUEST_DENIED',
@@ -932,7 +927,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     case 'profile_update_password':
                         if (empty($this->request['option']['password']))
                         {
-                            // TODO: Error Handling, password not set
+                            // Error Handling, password not set
                             $this->message->notice = 'Update api password with empty value';
                             $this->content['api_result'] = [
                                 'status'=>'INVALID_REQUEST',
@@ -942,7 +937,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         }
                         if (hash('sha256',hash('crc32b',$this->request['option']['password'])) == $this->content['account']['password'])
                         {
-                            // TODO: Error Handling, update value same as current record
+                            // Error Handling, update value same as current record
                             $this->message->notice = 'Update api password failed, update value same as current record';
                             $this->content['api_result'] = [
                                 'status'=>'OK',
@@ -997,7 +992,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 }
                 if (empty($_SERVER['HTTP_AUTH_KEY']))
                 {
-                    // TODO: Error Handling, api key authentication failed
+                    // Error Handling, api key authentication failed
                     $this->message->notice = 'Building: Api Key Not Provided';
                     $this->content['api_result'] = [
                         'status'=>'REQUEST_DENIED',
@@ -1010,7 +1005,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 $auth_id = $entity_api_key_obj->validate_api_key($method_variable);
                 if ($auth_id === false)
                 {
-                    // TODO: Error Handling, api key authentication failed
+                    // Error Handling, api key authentication failed
                     $this->message->notice = 'Building: Api Key Authentication Failed';
                     $this->content['api_result'] = [
                         'status'=>$method_variable['status'],
@@ -1022,7 +1017,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 $entity_api_method_obj = new entity_api_method($this->request['method'],['api_id'=>$auth_id]);
                 if (empty($entity_api_method_obj->id_group))
                 {
-                    // TODO: Error Handling, api method not recognized
+                    // Error Handling, api method not recognized
                     $this->message->notice = 'Building: Unknown Request Api Method ['.$this->request['method'].']';
                     $this->content['api_result'] = [
                         'status'=>'INVALID_REQUEST',
@@ -1051,7 +1046,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     }
                     if (!in_array($this->request['method'],$available_function_name))
                     {
-                        // TODO: Error Handling, user permission error, user does not have permission to use this function
+                        // Error Handling, user permission error, user does not have permission to use this function
                         $this->message->notice = 'Building: User ['.end($entity_api_obj->row)['name'].'] does not have the permission to use the method ['.$this->request['method'].']';
                         $this->content['api_result'] = [
                             'status'=>'REQUEST_DENIED',
@@ -1067,7 +1062,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 $method_calling = $this->request['method'];
                 if (!method_exists($entity_api_method_obj,$method_calling))
                 {
-                    // TODO: Error Handling, internal error, api method defined in database, but does not exist in class function
+                    // Error Handling, internal error, api method defined in database, but does not exist in class function
                     $this->message->notice = 'Building: Server Internal Error Api Method ['.$this->request['method'].'] not defined';
                     $this->content['api_result'] = [
                         'status'=>'UNKNOWN_ERROR',
@@ -1107,9 +1102,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     case 'console':
                         if (!isset($_COOKIE['session_id']))
                         {
-                            // TODO: Error Handling, session validation failed, session_id not set
+                            // Error Handling, session validation failed, session_id not set
                             $this->message->notice = 'Session ID Not Set, Redirect to Login Page';
-//print_r($_COOKIE);print_r($this->message->notice);exit();
                             $this->result['status'] = 301;
                             $this->result['header']['Location'] =  URI_SITE_BASE.'login';
                             return false;
@@ -1120,9 +1114,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $session = $entity_api_session_obj->validate_api_session_id($method_variable);
                         if ($session == false)
                         {
-                            // TODO: Error Handling, session validation failed, session_id invalid
+                            // Error Handling, session validation failed, session_id invalid
                             $this->message->notice = 'Session Validation Failed, Redirect to Login Page';
-//print_r($_COOKIE);print_r($this->message->notice);exit();
                             $this->result['status'] = 301;
                             $this->result['header']['Location'] =  URI_SITE_BASE.'login';
                             return false;
@@ -1130,9 +1123,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $entity_api_obj = new entity_api($session['account_id']);
                         if (empty($entity_api_obj->row))
                         {
-                            // TODO: Error Handling, session validation failed, session_id is valid, but cannot read corresponding account
+                            // Error Handling, session validation failed, session_id is valid, but cannot read corresponding account
                             $this->message->error = 'Session Validation Succeed, but cannot find related api account';
-//print_r($this->message->error);exit();
                             $this->result['status'] = 301;
                             $this->result['header']['Location'] =  URI_SITE_BASE.'login';
                             return false;
@@ -1251,7 +1243,6 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                     if (!empty($this->preference->api['force_ssl'])) $api_site_base = str_replace('http://','https://',$api_site_base);
                                     $content['page_content'] .= '<div class="api_method_request_uri">'.$api_site_base.$this->content['format'].'/'.$api_method['request_uri'].'</div>';
                                     $content['page_content'] .= '<div class="api_method_description">'.$api_method['description'].'</div>';
-//$content['page_content'] .=print_r($api_method['field'],true);
                                     if (is_array($api_method['field']) AND !empty($api_method['field']))
                                     {
                                         $content['page_content'] .= '<div class="api_method_field_wrapper">';
@@ -1284,17 +1275,13 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         // If page is login, check for user login session
                         if ($this->request['document'] == 'login')
                         {
-//print_r('<br>Login Page<br>');
                             if (isset($_COOKIE['session_id']))
                             {
-//print_r('<br>Session Exists: '.$_COOKIE['session_id']);
-//exit();
-                                // TODO: session_id is set, check if it is already logged in
+                                // session_id is set, check if it is already logged in
                                 $entity_api_session_obj = new entity_api_session();
                                 $method_variable = ['status'=>'OK','message'=>'','api_session_id'=>$_COOKIE['session_id'],'remote_ip'=>$this->request['remote_ip']];
                                 $session = $entity_api_session_obj->validate_api_session_id($method_variable);
-//print_r($session === false);
-//exit();
+
                                 if ($session === false)
                                 {
                                     // If session_id is not valid, unset it and continue login process
@@ -1305,7 +1292,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                     $entity_api_obj = new entity_api($session['account_id']);
                                     if (empty($entity_api_obj->row))
                                     {
-                                        // TODO: Error Handling, session validation failed, session_id is valid, but cannot read corresponding account
+                                        // Error Handling, session validation succeed, session_id is valid, but cannot read corresponding account
                                         $this->message->error = 'Session Validation Succeed, but cannot find related api account';
                                         // If session_id is not valid, unset it and continue login process
                                         $this->result['cookie'] = ['session_id'=>['value'=>'','time'=>1]];
@@ -1323,10 +1310,6 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             }
                             if ($_SERVER['REQUEST_METHOD'] == 'POST')
                             {
-//print_r('<br>Post Value Detect: ');
-//print_r($_COOKIE);
-//print_r($this->request['option']);
-//exit();
                                 if (isset($this->request['option']['username']))
                                 {
                                     $this->content['post_result'] = [
@@ -1349,7 +1332,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                             $complementary = base64_decode($option_value);
                                             if ($complementary === false OR $complementary == $option_value)
                                             {
-                                                // TODO: Error Handling, complementary info error
+                                                // Error Handling, complementary info error
                                                 $this->message->notice = 'Building: Login Failed';
                                                 $this->content['post_result'] = [
                                                     'status'=>'REQUEST_DENIED',
@@ -1362,7 +1345,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                                 $complementary_info = json_decode($complementary,true);
                                                 if (empty($complementary_info))
                                                 {
-                                                    // TODO: Error Handling, complementary info not in json format
+                                                    // Error Handling, complementary info not in json format
                                                     $this->message->notice = 'Building: Login Failed';
                                                     $this->content['post_result'] = [
                                                         'status'=>'REQUEST_DENIED',
@@ -1385,7 +1368,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                         $api_account = $entity_api_obj->authenticate($login_param);
                                         if ($api_account === false)
                                         {
-                                            // TODO: Error Handling, login failed
+                                            // Error Handling, login failed
                                             $this->message->notice = 'Building: Login Failed';
                                             $this->content['post_result'] = [
                                                 'status'=>'REQUEST_DENIED',
@@ -1407,7 +1390,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 
                                             if (empty($session))
                                             {
-                                                // TODO: Error Handling, create session id failed
+                                                // Error Handling, create session id failed
                                                 $this->message->error = 'Building: Fail to create session id';
                                                 $this->content['post_result'] = [
                                                     'status'=>'REQUEST_DENIED',
@@ -1479,25 +1462,19 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 
                                 $entity_api_log_obj = new entity_api_log();
                                 $log_record = ['name'=>'Logout','account_id'=>$session_record['account_id'],'status'=>'OK','message'=>'Session close by user','content'=>$session_record['name'],'remote_ip'=>$this->request['remote_ip'],'request_uri'=>$_SERVER['REQUEST_URI']];
-//echo '<pre>';
                                 $entity_api_obj = new entity_api($session_record['account_id']);
-//print_r($entity_api_obj);
-//exit();
                                 if (count($entity_api_obj->row) > 0)
                                 {
                                     $log_record['description'] = end($entity_api_obj->row)['name'];
                                 }
                                 $entity_api_log_obj->set_log($log_record);
-//print_r($session_record);
-//print_r($entity_api_log_obj);
                             }
 
                             // If session is valid, delete the session then redirect to login
                             $entity_api_session_obj->delete();
-//exit();
                             return true;
                         }
-//exit();
+
                         if (isset($this->request['option']['field']))
                         {
                             $this->content['field'] = array_merge($this->content['field'],$this->request['option']['field']);
@@ -1520,13 +1497,13 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             }
                             if (count($page_obj->id_group) > 1)
                             {
-                                // TODO: Error Handling, ambiguous reference, multiple page found, database data error
+                                // Error Handling, ambiguous reference, multiple page found, database data error
                                 $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): Multiple web page resources loaded '.implode(',',$page_obj->id_group);
                             }
                             $page_fetched_value = $page_obj->fetch_value(['page_size'=>1]);
                             if (empty($page_fetched_value))
                             {
-                                // TODO: Error Handling, fetch record row failed, database data error
+                                // Error Handling, fetch record row failed, database data error
                                 $GLOBALS['global_message']->error = __FILE__.'(line '.__LINE__.'): Fetch row failed '.implode(',',$page_obj->id_group);
                                 $this->result['status'] = 404;
                                 return false;
@@ -1594,8 +1571,6 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 return true;
         }
 
-        //print_r($page_field);
-        //print_r($GLOBALS['global_message']->display());
         return true;
     }
 
@@ -1645,14 +1620,14 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 
                 if (!file_exists($this->content['target_file']['path']))
                 {
-                    // TODO: Error Handling, Fail to generate target file
+                    // Error Handling, Fail to generate target file
                     $this->message->error = 'Rendering: Fail to generate target file';
                     return false;
                 }
 
                 if ($this->request['file_uri'] != $this->content['target_file']['uri'])
                 {
-                    // TODO: On Direct Rendering from HTTP REQUEST, if request_uri is different from target file_uri, do 301 redirect
+                    // On Direct Rendering from HTTP REQUEST, if request_uri is different from target file_uri, do 301 redirect
                     $this->result['status'] = 301;
                     $this->result['header']['Location'] = str_replace(URI_SITE_BASE,'/',$this->content['target_file']['uri']);
                     return false;
@@ -1671,7 +1646,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 
                 if ($this->content['target_file']['content_length'] == 0)
                 {
-                    // TODO: Error Handling, Fail to generate target file
+                    // Error Handling, Fail to generate target file
                     $this->message->error = 'Rendering: Fail to generate target file';
                     return false;
                 }
@@ -1712,7 +1687,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         $source_image = imagecreatefromstring($this->content['source_file']['path']);
                 }
                 if ($source_image === FALSE) {
-                    // TODO: Error Handling, fail to create image
+                    // Error Handling, fail to create image
                     $this->message->error = 'Rendering: fail to create image';
                     return false;
                 }
@@ -1812,9 +1787,6 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     $unlink_retry_counter--;
                 }
 
-//echo '<pre>';print_r($this);
-//print_r(['Last-Modified'=>gmdate('D, d M Y H:i:s',$this->content['target_file']['last_modified']).' GMT','Content-Length'=>$this->content['target_file']['content_length'],'Content-Type'=>$this->content['target_file']['content_type']]);
-//exit();
                 $this->result['header']['Last-Modified'] = gmdate('D, d M Y H:i:s',$this->content['target_file']['last_modified']).' GMT';
                 $this->result['header']['Content-Length'] = $this->content['target_file']['content_length'];
                 $this->result['header']['Content-Type'] = $this->content['target_file']['content_type'];
@@ -1871,21 +1843,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 setcookie($cookie_name,$cookie_content['value'],$cookie_content['time'],'/'.(FOLDER_SITE_BASE != ''?(FOLDER_SITE_BASE.'/'):''));
             }
         }
-//echo '<pre>';
-//unset($this->content['field']['content']);
-//unset($this->content['account']['api_method']);
-//unset($this->result['content']);
-//print_r($this);
-        /*if (isset($_SESSION))
-        {
-            echo '<pre>';
-            $print_result = ['request'=>$this->request,'content'=>$this->content,'result'=>$this->result];
-            unset($print_result['result']['content']);
-            print_r($print_result);
-            print_r($_SESSION);
-            print_r($this->message->display());
-            exit();
-        }*/
+
         http_response_code($this->result['status']);
         foreach($this->result['header'] as $header_name=>$header_content)
         {
@@ -1900,9 +1858,6 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
         {
             print_r($this->result['content']);
         }
-//echo '<pre>';
-//print_r($_COOKIE);
-//print_r(date('Y-m-d H:i:s',$this->result['cookie']['session_id']['time']));
     }
 
     function get_result()

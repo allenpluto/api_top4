@@ -142,7 +142,8 @@ $GLOBALS['time_stack']['create object 1 '.$match_result_value['object']] = micro
                 }
                 catch (Exception $e)
                 {
-                    //TODO: Add some error log here, $e->getMessage()
+                    // Error Handling, error rendering sub object during render_html
+                    $GLOBALS['global_message']->error = 'error rendering sub object during render_html'.$e->getMessage();
                     $match_result_value['value'] = $e->getMessage();
                     break;
                 }
@@ -249,7 +250,8 @@ function minify_content($value, $type='html')
             );
             return preg_replace($search, $replace, $value);
         default:
-            // TODO: Error Handling, minify unknown type
+            // Error Handling, minify unknown type
+            $GLOBALS['global_message']->error = 'minify_content - unrecognized minify type '.$type;
             return false;
     }
 }
@@ -270,23 +272,4 @@ function get_remote_ip()
         return $_SERVER['HTTP_X_FORWARDED_FOR'];
     }
     return $_SERVER['REMOTE_ADDR'];
-}
-
-function session_validation()
-{
-    $message = message::get_instance();
-
-    if (!isset($_COOKIE['session_id']))
-    {
-        // TODO: Error Handling, fail to get external source file header
-        $message->notice = 'Session Validation Failed, Redirect to Login Page';
-        return false;
-    }
-
-    if (!isset($_SESSION)) {
-        session_start();
-    }
-
-    $entity_api_session = new entity_api_session();
-
 }

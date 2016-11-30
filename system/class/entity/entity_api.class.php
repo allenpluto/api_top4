@@ -33,7 +33,7 @@ class entity_api extends entity
     {
         if (empty($parameter['username']) OR empty($parameter['password']))
         {
-            // TODO: username and password cannot be empty
+            // username and password cannot be empty
             $this->message->notice = 'Username and password cannot be empty';
             return false;
         }
@@ -44,13 +44,13 @@ class entity_api extends entity
         $row = $this->get($param);
         if (empty($this->id_group))
         {
-            // TODO: Error, Invalid login
+            // Error, Invalid login
             $this->message->notice = 'invalid login';
             return false;
         }
         if (count($this->id_group) > 1)
         {
-            // TODO: Error, Multiple accounts match, should never happen
+            // Error, Multiple accounts match, should never happen
             $this->message->warning = 'multiple login matched';
         }
         return end($this->row);

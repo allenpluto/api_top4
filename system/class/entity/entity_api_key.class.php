@@ -93,7 +93,7 @@ class entity_api_key extends entity
         $row = $this->get($get_parameter);
         if (empty($row))
         {
-            // TODO: Error, type invalid api key
+            // Error, type invalid api key
             $parameter['status'] = 'REQUEST_DENIED';
             $parameter['message'] = 'Invalid api key';
             return false;
@@ -119,14 +119,14 @@ class entity_api_key extends entity
                         return $record['account_id'];
                     }
                 }
-                // TODO: Error, requested ip not accepted
+                // Error, requested ip not accepted
                 $parameter['status'] = 'REQUEST_DENIED';
                 $parameter['message'] = 'Invalid ip address ['.$parameter['remote_ip'].']';
                 return false;
             }
             else
             {
-                // TODO: Error, type invalid api key, key is not generated through genuine method
+                // Error, type invalid api key, key is not generated through genuine method
                 $parameter['status'] = 'INVALID_REQUEST';
                 $parameter['message'] = 'Invalid api key, key is not genuine';
                 return false;

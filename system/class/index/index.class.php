@@ -4,7 +4,7 @@
 // Description: Base class for all database index classes, filters and search functions, primary key might not be unique
 //              due to joining multiple to multiple relationship tables
 
-class index
+class index extends base
 {
     // database connection
     protected $_conn = null;

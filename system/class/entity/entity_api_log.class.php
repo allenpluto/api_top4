@@ -14,7 +14,7 @@ class entity_api_log extends entity
         $this->set($set_parameter);
         if (empty($this->row))
         {
-            // TODO: Error Handling, Failed to generate log
+            // Error Handling, Failed to generate log
             $this->message->error = 'Failed to generate log';
             return false;
         }

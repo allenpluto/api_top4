@@ -7,7 +7,7 @@
 //              row - row values of desired page, set on fetch_value, unset on get
 //              rendered_html - implement html template of row, set on render, unset on get and fetch_value
 
-class view
+class view extends base
 {
     // database connection
     protected $_conn = null;

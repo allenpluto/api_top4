@@ -28,7 +28,7 @@ class entity_api_session extends entity
         $this->set($set_parameter);
         if (empty($this->row))
         {
-            // TODO: Error Handling, Failed to generate session
+            // Error Handling, Failed to generate session
             $this->message->error = 'Failed to generate session';
             return false;
         }
@@ -49,7 +49,7 @@ class entity_api_session extends entity
         $row = $this->get($get_parameter);
         if (empty($row))
         {
-            // TODO: Error Handling, invalid api key
+            // Error Handling, invalid api key
             $parameter['status'] = 'REQUEST_DENIED';
             $parameter['message'] = 'Please login again';
             $this->message->notice = 'Invalid session id '.$parameter['api_session_id'].'.';
@@ -59,7 +59,7 @@ class entity_api_session extends entity
         $session = end($row);
         if (strtotime($session['expire_time']) < strtotime(gmdate('Y-m-d H:i:s ')))
         {
-            // TODO: Error Handling, invalid api key
+            // Error Handling, invalid api key
             $parameter['status'] = 'REQUEST_DENIED';
             $parameter['message'] = 'Session Time Out, please login again';
             $this->message->notice = 'Session expired '.$parameter['api_session_id'].'.';
@@ -81,7 +81,7 @@ class entity_api_session extends entity
 
         if(hash('crc32b',2000-$session['account_id']) != $crc32b_dec)
         {
-            // TODO: Error Handling, invalid api key
+            // Error Handling, invalid api key
             $parameter['status'] = 'REQUEST_DENIED';
             $parameter['message'] = 'Please login again';
             $this->message->notice = 'Session id is not genius '.$parameter['api_session_id'].'.';

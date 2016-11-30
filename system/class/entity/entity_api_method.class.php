@@ -9,7 +9,7 @@ class entity_api_method extends entity
     {
         if (empty($parameter['api_id']))
         {
-            // TODO: Error Handling api account id not provided
+            // Error Handling api account id not provided
             $parameter['status'] = 'REQUEST_DENIED';
             $parameter['message'] = 'Cannot access API Account';
             return false;
@@ -39,10 +39,10 @@ class entity_api_method extends entity
 
         if (empty($parameter['username']) OR empty($parameter['first_name']) OR empty($parameter['last_name']))
         {
-            // TODO: Error Handling, username, first_name or last_name not provided
-            //$parameter['status'] = 'INVALID_REQUEST';
-            //$parameter['message'] = 'New Account Details not provided, username, first_name and last_name are mandatory';
-            $parameter = ['status'=>'INVALID_REQUEST','message'=>'New Account Details not provided, username, first_name and last_name are mandatory','username'=>$parameter['username'],'first_name'=>$parameter['first_name'],'last_name'=>$parameter['last_name']];
+            // Error Handling, username, first_name or last_name not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'New Account Details not provided, username, first_name and last_name are mandatory';
+            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'New Account Details not provided, username, first_name and last_name are mandatory','username'=>$parameter['username'],'first_name'=>$parameter['first_name'],'last_name'=>$parameter['last_name']];
             return false;
         }
 
@@ -108,7 +108,7 @@ class entity_api_method extends entity
         {
             if (empty($parameter_row['username']) OR empty($parameter_row['first_name']) OR empty($parameter_row['last_name']))
             {
-                // TODO: Error Handling, Website uri not provided
+                // Error Handling, Website uri not provided
                 //$parameter['status'] = 'INVALID_REQUEST';
                 //$parameter['message'] = 'New Account Details not provided, username, first_name and last_name are mandatory';
                 $parameter['result'][] = ['status'=>'INVALID_REQUEST','message'=>'New Account Details not provided, username, first_name and last_name are mandatory'];
@@ -186,10 +186,10 @@ class entity_api_method extends entity
 
         if (empty($parameter['title']) OR empty($parameter['latitude']) OR empty($parameter['longitude']) OR empty($parameter['category']))
         {
-            // TODO: Error Handling, username, first_name or last_name not provided
-            //$parameter['status'] = 'INVALID_REQUEST';
-            //$parameter['message'] = 'New Listing Details not provided, username, first_name and last_name are mandatory';
-            $parameter = ['status'=>'INVALID_REQUEST','message'=>'New Listing Details not provided. Title, category, latitude and longitude are mandatory fields'];
+            // Error Handling, username, first_name or last_name not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'New Listing Details not provided. Title, category, latitude and longitude are mandatory fields';
+            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'New Listing Details not provided. Title, category, latitude and longitude are mandatory fields'];
             return false;
         }
 
@@ -225,8 +225,10 @@ class entity_api_method extends entity
 
         if (empty($category_where))
         {
-            // TODO: Error Handling, username, first_name or last_name not provided
-            $parameter = ['status'=>'INVALID_REQUEST','message'=>'Category provided is not in correct format, it should be either schema name or schema full url start with http://, multiple categories should be separate by comma'];
+            // Error Handling, username, first_name or last_name not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Category provided is not in correct format, it should be either schema name or schema full url start with http://, multiple categories should be separate by comma';
+            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'Category provided is not in correct format, it should be either schema name or schema full url start with http://, multiple categories should be separate by comma'];
             return false;
         }
         $entity_category_param['where'][] = implode(' AND ',$category_where);
@@ -235,8 +237,10 @@ class entity_api_method extends entity
         $entity_category_obj->get($entity_category_param);
         if (empty($entity_category_obj->id_group))
         {
-            // TODO: Error Handling, username, first_name or last_name not provided
-            $parameter = ['status'=>'INVALID_REQUEST','message'=>'Cannot find category'];
+            // Error Handling, username, first_name or last_name not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Cannot find category';
+            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'Cannot find category'];
             return false;
         }
 
@@ -285,8 +289,10 @@ class entity_api_method extends entity
     {
         if (empty($parameter['username']))
         {
-            // TODO: Error Handling, username not provided
-            $parameter = ['status'=>'INVALID_REQUEST','message'=>'username not provided'];
+            // Error Handling, username not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'username not provided';
+            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'username not provided'];
             return false;
         }
 
@@ -329,8 +335,10 @@ class entity_api_method extends entity
     {
         if (empty($parameter['token']))
         {
-            // TODO: Error Handling, username not provided
-            $parameter = ['status'=>'INVALID_REQUEST','message'=>'token not provided'];
+            // Error Handling, username not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Token not provided';
+            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'token not provided'];
             return false;
         }
 
@@ -373,7 +381,7 @@ class entity_api_method extends entity
     {
         if (empty($parameter['uri']))
         {
-            // TODO: Error Handling, Website uri not provided
+            // Error Handling, Website uri not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'Website uri not provided';
             return false;

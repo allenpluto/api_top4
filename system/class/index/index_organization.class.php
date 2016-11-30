@@ -143,7 +143,8 @@ class index_organization extends index
         $value = trim(preg_replace('/^(https?:\/\/)?(www\.)?/','',$value),'/');
         if (empty($value))
         {
-            // TODO: Error Handling, empty uri string
+            // Error Handling, empty uri string
+            $this->message->notice = 'filter_by_uri, input string is not in correct URI format';
             return false;
         }
 
