@@ -1201,27 +1201,28 @@ $.fn.overlay_popup = function(user_option){
 
             overlay_container.html('');
 
-            overlay_wrapper.append(overlay_container).hide().appendTo(option['parent']);
+            overlay_wrapper.append(overlay_container).hide().data('option',option).appendTo(option['parent']);
+            option['parent'].addClass('overlay_active');
 
             overlay_wrapper.fadeIn(500,function(){
                 switch (option['load_type'])
                 {
-                case 'html_content':
-                    overlay_container.html(option['html_content']);
-                    option['init_function'](overlay_trigger,overlay_wrapper);
-                    break;
-                case 'html_datasrc':
-                    overlay_container.load(option['html_datasrc'],function(){
+                    case 'html_content':
+                        overlay_container.html(option['html_content']);
                         option['init_function'](overlay_trigger,overlay_wrapper);
-                    });
-                    break;
-                default:
-                    $('<iframe />',  {
-                        'src':option['html_datasrc']
-                    }).load(function(){
-                        option['init_function'](overlay_trigger,overlay_wrapper);
-                        $(this).css('height',$(this).contents().find('body').height())
-                    }).appendTo(overlay_container);
+                        break;
+                    case 'html_datasrc':
+                        overlay_container.load(option['html_datasrc'],function(){
+                            option['init_function'](overlay_trigger,overlay_wrapper);
+                        });
+                        break;
+                    default:
+                        $('<iframe />',  {
+                            'src':option['html_datasrc']
+                        }).load(function(){
+                            option['init_function'](overlay_trigger,overlay_wrapper);
+                            $(this).css('height',$(this).contents().find('body').height())
+                        }).appendTo(overlay_container);
                 }
 
                 if (option['title'])
@@ -1238,15 +1239,23 @@ $.fn.overlay_popup = function(user_option){
                     }).appendTo(overlay_container);
                 }
 
+                overlay_wrapper.on('close', function(event) {
+                    $(this).fadeOut(500,function(){
+                        var option = $(this).data('option');
+                        option['parent'].removeClass('overlay_active');
+                        $(this).remove();
+                    });
+                });
+
                 overlay_wrapper.click(function(event){
                     if ($(event.target).is($(this)) && (option['close_on_click_wrapper'] == true))
                     {
-                        $(this).fadeOut(500,function(){$(this).remove();});
+                        $(this).trigger('close');
                     }
                 });
 
                 overlay_wrapper.find('.overlay_close').click(function(){
-                    overlay_wrapper.fadeOut(500,function(){$(this).remove();});
+                    overlay_wrapper.trigger('close');
                 });
             });
         });
