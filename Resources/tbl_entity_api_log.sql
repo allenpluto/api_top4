@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Oct 21, 2016 at 05:05 AM
+-- Generation Time: Nov 30, 2016 at 03:28 PM
 -- Server version: 5.6.12-log
 -- PHP Version: 5.4.12
 
@@ -29,18 +29,21 @@ SET time_zone = "+00:00";
 DROP TABLE IF EXISTS `tbl_entity_api_log`;
 CREATE TABLE IF NOT EXISTS `tbl_entity_api_log` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `friendly_url` varchar(200) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `friendly_uri` varchar(200) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `name` varchar(200) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `alternate_name` varchar(200) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `description` varchar(500) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `image_id` int(11) NOT NULL DEFAULT '0',
   `enter_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `account_id` int(11) NOT NULL DEFAULT '0',
+  `status` varchar(20) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `message` text COLLATE utf8_unicode_ci NOT NULL,
-  `remote_ip` varchar(20) COLLATE utf8_unicode_ci NOT NULL,
+  `content` text COLLATE utf8_unicode_ci NOT NULL,
+  `remote_ip` varchar(20) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `request_uri` varchar(200) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=23 ;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
