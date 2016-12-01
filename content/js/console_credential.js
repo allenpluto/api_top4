@@ -39,7 +39,7 @@ var delete_credential_data = {
                             $(this).remove();
                         });
 
-                        overlay_wrapper.fadeOut(500,function(){$(this).remove();});
+                        overlay_wrapper.fadeOut(500,function(){$(this).trigger('close');});
                     }
                     else
                     {
@@ -164,13 +164,13 @@ var update_credential_data = {
                                 'class':'general_style_inline_block'
                             }).html(ip_restriction[i]).appendTo(overlay_trigger.closest('.api_key_container').find('.api_key_ip_restriction'));
                         }
-                        overlay_wrapper.fadeOut(500,function(){$(this).remove();});
+                        overlay_wrapper.fadeOut(500,function(){$(this).trigger('close');});
                     }
                     else
                     {
                         if (data.status == 'ZERO_RESULTS')
                         {
-                            overlay_wrapper.fadeOut(500,function(){$(this).remove();});
+                            overlay_wrapper.fadeOut(500,function(){$(this).trigger('close');});
                             //ajax_info.removeClass('ajax_info_success').addClass('ajax_info_error').html(data.message+' <a href="javascript:location.reload();">Refresh Page</a> to continue');
                         }
                         else

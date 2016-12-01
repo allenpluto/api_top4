@@ -95,7 +95,7 @@ var change_password_data = {
                     {
                         $('.api_profile_message_container').removeClass('ajax_info_error').addClass('ajax_info_success').html('Password updated');
 
-                        overlay_wrapper.fadeOut(500,function(){$(this).remove();});
+                        overlay_wrapper.fadeOut(500,function(){$(this).trigger('close');});
                     }
                     else
                     {
