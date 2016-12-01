@@ -92,37 +92,65 @@ var update_credential_data = {
 
 
         $('.ip_add_new').keydown(function(event){
-            switch (event.which)
+            if ($.inArray(event.keyCode, [46, 8, 9, 27, 110, 32, 189]) !== -1 ||
+                    // Allow: Ctrl+A
+                (event.keyCode == 65 && (event.ctrlKey === true || event.metaKey === true)) ||
+                    // Allow: Ctrl+C
+                (event.keyCode == 67 && (event.ctrlKey === true || event.metaKey === true)) ||
+                    // Allow: Ctrl+V
+                (event.keyCode == 86 && (event.ctrlKey === true || event.metaKey === true)) ||
+                    // Allow: Ctrl+X
+                (event.keyCode == 88 && (event.ctrlKey === true || event.metaKey === true)) ||
+                    // Allow: Ctrl+Z
+                (event.keyCode == 90 && (event.ctrlKey === true || event.metaKey === true)) ||
+                    // Allow: *
+                (event.keyCode == 56 && event.shiftKey === true) ||
+                    // Allow: home, end, left, right
+                (event.keyCode >= 35 && event.keyCode <= 39) ||
+                    // Allow: .
+                (event.keyCode == 190 && event.shiftKey === false)
+            )
             {
-                case 13:
-                    // Key Enter Pressed
-                    event.preventDefault();
-                    var validate_string = $(this).val();
-                    validate_string = validate_string.trim();
-                    var reg_pattern = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
-                    if (!reg_pattern.test(validate_string))
+                // let it happen, don't do anything
+                return;
+            }
+
+            if (event.keyCode == 13)
+            {
+                // Key Enter Pressed
+                event.preventDefault();
+                var validate_string = $(this).val();
+                validate_string = validate_string.trim();
+                var reg_pattern = /^(?:(\*|[0-9]{1,3})\.){3}(\*|[0-9]{1,3})$/;
+                if (!reg_pattern.test(validate_string))
+                {
+                    ajax_info.removeClass('ajax_info_success').addClass('ajax_info_error').html('IP Address is invalid').focus();
+                    return false;
+                }
+
+                var flag_repeat = false;
+                update_form.find('.update_row_ip_container .ip_row_container .ip_value').each(function(index,element){
+                    if ($(this).html() == validate_string)
                     {
-                        ajax_info.removeClass('ajax_info_success').addClass('ajax_info_error').html('IP Address is invalid');
-                        return false;
+                        $(this).closest('.ip_row_container').addClass('ip_row_container_highlight');
+                        setTimeout(function(){$(this).closest('.ip_row_container').addClass('ip_row_container_highlight')},3000);
                     }
+                });
 
-                    var flag_repeat = false;
-                    update_form.find('.update_row_ip_container .ip_row_container .ip_value').each(function(index,element){
-                        if ($(this).html() == validate_string)
-                        {
-                            $(this).closest('.ip_row_container').addClass('ip_row_container_highlight');
-                            setTimeout(function(){$(this).closest('.ip_row_container').addClass('ip_row_container_highlight')},3000);
-                        }
-                    });
+                var ip_row = $('<div />',{
+                    'class':'ip_row_container'
+                }).html('<div class="ip_value">'+$(this).val()+'</div><div class="ip_delete">&#xf00d;</div>').appendTo(update_form.find('.update_row_ip_container'));
+                ip_row.find('.ip_delete').click(function(event){
+                    event.preventDefault();
+                    ip_row.remove();
+                });
+                return;
+            }
 
-                    var ip_row = $('<div />',{
-                        'class':'ip_row_container'
-                    }).html('<div class="ip_value">'+$(this).val()+'</div><div class="ip_delete">&#xf00d;</div>').appendTo(update_form.find('.update_row_ip_container'));
-                    ip_row.find('.ip_delete').click(function(event){
-                        event.preventDefault();
-                        ip_row.remove();
-                    });
-                    break;
+            // Ensure that it is a number and stop the keypress
+            if ((event.shiftKey || (event.keyCode < 48 || event.keyCode > 57)) && (event.keyCode < 96 || event.keyCode > 105))
+            {
+                event.preventDefault();
             }
         });
 
