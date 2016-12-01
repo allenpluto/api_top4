@@ -124,7 +124,8 @@ var update_credential_data = {
                 var reg_pattern = /^(?:(\*|[0-9]{1,3})\.){3}(\*|[0-9]{1,3})$/;
                 if (!reg_pattern.test(validate_string))
                 {
-                    ajax_info.removeClass('ajax_info_success').addClass('ajax_info_error').html('IP Address is invalid').focus();
+                    ajax_info.removeClass('ajax_info_success').addClass('ajax_info_error').html('Invalid IP Address');
+                    overlay_wrapper.scrollTop(100);
                     return false;
                 }
 
@@ -132,18 +133,24 @@ var update_credential_data = {
                 update_form.find('.update_row_ip_container .ip_row_container .ip_value').each(function(index,element){
                     if ($(this).html() == validate_string)
                     {
-                        $(this).closest('.ip_row_container').addClass('ip_row_container_highlight');
-                        setTimeout(function(){$(this).closest('.ip_row_container').addClass('ip_row_container_highlight')},3000);
+                        var ip_row_container = $(this).closest('.ip_row_container');
+                        ip_row_container.addClass('ip_row_container_highlight');
+                        setTimeout(function(){ip_row_container.removeClass('ip_row_container_highlight')},3000);
+                        flag_repeat = true;
                     }
                 });
 
-                var ip_row = $('<div />',{
-                    'class':'ip_row_container'
-                }).html('<div class="ip_value">'+$(this).val()+'</div><div class="ip_delete">&#xf00d;</div>').appendTo(update_form.find('.update_row_ip_container'));
-                ip_row.find('.ip_delete').click(function(event){
-                    event.preventDefault();
-                    ip_row.remove();
-                });
+                if (!flag_repeat)
+                {
+                    var ip_row = $('<div />',{
+                        'class':'ip_row_container'
+                    }).html('<div class="ip_value">'+$(this).val()+'</div><div class="ip_delete">&#xf00d;</div>').appendTo(update_form.find('.update_row_ip_container'));
+                    ip_row.find('.ip_delete').click(function(event){
+                        event.preventDefault();
+                        ip_row.remove();
+                    });
+                }
+
                 return;
             }
 
