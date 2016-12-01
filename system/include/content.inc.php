@@ -1510,19 +1510,17 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             }
                             $this->content['field'] = array_merge($this->content['field'],end($page_fetched_value));
                             $this->content['field']['style'] = [
-                                ['value'=>'/css/default.min.css','option'=>['format'=>'html_tag']]
+                                //['value'=>'/css/default.min.css','option'=>['format'=>'html_tag']]
                             ];
 
                             $this->content['field']['script'] = [
-                                ['value'=>'/js/jquery.min.js','option'=>['source'=>PATH_CONTENT_JS.'jquery-1.11.3.js','format'=>'html_tag']],
-                                ['value'=>'/js/default.min.js','option'=>['format'=>'html_tag']],
-                                ['value'=>'/js/default-top4.js','option'=>['source'=>'http://dev.top4.com.au/scripts/default.js','format'=>'html_tag']]
+                                ['value'=>'/js/jquery.min.js','option'=>['source'=>PATH_CONTENT_JS.'jquery-1.11.3.js','format'=>'html_tag']]
+                                //['value'=>'/js/default.min.js','option'=>['format'=>'html_tag']]
+                                //['value'=>'/js/default-top4.js','option'=>['source'=>'http://dev.top4.com.au/scripts/default.js','format'=>'html_tag']]
                             ];
 
                             if ($this->request['document'] == 'login')
                             {
-                                //$this->content['field']['remote_addr'] = $this->request['remote_ip'];
-                                //$this->content['field']['http_user_agent'] = $_SERVER['HTTP_USER_AGENT'];
                                 $this->content['field']['complementary'] = base64_encode(json_encode(['remote_addr'=>get_remote_ip(), 'http_user_agent'=>$_SERVER['HTTP_USER_AGENT'], 'submission_id'=>sha1(openssl_random_pseudo_bytes(5))]));
                             }
                         }
