@@ -1241,7 +1241,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                     $content['page_content'] .= '<div class="api_method_name"><h3>'.$api_method['name'].'</h3></div>';
                                     $api_site_base = URI_SITE_BASE;
                                     if (!empty($this->preference->api['force_ssl'])) $api_site_base = str_replace('http://','https://',$api_site_base);
-                                    $content['page_content'] .= '<div class="api_method_request_uri">'.$api_site_base.$this->content['format'].'/'.$api_method['request_uri'].'</div>';
+                                    $content['page_content'] .= '<div class="api_method_request_uri">'.$api_site_base.'json/'.$api_method['request_uri'].'</div>';
                                     $content['page_content'] .= '<div class="api_method_description">'.$api_method['description'].'</div>';
                                     if (is_array($api_method['field']) AND !empty($api_method['field']))
                                     {
