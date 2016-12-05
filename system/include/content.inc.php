@@ -1168,10 +1168,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                     'ip_restriction'=>'IP Restriction'
                                 );
                                 $content['page_content'] .= render_html($field_name,'element_console_credential');
-                                foreach($row as $record_index=>$record)
-                                {
-                                    $content['page_content'] .= render_html($record,'element_console_credential');
-                                }
+                                $content['page_content'] .= render_html(array_values($row),'element_console_credential');
                                 $content['page_content'] .= '</div>';
                                 break;
                             case 'profile':

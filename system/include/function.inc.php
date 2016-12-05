@@ -39,9 +39,21 @@ function render_html($field = array(), $template_name = '')
 {
     if (empty($template_name)) return '';
 $GLOBALS['time_stack']['analyse template '.$template_name] = microtime(1) - $GLOBALS['start_time'];
+    if (is_array($field) AND isset($field[0]))
+    {
+        $rendered_content_array = array();
+        foreach($field as $field_index=>$field_value)
+        {
+            if (file_exists(PATH_TEMPLATE.$template_name.'_'.$field_index.FILE_EXTENSION_TEMPLATE)) $template_name .= '_'.$field_index;
+            $rendered_content_array[] = render_html($field_value, $template_name);
+        }
+        return implode('',$rendered_content_array);
+    }
+
     if (file_exists(PATH_TEMPLATE.$template_name.FILE_EXTENSION_TEMPLATE)) $template = file_get_contents(PATH_TEMPLATE.$template_name.FILE_EXTENSION_TEMPLATE);
     else return '';
     if (empty($field)) return $template;
+    if (!is_array($field)) $field = array('_field_value'=>$field);
 
     preg_match_all('/\[\[(\W*)(.+?)\]\]/', $template, $matches);
 
@@ -81,13 +93,7 @@ $GLOBALS['time_stack']['analyse template '.$template_name] = microtime(1) - $GLO
                     {
                         if (file_exists(PATH_TEMPLATE.$template_name.'_'.$match_result_value['name'].FILE_EXTENSION_TEMPLATE))
                         {
-                            $match_result_value['value'] = '';
-                            foreach ($field[$match_result_value['name']] as $field_index=>$field_value)
-                            {
-                                $sub_field = $field;
-                                $sub_field[$match_result_value['name']] = $field_value;
-                                $match_result_value['value'] .= render_html($sub_field,$template_name.'_'.$match_result_value['name']);
-                            }
+                            $match_result_value['value'] = render_html($field[$match_result_value['name']],$template_name.'_'.$match_result_value['name']);
                         }
                         else
                         {
