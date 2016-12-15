@@ -1,1 +1,0 @@
-<div class="general_style_inline_block">[[*_field_value]]</div>

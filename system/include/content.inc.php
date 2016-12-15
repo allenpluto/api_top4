@@ -91,7 +91,6 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST' AND !empty($_POST))
         {
-
             // default post request with json format Input and Output
             $option = array_merge($option,$_POST);
             //if (!isset($option['data_type'])) $option['data_type'] = 'json';
@@ -832,13 +831,16 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             ];
                             return true;
                         }
+                        if (!isset($this->request['option']['alternate_name'])) $this->request['option']['alternate_name'] = '';
+                        if (!isset($this->request['option']['ip_restriction'])) $this->request['option']['ip_restriction'] = array();
                         $update_value = array(
                             'alternate_name'=>$this->request['option']['alternate_name'],
                             'ip_restriction'=>$this->request['option']['ip_restriction']
                         );
                         if (end($row)['alternate_name'] == $update_value['alternate_name'])
                         {
-                            if (implode(',',end($row)['ip_restriction']) == implode(',',$update_value['ip_restriction']))
+                            if (implode(',',end($row)['ip_restriction'])
+                                == implode(',',$update_value['ip_restriction']))
                             {
                                 // Error Handling, all value same, nothing to update
                                 $this->message->notice = 'alternate_name and ip_restriction are the same as current record, nothing to update';
@@ -1013,7 +1015,20 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     ];
                     return true;
                 }
+
                 $entity_api_obj = new entity_api($auth_id);
+                if (empty($entity_api_obj->row))
+                {
+                    // Error Handling, session validation failed, api_key is valid, but cannot read corresponding account
+                    $this->message->error = 'Api Key Authentication Succeed, but cannot find related api account';
+                    $this->content['api_result'] = [
+                        'status'=>'REQUEST_DENIED',
+                        'message'=>'Cannot get account info, it might be suspended or temporarily inaccessible'
+                    ];
+                    return true;
+                }
+                $this->content['account'] = end($entity_api_obj->row);
+
                 $entity_api_method_obj = new entity_api_method($this->request['method'],['api_id'=>$auth_id]);
                 if (empty($entity_api_method_obj->id_group))
                 {

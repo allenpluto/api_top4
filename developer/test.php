@@ -667,9 +667,24 @@ $entity->sync();
 
 print_r($global_message->display());
 print_r('Executing time: '.(time() - $timestamp).'<br>');
-$format = format::get_obj();
-print_r($format->minify_css(".column_container:after {display: block; height:1px;margin-top:-1px;clear:both;content: '     i\'d like to test: content : with semi-column '; font-family:'Font Awesome'; }"));
-print_r($format->minify_css(".column_container > .column {display: block; float:left;min-height:1px ;}"));*/
+$format = format::get_obj();*/
+$css_test_line = ".column_container:after
+{
+display: block;
+height:1px;
+margin-top:-1px;
+clear:both;
+content: '     i\'d like to test: content : with semi-column ';
+font-family:'Font Awesome';
+}";
+print_r($css_test_line);
+echo '<br>';
+print_r(minify_content($css_test_line,'css'));
+preg_match("/('([^']|\\')*?[^\\]')/",$css_test_line,$matches);
+print_r($matches);
+
+echo '<br>';
+print_r(minify_content(".column_container > .column {display: block; float:left;min-height:1px ;}",'css'));
 
 /*$test_uri = 'http://mobile.top4.com.au/listing/find/plumbers/nsw/sydney-region/pyrmont';
 $test_uri = 'http://mobile.top4.com.au/listing/search/'.urlencode('Plumbing services & gas fitter').'/where/'.urlencode('Pyrmont NSW, 2106');

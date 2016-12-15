@@ -39,6 +39,18 @@ function render_html($field = array(), $template_name = '')
 {
     if (empty($template_name)) return '';
 $GLOBALS['time_stack']['analyse template '.$template_name] = microtime(1) - $GLOBALS['start_time'];
+
+    $field_parameter = array();
+    if (isset($field['_parameter']))
+    {
+        $field_parameter = $field['_parameter'];
+        unset($field['_parameter']);
+    }
+    if (isset($field_parameter['condition']) AND empty($field_parameter['condition'])) return '';
+    if (isset($field['_value']))
+    {
+        $field = $field['_value'];
+    }
     if (is_array($field) AND isset($field[0]))
     {
         $rendered_content_array = array();
@@ -47,13 +59,21 @@ $GLOBALS['time_stack']['analyse template '.$template_name] = microtime(1) - $GLO
             if (file_exists(PATH_TEMPLATE.$template_name.'_'.$field_index.FILE_EXTENSION_TEMPLATE)) $template_name .= '_'.$field_index;
             $rendered_content_array[] = render_html($field_value, $template_name);
         }
-        return implode('',$rendered_content_array);
+        $rendered_content =  implode('',$rendered_content_array);
+        if (isset($field_parameter['container']))
+        {
+            return render_html(array('_placeholder'=>$rendered_content),$field_parameter['container']);
+        }
+        else
+        {
+            return $rendered_content;
+        }
     }
 
     if (file_exists(PATH_TEMPLATE.$template_name.FILE_EXTENSION_TEMPLATE)) $template = file_get_contents(PATH_TEMPLATE.$template_name.FILE_EXTENSION_TEMPLATE);
     else return '';
     if (empty($field)) return $template;
-    if (!is_array($field)) $field = array('_field_value'=>$field);
+    if (!is_array($field)) $field = array('_placeholder'=>$field);
 
     preg_match_all('/\[\[(\W*)(.+?)\]\]/', $template, $matches);
 
@@ -81,28 +101,61 @@ $GLOBALS['time_stack']['analyse template '.$template_name] = microtime(1) - $GLO
     }
 
     $rendered_content = $template;
+    $translate_array = array();
     foreach($match_result as $match_result_key=>&$match_result_value)
     {
+        $match_result_value = array_merge($match_result_value,$field_parameter);
+        if (isset($match_result_value['condition']))
+        {
+            if (empty($match_result_value['condition']))
+            {
+                return '';
+            }
+            else
+            {
+                if (isset($field[$match_result_value['condition']]) AND empty($field[$match_result_value['condition']]))
+                {
+                    return '';
+                }
+            }
+        }
         switch($match_result_value['type'])
         {
             case '*':
                 // Field value, directly set value from given field
                 if (isset($field[$match_result_value['name']]))
                 {
-                    if (is_array($field[$match_result_value['name']]))
+                    if (empty($field[$match_result_value['name']]))
                     {
-                        if (file_exists(PATH_TEMPLATE.$template_name.'_'.$match_result_value['name'].FILE_EXTENSION_TEMPLATE))
-                        {
-                            $match_result_value['value'] = render_html($field[$match_result_value['name']],$template_name.'_'.$match_result_value['name']);
-                        }
-                        else
-                        {
-                            $match_result_value['value'] = implode(',',$field[$match_result_value['name']]);
-                        }
+                        $match_result_value['value'] = '';
                     }
                     else
                     {
-                        $match_result_value['value'] = $field[$match_result_value['name']];
+                        if (is_array($field[$match_result_value['name']]))
+                        {
+                            if (!isset($match_result_value['template'])) $match_result_value['template'] = $template_name.'_'.$match_result_value['name'];
+                            if (file_exists(PATH_TEMPLATE.$match_result_value['template'].FILE_EXTENSION_TEMPLATE))
+                            {
+                                $match_result_value['value'] = render_html($field[$match_result_value['name']],$match_result_value['template']);
+                            }
+                            else
+                            {
+                                $match_result_value['value'] = implode(',',$field[$match_result_value['name']]);
+                            }
+                        }
+                        else
+                        {
+                            if (empty($match_result_value['template']))
+                            {
+                                $match_result_value['value'] = $field[$match_result_value['name']];
+                            }
+                            else
+                            {
+                                    //$field_with_default_value = array_merge($field, ['_placeholder'=>$field[$match_result_value['name']],'_parameter'=>array()]);
+                                $match_result_value['value'] = render_html(['_placeholder'=>$field[$match_result_value['name']]],$match_result_value['template']);
+                                    //unset($field_with_default_value);
+                            }
+                        }
                     }
                 }
                 else $match_result_value['value'] = '';
@@ -126,7 +179,14 @@ $GLOBALS['time_stack']['analyse template '.$template_name] = microtime(1) - $GLO
 
                 if (!isset($match_result_value['object']))
                 {
-                    $match_result_value['object'] = 'view_'.$match_result_value['name'];
+                    if (class_exists('view_'.$match_result_value['name']))
+                    {
+                        $match_result_value['object'] = 'view_'.$match_result_value['name'];
+                    }
+                    else
+                    {
+                        $match_result_value['object'] = 'entity_'.$match_result_value['name'];
+                    }
                 }
                 if (!isset($match_result_value['template']))
                 {
@@ -162,7 +222,7 @@ $GLOBALS['time_stack']['create object '.$match_result_value['object']] = microti
                 $rendered_result = array();
                 foreach ($result as $index=>$row)
                 {
-                    $row = array_merge($field, $row);
+                    $row = array_merge($field,['_parameter'=>[]],$row);
                     $rendered_result[] = render_html($row,$match_result_value['template']);
 $GLOBALS['time_stack']['render row['.$index.'] '.$match_result_value['object']] = microtime(1) - $GLOBALS['start_time'];
                 }
@@ -191,9 +251,15 @@ $GLOBALS['time_stack']['render row['.$index.'] '.$match_result_value['object']] 
             default:
                 $match_result_value['value'] = '';
         }
-        if (isset($match_result_value['value']))  $rendered_content = strtr($rendered_content,[$match_result_key=>$match_result_value['value']]);
+        if (isset($match_result_value['value']))
+        {
+            $translate_array[$match_result_key] = $match_result_value['value'];
+            if (isset($match_result_value['container']) AND !empty($match_result_value['value'])) $translate_array[$match_result_key] = render_html(['_placeholder'=>$translate_array[$match_result_key]],$match_result_value['container']);
+        }
 $GLOBALS['time_stack']['render variable '.$match_result_key] = microtime(1) - $GLOBALS['start_time'];
     }
+    $rendered_content = strtr($rendered_content,$translate_array);
+
     //print_r($match_result);
 
     return $rendered_content;
@@ -222,6 +288,7 @@ function minify_content($value, $type='html')
                 '\\1',
                 '\\1'
             );
+            // ('([^']|\\')*?[^\\]')
             return preg_replace($search, $replace, $value);
         case 'html':
             // Minify HTML

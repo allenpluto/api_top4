@@ -13,6 +13,7 @@ class entity_api_key extends entity
             foreach($row as $record_index=>&$record)
             {
                 if (!empty($record['ip_restriction'])) $record['ip_restriction'] = explode(',',$record['ip_restriction']);
+                else $record['ip_restriction'] = array();
             }
             return $row;
         }
