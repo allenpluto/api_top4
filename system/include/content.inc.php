@@ -839,8 +839,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         );
                         if (end($row)['alternate_name'] == $update_value['alternate_name'])
                         {
-                            if (implode(',',end($row)['ip_restriction'])
-                                == implode(',',$update_value['ip_restriction']))
+                            if (implode(',',end($row)['ip_restriction']) == implode(',',$update_value['ip_restriction']))
                             {
                                 // Error Handling, all value same, nothing to update
                                 $this->message->notice = 'alternate_name and ip_restriction are the same as current record, nothing to update';

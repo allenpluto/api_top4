@@ -29,7 +29,7 @@ class entity_api_key extends entity
         {
             foreach($parameter['row'] as $record_index=>&$record)
             {
-                if (!empty($record['ip_restriction'])) $record['ip_restriction'] = implode(',',$record['ip_restriction']);
+                if (isset($record['ip_restriction'])) $record['ip_restriction'] = implode(',',$record['ip_restriction']);
             }
         }
         return parent::set($parameter);
@@ -38,7 +38,7 @@ class entity_api_key extends entity
 
     function update($value = array(), $parameter = array())
     {
-        if (!empty($value['ip_restriction'])) $value['ip_restriction'] = implode(',',$value['ip_restriction']);
+        if (isset($value['ip_restriction'])) $value['ip_restriction'] = implode(',',$value['ip_restriction']);
         return parent::update($value,$parameter);
 
     }

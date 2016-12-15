@@ -149,6 +149,7 @@ var update_credential_data = {
                         event.preventDefault();
                         ip_row.remove();
                     });
+                    $(this).val('');
                 }
 
                 return;
@@ -158,6 +159,15 @@ var update_credential_data = {
             if ((event.shiftKey || (event.keyCode < 48 || event.keyCode > 57)) && (event.keyCode < 96 || event.keyCode > 105))
             {
                 event.preventDefault();
+            }
+        });
+
+        $('.ip_add_new').blur(function(){
+            if ($(this).val())
+            {
+                var event = $.Event('keydown',{keyCode: 13});
+
+                $(this).trigger(event);
             }
         });
 
@@ -184,6 +194,7 @@ var update_credential_data = {
                 'data': post_value,
                 'timeout': 10000
             }).always(function(callback_obj, status, info_obj) {
+console.log(callback_obj);
                 if (status == 'success')
                 {
                     var data = callback_obj;
