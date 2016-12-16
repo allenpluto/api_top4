@@ -56,7 +56,6 @@ $GLOBALS['time_stack']['analyse template '.$template_name] = microtime(1) - $GLO
         $rendered_content_array = array();
         foreach($field as $field_index=>$field_value)
         {
-            if (file_exists(PATH_TEMPLATE.$template_name.'_'.$field_index.FILE_EXTENSION_TEMPLATE)) $template_name .= '_'.$field_index;
             $rendered_content_array[] = render_html($field_value, $template_name);
         }
         $rendered_content =  implode('',$rendered_content_array);
@@ -136,7 +135,12 @@ $GLOBALS['time_stack']['analyse template '.$template_name] = microtime(1) - $GLO
                             if (!isset($match_result_value['template'])) $match_result_value['template'] = $template_name.'_'.$match_result_value['name'];
                             if (file_exists(PATH_TEMPLATE.$match_result_value['template'].FILE_EXTENSION_TEMPLATE))
                             {
-                                $match_result_value['value'] = render_html($field[$match_result_value['name']],$match_result_value['template']);
+                                $match_result_value['value'] = '';
+                                foreach($field[$match_result_value['name']] as $sub_field_index=>$sub_field)
+                                {
+                                    $sub_field = array_merge($field,$sub_field);
+                                    $match_result_value['value'] .= render_html($sub_field,$match_result_value['template']);
+                                }
                             }
                             else
                             {
@@ -145,16 +149,17 @@ $GLOBALS['time_stack']['analyse template '.$template_name] = microtime(1) - $GLO
                         }
                         else
                         {
-                            if (empty($match_result_value['template']))
-                            {
-                                $match_result_value['value'] = $field[$match_result_value['name']];
-                            }
-                            else
-                            {
+                            $match_result_value['value'] = $field[$match_result_value['name']];
+                            //if (empty($match_result_value['template']))
+                            //{
+                            //    $match_result_value['value'] = $field[$match_result_value['name']];
+                            //}
+                            //else
+                            //{
                                     //$field_with_default_value = array_merge($field, ['_placeholder'=>$field[$match_result_value['name']],'_parameter'=>array()]);
-                                $match_result_value['value'] = render_html(['_placeholder'=>$field[$match_result_value['name']]],$match_result_value['template']);
+                            //    $match_result_value['value'] = render_html(['_placeholder'=>$field[$match_result_value['name']]],$match_result_value['template']);
                                     //unset($field_with_default_value);
-                            }
+                            //}
                         }
                     }
                 }
@@ -222,7 +227,7 @@ $GLOBALS['time_stack']['create object '.$match_result_value['object']] = microti
                 $rendered_result = array();
                 foreach ($result as $index=>$row)
                 {
-                    $row = array_merge($field,['_parameter'=>[]],$row);
+                    $row = array_merge($field,$row);
                     $rendered_result[] = render_html($row,$match_result_value['template']);
 $GLOBALS['time_stack']['render row['.$index.'] '.$match_result_value['object']] = microtime(1) - $GLOBALS['start_time'];
                 }

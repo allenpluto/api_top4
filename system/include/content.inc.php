@@ -1184,6 +1184,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 $content['page_content'] .= render_html($field_name,'element_console_credential');
                                 $content['page_content'] .= render_html(array_values($row),'element_console_credential');
                                 $content['page_content'] .= '</div>';
+                                $this->content['field']['content'] = render_html($content,'element_console_body');
                                 break;
                             case 'profile':
                                 $content['page_content'] = '<h3>'.$this->content['account']['name'].'</h3>';
@@ -1231,6 +1232,7 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                 $content['page_content'] .= '</div>';
 
                                 $content['page_content'] .= '</div>';
+                                $this->content['field']['content'] = render_html($content,'element_console_body');
                                 break;
                             case 'dashboard':
                             default:
@@ -1243,6 +1245,17 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 
                                 $entity_api_method_obj = new entity_api_method('',['api_id'=>$this->content['account']['id']]);
                                 $this->content['account']['api_method'] = $entity_api_method_obj->list_available_method($method_variable);
+
+                                $content['account_name'] = $this->content['account']['name'];
+                                $content['api_method'] = $this->content['account']['api_method'];
+                                $content['api_site_base'] = URI_SITE_BASE;
+                                if (!empty($this->preference->api['force_ssl'])) $content['api_site_base'] = str_replace('http://','https://',$content['api_site_base']);
+                                $this->content['field']['content'] = render_html($content,'element_console_dashboard_body_container');
+
+
+/*
+
+
 
                                 $content['page_content'] = '<h2><strong>Accessible API methods for account '.$this->content['account']['name'].': </strong></h2>';
 
@@ -1276,9 +1289,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                                     }
                                     $content['page_content'] .= '</div>';
                                 }
-
+*/
                         }
-                        $this->content['field']['content'] = render_html($content,'element_console_body');
 
                         break;
                     case 'default':
