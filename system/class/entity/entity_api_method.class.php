@@ -25,7 +25,7 @@ class entity_api_method extends entity
         $result = [];
         foreach($row as $record_index=>$record)
         {
-            $result[] = ['name'=>$record['name'],'request_uri'=>$record['friendly_uri'],'description'=>$record['description'],'field'=>($record['field']?json_decode($record['field'],true):'None')];
+            $result[] = ['name'=>$record['name'],'request_uri'=>$record['friendly_uri'],'description'=>$record['description'],'field'=>($record['field']?json_decode($record['field'],true):array())];
         }
         return $result;
     }

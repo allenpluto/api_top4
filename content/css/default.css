@@ -473,7 +473,12 @@ img {display:block;max-width:100%;}
 
 .inline_editor_text_empty
 {
+}
+
+.inline_editor_text_empty:before
+{
     font-style: italic;
+    content: '[N/A]';
 }
 
 /*# JQuery Plugins/Tool Tip #*/

@@ -1158,138 +1158,47 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                             ['value'=>'/js/default.min.js','option'=>['format'=>'html_tag']],
                         ];
 
+                        $this->content['field']['name'] = ucwords($this->request['method']).' - '.$this->content['account']['name'];
                         $content = ['page_title'=>ucwords($this->request['method'])];
                         switch($this->request['method'])
                         {
                             case 'credential':
+                                $content['remote_ip'] = $this->request['remote_ip'];
+                                $content['ajax_info'] = '';
+                                $content['api_key_wrapper_class_extra'] = '';
                                 $entity_api_key_obj = new entity_api_key();
                                 $get_parameter = array(
                                     'bind_param' => array(':account_id'=>$this->content['account']['id']),
                                     'where' => array('`account_id` = :account_id')
                                 );
-                                $row = $entity_api_key_obj->get_api_key($get_parameter);
-                                $content['page_content'] = '';
-                                $content['page_content'] .= '<h3>API Keys</h3>';
-
-                                $content['page_content'] .= '<div class="api_key_controller api_key_button_add_container"><a href="javascript:void(0)" class="api_key_button_add general_style_input_button general_style_input_button_orange">Create Credential</a></div>';
-                                $content['page_content'] .= '<div class="api_key_hidden_container"><input name="remote_ip" type="hidden" value="'.$this->request['remote_ip'].'" ></div>';
-                                $content['page_content'] .= '<div class="api_key_message_container ajax_info">'.(empty($row)?'No API Key Available, click "Create Credential" button to create one':'').'</div>';
-                                $content['page_content'] .= '<div class="api_key_wrapper'.(empty($row)?' api_key_wrapper_empty':'').'">';
-                                $field_name = array(
-                                    'class_extra'=>'api_key_name_container',
-                                    'name'=>'Key',
-                                    'alternate_name'=>'Name',
-                                    'ip_restriction'=>'IP Restriction'
-                                );
-                                $content['page_content'] .= render_html($field_name,'element_console_credential');
-                                $content['page_content'] .= render_html(array_values($row),'element_console_credential');
-                                $content['page_content'] .= '</div>';
-                                $this->content['field']['content'] = render_html($content,'element_console_body');
+                                $content['api_key'] = $entity_api_key_obj->get_api_key($get_parameter);
+                                if (empty($content['api_key']))
+                                {
+                                    $content['ajax_info'] = 'No API Key Available, click "Create Credential" button to create one';
+                                    $content['api_key_wrapper_class_extra'] = ' api_key_wrapper_empty';
+                                }
+                                $this->content['field']['content'] = render_html($content,'element_console_credential_body_container');
                                 break;
                             case 'profile':
-                                $content['page_content'] = '<h3>'.$this->content['account']['name'].'</h3>';
-                                $content['page_content'] .= '<div class="api_profile_hidden_container"><input name="alternate_name" type="hidden" value="'.$this->content['account']['alternate_name'].'" ></div>';
-                                $content['page_content'] .= '<div class="api_profile_message_container ajax_info"></div>';
-
-                                $content['page_content'] .= '<div class="api_profile_container">';
-
-                                $content['page_content'] .= '<div class="api_profile_row api_profile_row_alternate_name">';
-                                $content['page_content'] .= '<div class="api_profile_row_label">Nickname';
-                                $content['page_content'] .= '
-										<div class="api_profile_row_tool_tip tool_tip_wrapper tool_tip_bottom_right_wrapper">
-											<div class="tool_tip_mask general_style_colour_orange font_icon">&#xf059;</div>
-											<div class="tool_tip_container">
-												<div class="tool_tip">
-													<div class="tool_close"></div>
-													<div class="tool_tip_title">Nickname</div>
-													<div class="tool_tip_content">User Alias, pick a familiar nickname, make login easier</div>
-												</div>
-											</div>
-										</div>';
-                                $content['page_content'] .= '</div>';
-                                $content['page_content'] .= '<div class="api_profile_row_content">';
-                                $content['page_content'] .= '<div class="inline_editor">'.($this->content['account']['alternate_name']?'<div class="inline_editor_text">'.$this->content['account']['alternate_name']:'<div class="inline_editor_text inline_editor_text_empty">[N/A]').'</div><input class="inline_editor_input" name="alternate_name" type="text" placeholder="Nickname, e.g. superhero86" value="'.$this->content['account']['alternate_name'].'"></div>';
-                                $content['page_content'] .= '</div>';
-                                $content['page_content'] .= '</div>';
-
-                                $content['page_content'] .= '<div class="api_profile_row api_profile_row_password">';
-                                $content['page_content'] .= '<div class="api_profile_row_label">Password';
-                                $content['page_content'] .= '
-										<div class="api_profile_row_tool_tip tool_tip_wrapper tool_tip_bottom_right_wrapper">
-											<div class="tool_tip_mask general_style_colour_orange font_icon">&#xf059;</div>
-											<div class="tool_tip_container">
-												<div class="tool_tip">
-													<div class="tool_close"></div>
-													<div class="tool_tip_title">Password</div>
-													<div class="tool_tip_content">Minimum 8 characters. At least 1 alphabet and 1 number.</div>
-												</div>
-											</div>
-										</div>';
-                                $content['page_content'] .= '</div>';
-                                $content['page_content'] .= '<div class="api_profile_row_content">';
-                                $content['page_content'] .= '<a href="javascript:void(0)" class="api_profile_button_change_password general_style_input_button general_style_input_button_gray">Change Password</a>';
-                                $content['page_content'] .= '</div>';
-                                $content['page_content'] .= '</div>';
-
-                                $content['page_content'] .= '</div>';
-                                $this->content['field']['content'] = render_html($content,'element_console_body');
+                                $content['account_name'] = $this->content['account']['name'];
+                                $content['alternate_name_extra_class'] = '';
+                                $content['alternate_name'] = $this->content['account']['alternate_name'];
+                                if (empty($content['alternate_name']))
+                                {
+                                    $content['alternate_name_extra_class'] = ' inline_editor_text_empty';
+                                }
+                                $this->content['field']['content'] = render_html($content,'element_console_profile_body_container');
                                 break;
                             case 'dashboard':
                             default:
-                                $method_variable = [];
-                                if (!empty($this->request['option'])) $method_variable = $this->request['option'];
-                                if (!empty($this->request['value'])) $method_variable['value'] = $this->request['value'];
-                                //$method_variable['api_id'] = $this->content['account']['id'];
-                                $method_variable['status'] = 'OK';
-                                $method_variable['message'] = '';
-
                                 $entity_api_method_obj = new entity_api_method('',['api_id'=>$this->content['account']['id']]);
-                                $this->content['account']['api_method'] = $entity_api_method_obj->list_available_method($method_variable);
+                                $this->content['account']['api_method'] = $entity_api_method_obj->list_available_method();
 
                                 $content['account_name'] = $this->content['account']['name'];
                                 $content['api_method'] = $this->content['account']['api_method'];
                                 $content['api_site_base'] = URI_SITE_BASE;
                                 if (!empty($this->preference->api['force_ssl'])) $content['api_site_base'] = str_replace('http://','https://',$content['api_site_base']);
                                 $this->content['field']['content'] = render_html($content,'element_console_dashboard_body_container');
-
-
-/*
-
-
-
-                                $content['page_content'] = '<h2><strong>Accessible API methods for account '.$this->content['account']['name'].': </strong></h2>';
-
-                                foreach ($this->content['account']['api_method'] as $api_index=>$api_method)
-                                {
-                                    $content['page_content'] .= '<div class="api_method_container">';
-                                    $content['page_content'] .= '<div class="api_method_name"><h3>'.$api_method['name'].'</h3></div>';
-                                    $api_site_base = URI_SITE_BASE;
-                                    if (!empty($this->preference->api['force_ssl'])) $api_site_base = str_replace('http://','https://',$api_site_base);
-                                    $content['page_content'] .= '<div class="api_method_request_uri">'.$api_site_base.'json/'.$api_method['request_uri'].'</div>';
-                                    $content['page_content'] .= '<div class="api_method_description">'.$api_method['description'].'</div>';
-                                    if (is_array($api_method['field']) AND !empty($api_method['field']))
-                                    {
-                                        $content['page_content'] .= '<div class="api_method_field_wrapper">';
-                                        $content['page_content'] .= '<div class="api_method_field_title"><strong>Parameters: </strong></div>';
-                                        $field_name = array(
-                                            'class_extra'=>'api_method_field_name_container',
-                                            'name'=>'Name',
-                                            'type'=>'Type',
-                                            'mandatory'=>'Mandatory',
-                                            'length'=>'Length',
-                                            'description'=>'Description'
-                                        );
-                                        $content['page_content'] .= render_html($field_name,'element_api_method_field');
-
-                                        foreach ($api_method['field'] as $field_index=>$field)
-                                        {
-                                            $content['page_content'] .= render_html($field,'element_api_method_field');
-                                        }
-                                        $content['page_content'] .= '</div>';
-                                    }
-                                    $content['page_content'] .= '</div>';
-                                }
-*/
                         }
 
                         break;

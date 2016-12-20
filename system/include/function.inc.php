@@ -138,6 +138,7 @@ $GLOBALS['time_stack']['analyse template '.$template_name] = microtime(1) - $GLO
                                 $match_result_value['value'] = '';
                                 foreach($field[$match_result_value['name']] as $sub_field_index=>$sub_field)
                                 {
+                                    if (!is_array($sub_field)) $sub_field = array('_placeholder'=>$sub_field);
                                     $sub_field = array_merge($field,$sub_field);
                                     $match_result_value['value'] .= render_html($sub_field,$match_result_value['template']);
                                 }
@@ -149,17 +150,17 @@ $GLOBALS['time_stack']['analyse template '.$template_name] = microtime(1) - $GLO
                         }
                         else
                         {
-                            $match_result_value['value'] = $field[$match_result_value['name']];
-                            //if (empty($match_result_value['template']))
-                            //{
-                            //    $match_result_value['value'] = $field[$match_result_value['name']];
-                            //}
-                            //else
-                            //{
+                            //$match_result_value['value'] = $field[$match_result_value['name']];
+                            if (empty($match_result_value['template']))
+                            {
+                                $match_result_value['value'] = $field[$match_result_value['name']];
+                            }
+                            else
+                            {
                                     //$field_with_default_value = array_merge($field, ['_placeholder'=>$field[$match_result_value['name']],'_parameter'=>array()]);
-                            //    $match_result_value['value'] = render_html(['_placeholder'=>$field[$match_result_value['name']]],$match_result_value['template']);
+                                $match_result_value['value'] = render_html(['_placeholder'=>$field[$match_result_value['name']]],$match_result_value['template']);
                                     //unset($field_with_default_value);
-                            //}
+                            }
                         }
                     }
                 }
