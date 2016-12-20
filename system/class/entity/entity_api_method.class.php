@@ -406,7 +406,7 @@ class entity_api_method extends entity
             $parameter['status'] = 'OK';
             foreach($view_organization_obj->row as $record_index=>$record)
             {
-                $parameter['result'][] = ['name'=>$record['name'],'friendly_url'=>$record['friendly_url'],'website'=>$record['website']];
+                $parameter['result'][] = ['name'=>$record['name'],'friendly_url'=>$record['friendly_url'],'address'=>$record['street_address'].' '.$record['suburb'].', '.$record['state'].' '.$record['post'],'phone'=>$record['phone'],'category'=>$record['category_name'],'description'=>$record['description'],'image'=>$record['image_src'],'website'=>$record['website']];
             }
         }
         return $parameter['result'];

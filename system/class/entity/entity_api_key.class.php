@@ -1,7 +1,7 @@
 <?php
 // Class Object
-// Name: entity_api
-// Description: api account table, which stores all api user related information
+// Name: entity_api_key
+// Description: api key table, stores all api key and ip restrictions
 
 class entity_api_key extends entity
 {
@@ -103,18 +103,13 @@ class entity_api_key extends entity
         {
             if (hash('crc32b',2000-$record['account_id']) == $crc32b_dec)
             {
-//$parameter['status'] = 'OK';
-//return $record['account_id'];
-
                 foreach ($record['ip_restriction'] as $ip_index=>$ip_pattern)
                 {
                     $ip_pattern = str_replace('.','\.',$ip_pattern);
                     $ip_pattern = str_replace('*','([0-9a-f]*)',$ip_pattern);
                     $ip_pattern = '/'.$ip_pattern.'/';
-//print_r([$ip_pattern,$parameter['remote_ip']]);
                     if (preg_match($ip_pattern,$parameter['remote_ip']))
                     {
-//print_r('<br>pattern matched<br>');
                         $parameter['status'] = 'OK';
                         $parameter['message'] = NULL;
                         return $record['account_id'];
