@@ -12,7 +12,7 @@
                             --><div class="api_key_ip_restriction">IP Restriction</div><!--
                             --><div class="api_key_controller"></div><!--
                         --></div>
-                        [[*api_key:template=`element_console_credential`]]
+                        [[*api_key:template=`element_api_key_container`]]
                     </div>
                 </div>
             </div>

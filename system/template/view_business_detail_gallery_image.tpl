@@ -1,1 +1,0 @@
-<div id="listing_detail_view_gallery_image_container_[[*id]]" class="listing_detail_view_gallery_image_container touch_slider_item"><img src="[[*image_src]]" sizes="(max-width: 991px) 100vw, 25vw" srcset="[[*image_src_m]] 300w, [[*image_src_l]] 480w, [[*image_src_xl]] 800w"></div>

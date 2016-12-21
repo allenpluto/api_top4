@@ -1,4 +1,0 @@
-DROP VIEW IF EXISTS `tbl_view_featured`;
-CREATE VIEW `tbl_view_featured` AS
-SELECT `tbl_view_organization`.`id`, `tbl_view_organization`.`friendly_url`, `tbl_view_organization`.`description`, `tbl_view_organization`.`street_address`, `tbl_view_organization`.`suburb`, `tbl_view_organization`.`state`, `tbl_view_organization`.`post`, `tbl_view_organization`.`avg_review`, `tbl_view_organization`.`avg_review_percentage`, `tbl_view_organization`.`count_review`, `tbl_view_organization`.`image_id`, `tbl_view_organization`.`image_src`, `tbl_view_organization`.`name`, `tbl_view_organization`.`logo_id`, `tbl_view_organization`.`logo_image_src`, `tbl_view_organization`.`schema_itemtype` FROM `ListingFeatured` 
-JOIN `tbl_view_organization` ON `ListingFeatured`.`listing_id` = `tbl_view_organization`.`id`
