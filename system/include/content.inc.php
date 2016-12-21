@@ -32,11 +32,12 @@ class content extends base {
 //print_r($this);
 if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml')
 {
-    if (!file_exists(dirname(PATH_ASSET.'log'))) mkdir(dirname(PATH_ASSET.'log'), 0755, true);
-    file_put_contents(PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_access_log.txt','REQUEST: '.$this->request['remote_ip'].' ['.date('D, d M Y H:i:s').']'.$_SERVER['REQUEST_URI']."\n",FILE_APPEND);
+    $api_access_log = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_access_log.txt';
+    if (!file_exists(dirname($api_access_log))) mkdir(dirname($api_access_log), 0755, true);
+    file_put_contents($api_access_log,'REQUEST: '.$this->request['remote_ip'].' ['.date('D, d M Y H:i:s').']'.$_SERVER['REQUEST_URI']."\n",FILE_APPEND);
     if ($this->request['method'] == 'select_business_by_uri' AND !empty($this->request['option']['uri']))
     {
-        file_put_contents(PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_access_log.txt','REQUEST QUERY: uri = '.$this->request['option']['uri']."\n",FILE_APPEND);
+        file_put_contents($api_access_log,'REQUEST QUERY: uri = '.$this->request['option']['uri']."\n",FILE_APPEND);
     }
 }
 
@@ -65,9 +66,9 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
 {
     if (isset($this->content['account']))
     {
-        file_put_contents(PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_access_log.txt','REQUEST Account: '.$this->content['account']['name'].'['.$this->content['account']['id'].']'."\n",FILE_APPEND);
+        file_put_contents($api_access_log,'REQUEST Account: '.$this->content['account']['name'].'['.$this->content['account']['id'].']'."\n",FILE_APPEND);
     }
-    file_put_contents(PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_access_log.txt','RESULT: '.$this->result['content']."\n\n",FILE_APPEND);
+    file_put_contents($api_access_log,'RESULT: '.$this->result['content']."\n\n",FILE_APPEND);
 }
 //exit();
     }
