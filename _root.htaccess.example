@@ -6,7 +6,7 @@ Options -Indexes
 DirectorySlash Off
 
 RewriteEngine On
-RewriteBase /
+RewriteBase /allen_frame_trial/
 
 # Force remove trailing slash
 RewriteRule ^(.*)/$ $1?slash_remove=$1 [L,R=301]
@@ -19,12 +19,12 @@ RewriteRule (.*)(?:/screen/[^/]*)(.*) ./$1$2?screen=%1 [QSA,L,R=301]
 RewriteCond %{REQUEST_URI} /sort/([^/]*)
 RewriteRule (.*)(?:/sort/[^/]*)(.*) ./$1$2?sort=%1 [QSA,L,R=301]
 
-#RewriteCond %{REQUEST_URI} (^/$)
+#RewriteCond %{REQUEST_URI} (^/allen_frame_trial/$)
 #RewriteRule (.*) asset/html/index.html?request_uri=%1&target_uri=$1 [QSA,NC,L]
 
 # Redirect all request to cache folder
 RewriteCond %{QUERY_STRING} !request_uri=
-RewriteCond %{REQUEST_URI} !(/(asset|content|developer|login)/|404\.php)
+RewriteCond %{REQUEST_URI} !(/(asset|content|developer|login)/|404\.php|favicon)
 RewriteCond %{REQUEST_URI} (.*)
 RewriteRule (.*) asset/$1?request_uri=%1&rewrite_base=$1 [QSA,NC,L]
 

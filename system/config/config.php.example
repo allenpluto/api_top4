@@ -8,21 +8,30 @@ define('DATABASE_CHARSET', 'utf8');
 define('DATABASE_TABLE_PREFIX', 'tbl_');
 
 // URI
-define('URI_DOMAIN','http://localhost/');
-define('URI_SITE_PATH','allen_frame_trial/');
+//define('URI_DOMAIN','http://localhost/');
+//define('URI_SITE_PATH','allen_frame_trial/');
+
+define('URI_BASE','http://local.top4.com.au/');
+define('FOLDER_SITE_BASE','allen_frame_trial');
 
 define('URI_IMAGE_EXTERNAL', 'http://dev.top4.com.au/custom/domain_1/image_files/');
 
 // Core Paths
-define('PATH_BASE', '/wamp/www/allen_frame_trial/');
+//define('PATH_BASE', '/wamp/www/allen_frame_trial/');
 
 include_once('config_constant.php');
-//$global_preference->ajax_data_encode = 'none';
+$global_preference->ajax_data_encode = 'none';
 
-//$global_preference->page_cache = false;
+$global_preference->page_cache = false;
+$global_preference->format_cache = false;
 
 //$global_preference->minify_html = true;
 //$global_preference->minify_css = true;
 //$global_preference->minify_js = true;
 
 //$global_preference->ga_tracking_id = 'UA-71671221-3';
+$global_preference->google_api_credential_browser = 'AIzaSyAtw-geY0B0clS4SRzPsYfvT0ROsSl3JVA';
+
+$global_preference->environment = 'staging';
+
+error_reporting(E_ALL);
