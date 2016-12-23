@@ -282,52 +282,151 @@ function minify_content($value, $type='html')
     {
         case 'css':
             // Minify CSS
+
+            // Remove comments
             $search = array(
-                '/\/\*(.*?)\*\//s',                  // remove css comments
+                '/\/\*(.*?)\*\//s'                  // remove css comments
+            );
+            $replace = array(
+                ''
+            );
+            $value = preg_replace($search, $replace, $value);
+
+            // Preserve Quoted Content
+            $counter = 0;
+            $quoted_content = array();
+            while(preg_match('/"((?:[^"]|\\")*?)(?<!\\\)"/',$value,$matches,PREG_OFFSET_CAPTURE))
+            {
+                $quoted_content['[[*quoted_content_'.$counter.']]'] = $matches[0][0];
+                $value = substr_replace($value,'[[*quoted_content_'.$counter.']]',$matches[0][1],strlen($matches[0][0]));
+                $counter++;
+            }
+            while(preg_match('/\'((?:[^\']|\\\')*?)(?<!\\\)\'/',$value,$matches,PREG_OFFSET_CAPTURE))
+            {
+                $quoted_content['[[*quoted_content_'.$counter.']]'] = $matches[0][0];
+                $value = substr_replace($value,'[[*quoted_content_'.$counter.']]',$matches[0][1],strlen($matches[0][0]));
+                $counter++;
+            }
+            unset($counter);
+
+            // Minify Content
+            $search = array(
                 '/([,:;\{\}])[^\S]+/',             // strip whitespaces after , : ; { }
                 '/[^\S]+([,:;\{\}])/',             // strip whitespaces before , : ; { }
                 '/(\s)+/'                            // shorten multiple whitespace sequences
             );
             $replace = array(
-                '',
                 '\\1',
                 '\\1',
                 '\\1'
             );
-            // ('([^']|\\')*?[^\\]')
-            return preg_replace($search, $replace, $value);
+            $value = preg_replace($search, $replace, $value);
+
+            // Restore Quoted Content
+            for ($i=0;$i<2;$i++)  $value = strtr($value,$quoted_content);
+
+            return $value;
         case 'html':
             // Minify HTML
+
+            // Remove comments
             $search = array(
-                '/<\!--(?!\[if)(.*?)-->/s',       // remove html comments, except IE comments
+                '/<\!--(?!\[if)(.*?)-->/s'       // remove html comments, except IE comments
+            );
+            $replace = array(
+                ''
+            );
+            $value = preg_replace($search, $replace, $value);
+
+            // Preserve Quoted Content
+            $counter = 0;
+            $quoted_content = array();
+            while(preg_match('/\<script(.*?)\<\/script\>/',$value,$matches,PREG_OFFSET_CAPTURE))
+            {
+                $quoted_content['[[*quoted_content_'.$counter.']]'] = $matches[0][0];
+                $value = substr_replace($value,'[[*quoted_content_'.$counter.']]',$matches[0][1],strlen($matches[0][0]));
+                $counter++;
+            }
+            while(preg_match('/\<style(.*?)\<\/style\>/',$value,$matches,PREG_OFFSET_CAPTURE))
+            {
+                $quoted_content['[[*quoted_content_'.$counter.']]'] = $matches[0][0];
+                $value = substr_replace($value,'[[*quoted_content_'.$counter.']]',$matches[0][1],strlen($matches[0][0]));
+                $counter++;
+            }
+            unset($counter);
+
+            // Minify Content
+            $search = array(
                 '/\>[^\S ]+/',                      // strip whitespaces after tags, except space
                 '/[^\S ]+\</',                      // strip whitespaces before tags, except space
                 '/(\s)+/'                            // shorten multiple whitespace sequences
             );
             $replace = array(
-                '',
                 '>',
                 '<',
                 '\\1'
             );
-            return preg_replace($search, $replace, $value);
+            $value = preg_replace($search, $replace, $value);
+
+            // Restore Quoted Content
+            for ($i=0;$i<2;$i++)  $value = strtr($value,$quoted_content);
+
+            return $value;
         case 'js':
             // Minify JS
+
+            // Remove comments
             $search = array(
                 '/\/\*(.*?)\*\//s',                       // remove js comments with /* */
-                '/\/\/(.*?)[\n\r]/s',                     // remove js comments with //
-                '/([\<\>\=\+\-,:;\(\)\{\}])[^\S]+(?=([^\']*\'[^\']*\')*[^\']*$)/',        // strip whitespaces after , : ; { }
-                '/[^\S]+([\<\>\=\+\-,:;\(\)\{\}])(?=([^\']*\'[^\']*\')*[^\']*$)/',        // strip whitespaces before , : ; { }
-                '/^(\s)+/'                                 // strip whitespaces in the start of the file
+                '/\/\/(.*?)[\n\r]/s'                     // remove js comments with //
             );
             $replace = array(
                 '',
-                '',
+                ''
+            );
+            $value = preg_replace($search, $replace, $value);
+
+            // Preserve Quoted Content
+            $counter = 0;
+            $quoted_content = array();
+            while(preg_match('/"(?:[^"]|\\")*?(?<!\\\)"/',$value,$matches,PREG_OFFSET_CAPTURE))
+            {
+                $quoted_content['[[*quoted_content_'.$counter.']]'] = $matches[0][0];
+                $value = substr_replace($value,'[[*quoted_content_'.$counter.']]',$matches[0][1],strlen($matches[0][0]));
+                $counter++;
+            }
+            while(preg_match('/\'(?:[^\']|\\\')*?(?<!\\\)\'/',$value,$matches,PREG_OFFSET_CAPTURE))
+            {
+                $quoted_content['[[*quoted_content_'.$counter.']]'] = $matches[0][0];
+                $value = substr_replace($value,'[[*quoted_content_'.$counter.']]',$matches[0][1],strlen($matches[0][0]));
+                $counter++;
+            }
+            while(preg_match('/(?<!\/)\/(?:[^\/\n\r]|\\\\\/)+?(?<!\\\)\//',$value,$matches,PREG_OFFSET_CAPTURE))
+            {
+                $quoted_content['[[*quoted_content_'.$counter.']]'] = $matches[0][0];
+                $value = substr_replace($value,'[[*quoted_content_'.$counter.']]',$matches[0][1],strlen($matches[0][0]));
+                $counter++;
+            }
+            unset($counter);
+            unset($matches);
+
+            // Minify Content
+            $search = array(
+                '/([\<\>\=\+\-,:;\(\)\{\}])[^\S]+/',        // strip whitespaces after , : ; { }
+                '/[^\S]+([\<\>\=\+\-,:;\(\)\{\}])/',        // strip whitespaces before , : ; { }
+                '/^(\s)+/'                                 // strip whitespaces in the start of the file
+            );
+            $replace = array(
                 '\\1',
                 '\\1',
                 ''
             );
-            return preg_replace($search, $replace, $value);
+            $value = preg_replace($search, $replace, $value);
+
+            // Restore Quoted Content
+            for ($i=0;$i<3;$i++)  $value = strtr($value,$quoted_content);
+
+            return $value;
         default:
             // Error Handling, minify unknown type
             $GLOBALS['global_message']->error = 'minify_content - unrecognized minify type '.$type;

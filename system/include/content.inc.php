@@ -597,21 +597,29 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                         if (!empty($record['mime'])) $this->content['source_file']['content_type'] = $record['mime'];
                     }
                 }
+
                 if ($this->content['source_file']['last_modified'] > $this->content['target_file']['last_modified'])
                 {
-                    if ($this->content['source_file']['path'] == $this->content['source_file']['original_file'])
-                    {
-                        unset($this->content['source_file']['original_file']);
-                    }
-                    else
-                    {
-                        if(file_exists($this->content['target_file']['path'])) unlink($this->content['target_file']['path']);
+                    if(file_exists($this->content['target_file']['path'])) unlink($this->content['target_file']['path']);
+                }
 
+                if ($this->content['source_file']['path'] == $this->content['source_file']['original_file'])
+                {
+                    unset($this->content['source_file']['original_file']);
+                }
+                else
+                {
+                    if ($this->content['source_file']['last_modified'] > $this->content['target_file']['last_modified'])
+                    {
                         copy($this->content['source_file']['original_file'],$this->content['source_file']['path']);
                         touch($this->content['source_file']['path'], $this->content['source_file']['last_modified']);
 
                         if(!isset($this->content['source_file']['content_length'])) $this->content['source_file']['content_length'] = filesize($this->content['source_file']['path']);
                         if(!isset($this->content['source_file']['content_type'])) $this->content['source_file']['content_type'] = mime_content_type($this->content['source_file']['path']);
+                    }
+                    else
+                    {
+                        if(file_exists($this->content['source_file']['path'])) unlink($this->content['source_file']['path']);
                     }
                 }
 

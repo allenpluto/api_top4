@@ -1205,11 +1205,6 @@ $.fn.overlay_popup = function(user_option){
                     });
                 });
 
-                //$('#fix').on('touchmove',function(e){
-                //    if(!$('.scroll').has($(e.target)).length)
-                //        e.preventDefault();
-                //});
-
                 overlay_wrapper.click(function(event){
                     if ($(event.target).is($(this)) && (option['close_on_click_wrapper'] == true))
                     {
