@@ -216,7 +216,7 @@ class entity_api_method extends entity
         }
         if (!empty($category_name_array))
         {
-            $category_where[] = '`name` IN (:name_'.implode(',:name_',array_keys($category_schema_array)).')';
+            $category_where[] = '`name` IN (:name_'.implode(',:name_',array_keys($category_name_array)).')';
             foreach($category_name_array as $category_name_index=>$category_name)
             {
                 $entity_category_param['bind_param'][':name_'.$category_name_index] = $category_name;
