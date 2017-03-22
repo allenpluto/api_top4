@@ -177,6 +177,7 @@ class entity extends base
         {
             $query_errorInfo = $query->errorInfo();
             $GLOBALS['global_message']->error = __FILE__.'(line '.__LINE__.'): SQL Error - '.$query_errorInfo[2];
+            $GLOBALS['global_message']->error = $sql.' '.json_encode($parameter);
             return false;
         }
     }
@@ -538,7 +539,7 @@ class entity extends base
                         $GLOBALS['global_message']->error = __FILE__.'(line '.__LINE__.'): SQL Error - '.$query_errorInfo[2];
                     }
                 }
-                if (isset($record_primary_key))
+                if (!empty($record_primary_key))
                 {
                     $new_row['id_'.$record_primary_key] = $record;
                     $new_row['id_'.$record_primary_key][$parameter['primary_key']] = $record_primary_key;
