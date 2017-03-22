@@ -194,12 +194,12 @@ class entity_api_method extends entity
         }
 
         $category_array = explode(',',$parameter['category']);
-        $category_title_array = array();
+        $category_name_array = array();
         $category_schema_array = array();
         foreach($category_array as $category_index=>$category)
         {
             if (preg_match('/^http/',$category) == 1) $category_schema_array[] = $category;
-            else $category_title_array[] = $category;
+            else $category_name_array[] = $category;
         }
         $entity_category_param = array(
             'bind_param' => array(),
@@ -214,12 +214,12 @@ class entity_api_method extends entity
                 $entity_category_param['bind_param'][':schema_'.$category_schema_index] = $category_schema;
             }
         }
-        if (!empty($category_title_array))
+        if (!empty($category_name_array))
         {
-            $category_where[] = '`title` IN (:title_'.implode(',:title_',array_keys($category_schema_array)).')';
-            foreach($category_title_array as $category_title_index=>$category_title)
+            $category_where[] = '`name` IN (:name_'.implode(',:name_',array_keys($category_schema_array)).')';
+            foreach($category_name_array as $category_name_index=>$category_name)
             {
-                $entity_category_param['bind_param'][':title_'.$category_title_index] = $category_title;
+                $entity_category_param['bind_param'][':name_'.$category_name_index] = $category_name;
             }
         }
 
@@ -267,20 +267,21 @@ class entity_api_method extends entity
         {
             $parameter['status'] = 'SERVER_ERROR';
             $parameter['message'] = 'Database insert request failed, try again later';
-            return '';
+            return false;
         }
 
         if (count($entity_listing_obj->row) == 0)
         {
             $parameter['status'] = 'ZERO_RESULTS';
             $parameter['message'] = 'No row inserted';
+            return false;
         }
         else
         {
             $record = end($entity_listing_obj->row);
             $parameter = ['status'=>'OK','result'=>['title'=>$record['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record['friendly_url']]];
+            return $parameter['result'];
         }
-        return $parameter['result'];
     }
 
 
