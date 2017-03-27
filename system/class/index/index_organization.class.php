@@ -148,7 +148,7 @@ class index_organization extends index
             return false;
         }
 
-        return $this->get(['where'=>'url LIKE CONCAT("%",:url,"%")','bind_param'=>[':url'=>$value]]);
+        return $this->get(['where'=>'url LIKE CONCAT("%/",:url,"%") OR url LIKE CONCAT("%.",:url,"%")','bind_param'=>[':url'=>$value]]);
     }
 
 
