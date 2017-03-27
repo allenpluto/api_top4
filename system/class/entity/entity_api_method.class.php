@@ -378,6 +378,57 @@ class entity_api_method extends entity
         }
     }
 
+    function select_account_index(&$parameter = array())
+    {
+        $entity_account_obj = new entity_account();
+        $entity_account_param = array(
+            'bind_param' => array(':import_id'=>$this->api_id),
+            'where' => array('`importID` = :import_id')
+        );
+        if (isset($parameter['page_size']))
+        {
+            $entity_account_param['limit'] = intval($parameter['page_size']);
+            if ($entity_account_param['limit'] > 1000) $entity_account_param['limit'] = 1000;
+            if ($entity_account_param['limit'] < 1) $entity_account_param['limit'] = 1;
+        }
+        else
+        {
+            $entity_account_param['limit'] = 100;
+        }
+        if (isset($parameter['page_number']))
+        {
+            $entity_account_param['offset'] = intval($parameter['page_number']);
+            if ($entity_account_param['offset'] < 0) $entity_account_param['offset'] = 0;
+        }
+        else
+        {
+            $entity_account_param['offset'] = 0;
+        }
+        $result_row = $entity_account_obj->get($entity_account_param);
+        if (count($entity_account_obj->row) == 0)
+        {
+            $parameter['status'] = 'ZERO_RESULTS';
+            $parameter['message'] = 'Account not available';
+            return false;
+        }
+        $field = ['username','nickname'];
+        foreach($result_row as $row_index=>$row)
+        {
+            $result_row = ['status'=>'OK'];
+            foreach ($row as $record_index=>$record)
+            {
+                if (in_array($record_index,$field))
+                {
+                    $result_row[$record_index] = $record;
+                }
+            }
+            $result_row['token'] = $row['complementary_info'];
+
+            $parameter['result'][] = $result_row;
+        }
+
+    }
+
     function select_business_by_uri(&$parameter = array())
     {
         if (empty($parameter['uri']))
