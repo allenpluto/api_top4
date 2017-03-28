@@ -314,16 +314,16 @@ class entity_api_method extends entity
         {
             if ($row['importID'] == $this->api_id)
             {
-                $result_row = ['status'=>'OK'];
+                $processed_result_row = [];
                 foreach ($row as $record_index=>$record)
                 {
                     if (in_array($record_index,$field))
                     {
-                        $result_row[$record_index] = $record;
+                        $processed_result_row[$record_index] = $record;
                     }
                 }
 
-                $parameter['result'][] = $result_row;
+                $parameter['result'][] = $processed_result_row;
             }
             else
             {
@@ -361,16 +361,16 @@ class entity_api_method extends entity
         {
             if ($row['importID'] == $this->api_id)
             {
-                $result_row = ['status'=>'OK'];
+                $processed_result_row = [];
                 foreach ($row as $record_index=>$record)
                 {
                     if (in_array($record_index,$field))
                     {
-                        $result_row[$record_index] = $record;
+                        $processed_result_row[$record_index] = $record;
                     }
                 }
 
-                $parameter['result'][] = $result_row;
+                $parameter['result'][] = $processed_result_row;
             }
             else
             {

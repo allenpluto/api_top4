@@ -166,7 +166,7 @@ class view extends base
         else
         {
             $query_errorInfo = $query->errorInfo();
-            $GLOBALS['global_message']->error = __FILE__.'(line '.__LINE__.'): SQL Error - '.$query_errorInfo[2];
+            $GLOBALS['global_message']->error = __FILE__.' ['.get_class($this).'] (line '.__LINE__.'): SQL Error - '.$query_errorInfo[2];
             return false;
         }
     }
