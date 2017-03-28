@@ -330,6 +330,7 @@ class entity_api_method extends entity
                 $parameter['result'][] = ['status'=>'REQUEST_DENIED','message'=>'User does not belong to current API Account, cannot view user details','username'=>$row['username']];
             }
         }
+        return $parameter['result'];
     }
 
     function select_account_by_token(&$parameter = array())
@@ -376,6 +377,7 @@ class entity_api_method extends entity
                 $parameter['result'][] = ['status'=>'REQUEST_DENIED','message'=>'User does not belong to current API Account, cannot view user details','username'=>$row['username']];
             }
         }
+        return $parameter['result'];
     }
 
     function select_account_index(&$parameter = array())
@@ -414,19 +416,20 @@ class entity_api_method extends entity
         $field = ['username','nickname'];
         foreach($result_row as $row_index=>$row)
         {
-            $result_row = ['status'=>'OK'];
+//            $result_row = ['status'=>'OK'];
+            $processed_result_row = [];
             foreach ($row as $record_index=>$record)
             {
                 if (in_array($record_index,$field))
                 {
-                    $result_row[$record_index] = $record;
+                    $processed_result_row[$record_index] = $record;
                 }
             }
-            $result_row['token'] = $row['complementary_info'];
+            $processed_result_row['token'] = $row['complementary_info'];
 
-            $parameter['result'][] = $result_row;
+            $parameter['result'][] = $processed_result_row;
         }
-
+        return $parameter['result'];
     }
 
     function select_business_by_uri(&$parameter = array())
