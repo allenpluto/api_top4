@@ -87,7 +87,7 @@ class entity_api_method extends entity
         else
         {
             $record = end($entity_account->row);
-            $parameter = ['status'=>'OK','result'=>['token'=>$record['complementary_info'],'username'=>$record['username'],'password'=>$record['plain_password']]];
+            $parameter = ['status'=>'OK','result'=>['id'=>$record['id'],'token'=>$record['complementary_info'],'username'=>$record['username'],'password'=>$record['plain_password']]];
         }
         return $parameter['result'];
     }
@@ -156,7 +156,7 @@ class entity_api_method extends entity
         {
             foreach($entity_account->row as $record_index=>$record)
             {
-                $parameter['result'][] = ['status'=>'OK','token'=>$record['complementary_info'],'username'=>$record['username'],'password'=>$record['plain_password']];
+                $parameter['result'][] = ['id'=>$record['id'],'token'=>$record['complementary_info'],'username'=>$record['username'],'password'=>$record['plain_password']];
             }
         }
         $overall_status = array();
@@ -279,7 +279,7 @@ class entity_api_method extends entity
         else
         {
             $record = end($entity_listing_obj->row);
-            $parameter = ['status'=>'OK','result'=>['title'=>$record['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record['friendly_url']]];
+            $parameter = ['status'=>'OK','result'=>['id'=>$record['id'],'title'=>$record['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record['friendly_url']]];
             return $parameter['result'];
         }
     }
@@ -295,7 +295,7 @@ class entity_api_method extends entity
             return false;
         }
 
-        if (empty($parameter['title']) OR empty($parameter['latitude']) OR empty($parameter['longitude']) OR empty($parameter['category']))
+        if (empty($parameter['company']) OR empty($parameter['latitude']) OR empty($parameter['longitude']) OR empty($parameter['category']))
         {
             // Error Handling, username, first_name or last_name not provided
             $parameter['status'] = 'INVALID_REQUEST';
@@ -348,14 +348,12 @@ class entity_api_method extends entity
             $parameter['message'] = 'No row inserted';
             return false;
         }
-        else
-        {
-            $record = end($entity_account->row);
-            $parameter = ['status'=>'OK','result'=>['token'=>$record['complementary_info'],'username'=>$record['username'],'password'=>$record['plain_password']]];
-        }
+        $record_account = end($entity_account->row);
+//        $parameter = ['status'=>'OK','result'=>['account_id'=>$record_account['id'],'token'=>$record_account['complementary_info'],'username'=>$record_account['username'],'password'=>$record_account['plain_password']]];
 
+        // Create Business Listing
         $entity_listing_obj = new entity_listing();
-        $listing_field_array = ['title','latitude','longitude','category','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
+        $listing_field_array = ['latitude','longitude','category','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
         $set_listing_parameter = array('row'=>array());
 
         $category_array = explode(',',$parameter['category']);
@@ -418,6 +416,8 @@ class entity_api_method extends entity
             }
         }
         $set_listing_row['importID'] = $this->api_id;
+        $set_listing_row['account_id'] = $record_account['id'];
+        $set_listing_row['title'] = $parameter['company'];
         $set_listing_row['status'] = 'A';
         $set_listing_row['bulked'] = 'y';
         $set_listing_row['thumb_id'] = 0;
@@ -441,12 +441,9 @@ class entity_api_method extends entity
             $parameter['message'] = 'No row inserted';
             return false;
         }
-        else
-        {
-            $record = end($entity_listing_obj->row);
-            $parameter = ['status'=>'OK','result'=>['title'=>$record['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record['friendly_url']]];
-            return $parameter['result'];
-        }
+        $record_listing = end($entity_listing_obj->row);
+        $parameter = ['status'=>'OK','result'=>['account'=>['id'=>$record_account['id'],'token'=>$record_account['complementary_info'],'username'=>$record_account['username'],'password'=>$record_account['plain_password'],'listing'=>['id'=>$record_listing['id'],'title'=>$record_listing['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record_listing['friendly_url']]]]];
+        return $parameter['result'];
 
 
     }
