@@ -444,7 +444,7 @@ class entity_api_method extends entity
             return false;
         }
         $record_listing = end($entity_listing_obj->row);
-        $parameter = ['status'=>'OK','result'=>['account'=>['id'=>$record_account['id'],'token'=>$record_account['complementary_info'],'username'=>$record_account['username'],'password'=>$record_account['password'],'listing'=>['id'=>$record_listing['id'],'title'=>$record_listing['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record_listing['friendly_url']]]]];
+        $parameter = ['status'=>'OK','result'=>['account'=>['id'=>$record_account['id'],'token'=>$record_account['complementary_info'],'username'=>$record_account['username'],'password'=>$record_account['password']],'listing'=>['id'=>$record_listing['id'],'title'=>$record_listing['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record_listing['friendly_url']]]];
         return $parameter['result'];
 
 
