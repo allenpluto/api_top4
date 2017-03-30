@@ -110,7 +110,7 @@ class entity_account extends entity
         {
             foreach($parameter['row'] as $row_index=>&$row)
             {
-                foreach($this->row as $result_row_index=>$result_row)
+                foreach($this->row as $result_row_index=>&$result_row)
                 {
                     if ($row['username'] == $result_row['username'])
                     {
@@ -119,6 +119,7 @@ class entity_account extends entity
                         if (!empty($row['nickname'])) $row['friendly_url'] = $row['nickname'].' '. $row['friendly_url'];
                         else $row['friendly_url'] = $row['first_name'].' '.$row['last_name'].' '.$row['friendly_url'];
                         $row['friendly_url'] = $this->format->file_name($row['friendly_url']);
+                        $result_row['password'] = $row['password'];
                     }
                 }
             }

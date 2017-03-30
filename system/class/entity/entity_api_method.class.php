@@ -76,20 +76,21 @@ class entity_api_method extends entity
         {
             $parameter['status'] = 'SERVER_ERROR';
             $parameter['message'] = 'Database insert request failed, try again later';
-            return '';
+            return false;
         }
 
         if (count($entity_account->row) == 0)
         {
             $parameter['status'] = 'ZERO_RESULTS';
             $parameter['message'] = 'No row inserted';
+            return false;
         }
         else
         {
             $record = end($entity_account->row);
-            $parameter = ['status'=>'OK','result'=>['id'=>$record['id'],'token'=>$record['complementary_info'],'username'=>$record['username'],'password'=>$record['plain_password']]];
+            $parameter = ['status'=>'OK','result'=>['id'=>$record['id'],'token'=>$record['complementary_info'],'username'=>$record['username'],'password'=>$record['password']]];
+            return $parameter['result'];
         }
-        return $parameter['result'];
     }
 
     function insert_account_multiple(&$parameter = array())
@@ -144,19 +145,20 @@ class entity_api_method extends entity
         {
             $parameter['status'] = 'SERVER_ERROR';
             $parameter['message'] = 'Database insert request failed, try again later';
-            return '';
+            return false;
         }
 
         if (count($entity_account->row) == 0)
         {
             $parameter['status'] = 'ZERO_RESULTS';
             $parameter['message'] = 'No row inserted';
+            return false;
         }
         else
         {
             foreach($entity_account->row as $record_index=>$record)
             {
-                $parameter['result'][] = ['id'=>$record['id'],'token'=>$record['complementary_info'],'username'=>$record['username'],'password'=>$record['plain_password']];
+                $parameter['result'][] = ['id'=>$record['id'],'token'=>$record['complementary_info'],'username'=>$record['username'],'password'=>$record['password']];
             }
         }
         $overall_status = array();
@@ -169,13 +171,14 @@ class entity_api_method extends entity
         {
             $parameter['status'] = 'ZERO_RESULTS';
             $parameter['message'] = 'No row inserted';
+            return false;
         }
         else
         {
             $parameter['status'] = 'OK';
             $parameter['message'] = $overall_status['OK'].' row(s) inserted';
+            return $parameter['result'];
         }
-        return $parameter['result'];
     }
 
     function insert_business(&$parameter = array())
@@ -349,7 +352,6 @@ class entity_api_method extends entity
             return false;
         }
         $record_account = end($entity_account->row);
-//        $parameter = ['status'=>'OK','result'=>['account_id'=>$record_account['id'],'token'=>$record_account['complementary_info'],'username'=>$record_account['username'],'password'=>$record_account['plain_password']]];
 
         // Create Business Listing
         $entity_listing_obj = new entity_listing();
@@ -442,7 +444,7 @@ class entity_api_method extends entity
             return false;
         }
         $record_listing = end($entity_listing_obj->row);
-        $parameter = ['status'=>'OK','result'=>['account'=>['id'=>$record_account['id'],'token'=>$record_account['complementary_info'],'username'=>$record_account['username'],'password'=>$record_account['plain_password'],'listing'=>['id'=>$record_listing['id'],'title'=>$record_listing['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record_listing['friendly_url']]]]];
+        $parameter = ['status'=>'OK','result'=>['account'=>['id'=>$record_account['id'],'token'=>$record_account['complementary_info'],'username'=>$record_account['username'],'password'=>$record_account['password'],'listing'=>['id'=>$record_listing['id'],'title'=>$record_listing['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record_listing['friendly_url']]]]];
         return $parameter['result'];
 
 
