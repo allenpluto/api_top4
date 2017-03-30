@@ -35,7 +35,7 @@ class entity_listing extends entity
     function set($parameter = array())
     {
 //print_r($parameter);
-        $set_listing_parameter = ['fields' => ['id','title','abn','address','address2','city','state','zip_code','account_id','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status','bulked','importID','thumb_id','image_id','banner_id','category','updated','entered'],'row'=>[]];
+        $set_listing_parameter = ['fields' => ['id','title','abn','address','address2','city','state','zip_code','latitude','longitude','account_id','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status','bulked','importID','thumb_id','image_id','banner_id','category','updated','entered'],'row'=>[]];
         if (isset($parameter['row']))
         {
             foreach ($parameter['row'] as $row_index=>&$row)
