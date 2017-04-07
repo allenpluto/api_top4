@@ -19,7 +19,7 @@ class entity_api_method extends entity
     }
 
     // General Public Accessible Functions
-    function list_available_method($parameter = array())
+    function list_available_method(&$parameter = array())
     {
         $row = $this->get(['where'=>'`tbl_entity_api_method`.id < 100 OR `tbl_entity_api_method`.id IN (SELECT api_method_id FROM tbl_rel_api_to_api_method WHERE api_id = :api_id)','bind_param'=>[':api_id'=>$this->api_id],'id_group'=>array()]);
         $result = [];
@@ -37,30 +37,29 @@ class entity_api_method extends entity
         $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
         $set_account_parameter = array('row'=>array());
 
-        if (empty($parameter['username']) OR empty($parameter['first_name']) OR empty($parameter['last_name']))
+        if (empty($parameter['option']['username']) OR empty($parameter['option']['first_name']) OR empty($parameter['option']['last_name']))
         {
             // Error Handling, username, first_name or last_name not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'New Account Details not provided, username, first_name and last_name are mandatory';
-            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'New Account Details not provided, username, first_name and last_name are mandatory','username'=>$parameter['username'],'first_name'=>$parameter['first_name'],'last_name'=>$parameter['last_name']];
             return false;
         }
 
         $entity_account_check = new entity_account();
         $entity_account_check_param = array(
-            'bind_param' => array(':username'=>$parameter['username']),
+            'bind_param' => array(':username'=>$parameter['option']['username']),
             'where' => array('`username` = :username')
         );
         $entity_account_check->get($entity_account_check_param);
         if (count($entity_account_check->row) > 0)
         {
-            $parameter = ['status'=>'REQUEST_DENIED','message'=>'Account already exist','username'=>$parameter['username']];
+            $parameter = ['status'=>'REQUEST_DENIED','message'=>'Account already exist','username'=>$parameter['option']['username']];
             return false;
         }
         unset($entity_account_check);
 
         $set_account_row = array();
-        foreach($parameter as $parameter_item_index=>$parameter_item)
+        foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
         {
             if (in_array($parameter_item_index,$account_field_array))
             {
@@ -93,93 +92,93 @@ class entity_api_method extends entity
         }
     }
 
-    function insert_account_multiple(&$parameter = array())
-    {
-        $entity_account = new entity_account();
-        $account_field_array = ['username','first_name','last_name','company','address','address2','city','state','zip','country','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
-        $set_account_parameter = array('row'=>array());
-        $parameter['result'] = [];
-
-        if (!isset($parameter['row']))
-        {
-            $parameter = ['row'=>[$parameter]];
-        }
-
-        foreach ($parameter['row'] as $parameter_row_index=>$parameter_row)
-        {
-            if (empty($parameter_row['username']) OR empty($parameter_row['first_name']) OR empty($parameter_row['last_name']))
-            {
-                // Error Handling, Website uri not provided
-                //$parameter['status'] = 'INVALID_REQUEST';
-                //$parameter['message'] = 'New Account Details not provided, username, first_name and last_name are mandatory';
-                $parameter['result'][] = ['status'=>'INVALID_REQUEST','message'=>'New Account Details not provided, username, first_name and last_name are mandatory'];
-                continue;
-            }
-
-            $entity_account_check = new entity_account();
-            $entity_account_check_param = array(
-                'bind_param' => array(':username'=>$parameter_row['username']),
-                'where' => array('`username` = :username')
-            );
-            $entity_account_check->get($entity_account_check_param);
-            if (count($entity_account_check->row) > 0)
-            {
-                $parameter['result'][] = ['status'=>'REQUEST_DENIED','message'=>'Account Exists','username'=>$parameter_row['username']];
-                continue;
-            }
-            unset($entity_account_check);
-
-            $set_account_row = array();
-            foreach($parameter_row as $parameter_item_index=>$parameter_item)
-            {
-                if (in_array($parameter_item_index,$account_field_array))
-                {
-                    $set_account_row[$parameter_item_index] = $parameter_item;
-                }
-            }
-            $set_account_row['importID'] = $this->api_id;
-            $set_account_parameter['row'][] = $set_account_row;
-        }
-        $account_insert_result = $entity_account->set($set_account_parameter);
-        if ($account_insert_result === FALSE)
-        {
-            $parameter['status'] = 'SERVER_ERROR';
-            $parameter['message'] = 'Database insert request failed, try again later';
-            return false;
-        }
-
-        if (count($entity_account->row) == 0)
-        {
-            $parameter['status'] = 'ZERO_RESULTS';
-            $parameter['message'] = 'No row inserted';
-            return false;
-        }
-        else
-        {
-            foreach($entity_account->row as $record_index=>$record)
-            {
-                $parameter['result'][] = ['id'=>$record['id'],'token'=>$record['complementary_info'],'username'=>$record['username'],'password'=>$record['password']];
-            }
-        }
-        $overall_status = array();
-        foreach($parameter['result'] as $record_index=>$record)
-        {
-            if (empty($overall_status[$record['status']])) $overall_status[$record['status']] = 1;
-            else $overall_status[$record['status']]++;
-        }
-        if (empty($overall_status['OK']))
-        {
-            $parameter['status'] = 'ZERO_RESULTS';
-            $parameter['message'] = 'No row inserted';
-            return false;
-        }
-        else
-        {
-            $parameter['status'] = 'OK';
-            $parameter['message'] = $overall_status['OK'].' row(s) inserted';
-            return $parameter['result'];
-        }
-    }
+//    function insert_account_multiple(&$parameter = array())
+//    {
+//        $entity_account = new entity_account();
+//        $account_field_array = ['username','first_name','last_name','company','address','address2','city','state','zip','country','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+//        $set_account_parameter = array('row'=>array());
+//        $parameter['result'] = [];
+//
+//        if (!isset($parameter['row']))
+//        {
+//            $parameter = ['row'=>[$parameter]];
+//        }
+//
+//        foreach ($parameter['row'] as $parameter_row_index=>$parameter_row)
+//        {
+//            if (empty($parameter_row['username']) OR empty($parameter_row['first_name']) OR empty($parameter_row['last_name']))
+//            {
+//                // Error Handling, Website uri not provided
+//                //$parameter['status'] = 'INVALID_REQUEST';
+//                //$parameter['message'] = 'New Account Details not provided, username, first_name and last_name are mandatory';
+//                $parameter['result'][] = ['status'=>'INVALID_REQUEST','message'=>'New Account Details not provided, username, first_name and last_name are mandatory'];
+//                continue;
+//            }
+//
+//            $entity_account_check = new entity_account();
+//            $entity_account_check_param = array(
+//                'bind_param' => array(':username'=>$parameter_row['username']),
+//                'where' => array('`username` = :username')
+//            );
+//            $entity_account_check->get($entity_account_check_param);
+//            if (count($entity_account_check->row) > 0)
+//            {
+//                $parameter['result'][] = ['status'=>'REQUEST_DENIED','message'=>'Account Exists','username'=>$parameter_row['username']];
+//                continue;
+//            }
+//            unset($entity_account_check);
+//
+//            $set_account_row = array();
+//            foreach($parameter_row as $parameter_item_index=>$parameter_item)
+//            {
+//                if (in_array($parameter_item_index,$account_field_array))
+//                {
+//                    $set_account_row[$parameter_item_index] = $parameter_item;
+//                }
+//            }
+//            $set_account_row['importID'] = $this->api_id;
+//            $set_account_parameter['row'][] = $set_account_row;
+//        }
+//        $account_insert_result = $entity_account->set($set_account_parameter);
+//        if ($account_insert_result === FALSE)
+//        {
+//            $parameter['status'] = 'SERVER_ERROR';
+//            $parameter['message'] = 'Database insert request failed, try again later';
+//            return false;
+//        }
+//
+//        if (count($entity_account->row) == 0)
+//        {
+//            $parameter['status'] = 'ZERO_RESULTS';
+//            $parameter['message'] = 'No row inserted';
+//            return false;
+//        }
+//        else
+//        {
+//            foreach($entity_account->row as $record_index=>$record)
+//            {
+//                $parameter['result'][] = ['id'=>$record['id'],'token'=>$record['complementary_info'],'username'=>$record['username'],'password'=>$record['password']];
+//            }
+//        }
+//        $overall_status = array();
+//        foreach($parameter['result'] as $record_index=>$record)
+//        {
+//            if (empty($overall_status[$record['status']])) $overall_status[$record['status']] = 1;
+//            else $overall_status[$record['status']]++;
+//        }
+//        if (empty($overall_status['OK']))
+//        {
+//            $parameter['status'] = 'ZERO_RESULTS';
+//            $parameter['message'] = 'No row inserted';
+//            return false;
+//        }
+//        else
+//        {
+//            $parameter['status'] = 'OK';
+//            $parameter['message'] = $overall_status['OK'].' row(s) inserted';
+//            return $parameter['result'];
+//        }
+//    }
 
     function insert_business(&$parameter = array())
     {
@@ -187,16 +186,15 @@ class entity_api_method extends entity
         $listing_field_array = ['title','latitude','longitude','category','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
         $set_listing_parameter = array('row'=>array());
 
-        if (empty($parameter['title']) OR empty($parameter['latitude']) OR empty($parameter['longitude']) OR empty($parameter['category']))
+        if (empty($parameter['option']['title']) OR empty($parameter['option']['latitude']) OR empty($parameter['option']['longitude']) OR empty($parameter['option']['category']))
         {
             // Error Handling, username, first_name or last_name not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'New Listing Details not provided. Title, category, latitude and longitude are mandatory fields';
-            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'New Listing Details not provided. Title, category, latitude and longitude are mandatory fields'];
             return false;
         }
 
-        $category_array = explode(',',$parameter['category']);
+        $category_array = explode(',',$parameter['option']['category']);
         $category_name_array = array();
         $category_schema_array = array();
         foreach($category_array as $category_index=>$category)
@@ -231,7 +229,6 @@ class entity_api_method extends entity
             // Error Handling, username, first_name or last_name not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'Category provided is not in correct format, it should be either schema name or schema full url start with http://, multiple categories should be separate by comma';
-            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'Category provided is not in correct format, it should be either schema name or schema full url start with http://, multiple categories should be separate by comma'];
             return false;
         }
         $entity_category_param['where'][] = implode(' AND ',$category_where);
@@ -243,12 +240,11 @@ class entity_api_method extends entity
             // Error Handling, username, first_name or last_name not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'Cannot find category';
-            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'Cannot find category'];
             return false;
         }
 
         $set_listing_row = array();
-        foreach($parameter as $parameter_item_index=>$parameter_item)
+        foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
         {
             if (in_array($parameter_item_index,$listing_field_array))
             {
@@ -289,21 +285,19 @@ class entity_api_method extends entity
 
     function insert_account_with_business(&$parameter = array())
     {
-        if (empty($parameter['username']) OR empty($parameter['first_name']) OR empty($parameter['last_name']))
+        if (empty($parameter['option']['username']) OR empty($parameter['option']['first_name']) OR empty($parameter['option']['last_name']))
         {
             // Error Handling, username, first_name or last_name not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'New Account Details not provided, username, first_name and last_name are mandatory';
-            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'New Account Details not provided, username, first_name and last_name are mandatory','username'=>$parameter['username'],'first_name'=>$parameter['first_name'],'last_name'=>$parameter['last_name']];
             return false;
         }
 
-        if (empty($parameter['company']) OR empty($parameter['latitude']) OR empty($parameter['longitude']) OR empty($parameter['category']))
+        if (empty($parameter['option']['company']) OR empty($parameter['option']['latitude']) OR empty($parameter['option']['longitude']) OR empty($parameter['option']['category']))
         {
             // Error Handling, username, first_name or last_name not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'New Listing Details not provided. Title, category, latitude and longitude are mandatory fields';
-            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'New Listing Details not provided. Title, category, latitude and longitude are mandatory fields'];
             return false;
         }
 
@@ -314,19 +308,19 @@ class entity_api_method extends entity
 
         $entity_account_check = new entity_account();
         $entity_account_check_param = array(
-            'bind_param' => array(':username'=>$parameter['username']),
+            'bind_param' => array(':username'=>$parameter['option']['username']),
             'where' => array('`username` = :username')
         );
         $entity_account_check->get($entity_account_check_param);
         if (count($entity_account_check->row) > 0)
         {
-            $parameter = ['status'=>'REQUEST_DENIED','message'=>'Account already exist','username'=>$parameter['username']];
+            $parameter = ['status'=>'REQUEST_DENIED','message'=>'Account already exist','username'=>$parameter['option']['username']];
             return false;
         }
         unset($entity_account_check);
 
         $set_account_row = array();
-        foreach($parameter as $parameter_item_index=>$parameter_item)
+        foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
         {
             if (in_array($parameter_item_index,$account_field_array))
             {
@@ -358,7 +352,7 @@ class entity_api_method extends entity
         $listing_field_array = ['latitude','longitude','category','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
         $set_listing_parameter = array('row'=>array());
 
-        $category_array = explode(',',$parameter['category']);
+        $category_array = explode(',',$parameter['option']['category']);
         $category_name_array = array();
         $category_schema_array = array();
         foreach($category_array as $category_index=>$category)
@@ -393,7 +387,6 @@ class entity_api_method extends entity
             // Error Handling, username, first_name or last_name not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'Category provided is not in correct format, it should be either schema name or schema full url start with http://, multiple categories should be separate by comma';
-            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'Category provided is not in correct format, it should be either schema name or schema full url start with http://, multiple categories should be separate by comma'];
             return false;
         }
         $entity_category_param['where'][] = implode(' AND ',$category_where);
@@ -405,12 +398,11 @@ class entity_api_method extends entity
             // Error Handling, username, first_name or last_name not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'Cannot find category';
-            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'Cannot find category'];
             return false;
         }
 
         $set_listing_row = array();
-        foreach($parameter as $parameter_item_index=>$parameter_item)
+        foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
         {
             if (in_array($parameter_item_index,$listing_field_array))
             {
@@ -419,7 +411,7 @@ class entity_api_method extends entity
         }
         $set_listing_row['importID'] = $this->api_id;
         $set_listing_row['account_id'] = $record_account['id'];
-        $set_listing_row['title'] = $parameter['company'];
+        $set_listing_row['title'] = $parameter['option']['company'];
         $set_listing_row['status'] = 'A';
         $set_listing_row['bulked'] = 'y';
         $set_listing_row['thumb_id'] = 0;
@@ -450,22 +442,144 @@ class entity_api_method extends entity
 
     }
 
+    function update_business(&$parameter = array())
+    {
+        $listing_field_array = ['id','title','latitude','longitude','category','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status'];
+        $set_listing_row = array();
+        foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
+        {
+            if (in_array($parameter_item_index,$listing_field_array) AND !isset($set_listing_row[$parameter_item_index]))
+            {
+                $set_listing_row[$parameter_item_index] = $parameter_item;
+            }
+        }
+
+        $entity_listing_obj = new entity_listing();
+        $set_listing_parameter = array('row'=>array());
+        if (empty($set_listing_row['id']))
+        {
+            // Error Handling, id not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Update Listing ID not provided';
+            return false;
+        }
+
+        $entity_listing_obj = new entity_listing($set_listing_row['id']);
+        if (empty($entity_listing_obj->id_group))
+        {
+            // Error Handling, category provided does not match database records
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Listing does not exist, please use insert_business instead';
+            return false;
+        }
+        $listing_row = end($entity_listing_obj->row);
+        if (empty($listing_row['importID']) OR $listing_row['importID'] != $this->api_id)
+        {
+            $parameter['status'] = 'REQUEST_DENIED';
+            $parameter['message'] = 'Current API User does not have the permission to update this listing';
+            return false;
+        }
+        unset($listing_row);
+
+        if (isset($parameter['option']['category']))
+        {
+            if (empty($parameter['option']['category']))
+            {
+                // Error Handling, category empty
+                $parameter['status'] = 'INVALID_REQUEST';
+                $parameter['message'] = 'Category is mandatory field, cannot be set to empty';
+                return false;
+            }
+            $category_array = explode(',',$parameter['option']['category']);
+            $category_name_array = array();
+            $category_schema_array = array();
+            foreach($category_array as $category_index=>$category)
+            {
+                if (preg_match('/^http/',$category) == 1) $category_schema_array[] = $category;
+                else $category_name_array[] = $category;
+            }
+            $entity_category_param = array(
+                'bind_param' => array(),
+                'where' => array()
+            );
+            $category_where = array();
+            if (!empty($category_schema_array))
+            {
+                $category_where[] = '`schema_itemtype` IN (:schema_'.implode(',:schema_',array_keys($category_schema_array)).')';
+                foreach($category_schema_array as $category_schema_index=>$category_schema)
+                {
+                    $entity_category_param['bind_param'][':schema_'.$category_schema_index] = $category_schema;
+                }
+            }
+            if (!empty($category_name_array))
+            {
+                $category_where[] = '`name` IN (:name_'.implode(',:name_',array_keys($category_name_array)).')';
+                foreach($category_name_array as $category_name_index=>$category_name)
+                {
+                    $entity_category_param['bind_param'][':name_'.$category_name_index] = $category_name;
+                }
+            }
+
+            if (empty($category_where))
+            {
+                // Error Handling, username, first_name or last_name not provided
+                $parameter['status'] = 'INVALID_REQUEST';
+                $parameter['message'] = 'Category provided is not in correct format, it should be either schema name or schema full url start with http://, multiple categories should be separate by comma';
+                return false;
+            }
+            $entity_category_param['where'][] = implode(' AND ',$category_where);
+
+            $entity_category_obj = new entity_category();
+            $entity_category_obj->get($entity_category_param);
+            if (empty($entity_category_obj->id_group))
+            {
+                // Error Handling, category provided does not match database records
+                $parameter['status'] = 'INVALID_REQUEST';
+                $parameter['message'] = 'Category does not exist or in wrong format';
+                return false;
+            }
+            $set_listing_row['category'] = implode($entity_category_obj->id_group);
+        }
+
+        $set_listing_parameter['row'][] = $set_listing_row;
+
+        $listing_insert_result = $entity_listing_obj->update($set_listing_row);
+
+        if ($listing_insert_result === FALSE)
+        {
+            $parameter['status'] = 'SERVER_ERROR';
+            $parameter['message'] = 'Database insert request failed, try again later';
+            return false;
+        }
+
+        if (count($entity_listing_obj->row) == 0)
+        {
+            $parameter['status'] = 'ZERO_RESULTS';
+            $parameter['message'] = 'No field updated';
+            return false;
+        }
+        else
+        {
+            $record = end($entity_listing_obj->row);
+            $parameter = ['status'=>'OK','result'=>['id'=>$record['id']]];
+            return $parameter['result'];
+        }
+    }
 
     // Select Functions
     function select_account_by_username(&$parameter = array())
     {
-        if (empty($parameter['username']))
+        if (empty($parameter['option']['username']))
         {
             // Error Handling, username not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'username not provided';
-            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'username not provided'];
             return false;
         }
 
         $entity_account_obj = new entity_account();
         $entity_account_param = array(
-            'bind_param' => array(':username'=>$parameter['username']),
+            'bind_param' => array(':username'=>$parameter['option']['username']),
             'where' => array('`username` = :username')
         );
         $result_row = $entity_account_obj->get($entity_account_param);
@@ -501,18 +615,17 @@ class entity_api_method extends entity
 
     function select_account_by_token(&$parameter = array())
     {
-        if (empty($parameter['token']))
+        if (empty($parameter['option']['token']))
         {
             // Error Handling, username not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'Token not provided';
-            //$parameter = ['status'=>'INVALID_REQUEST','message'=>'token not provided'];
             return false;
         }
 
         $entity_account_obj = new entity_account();
         $entity_account_param = array(
-            'bind_param' => array(':complementary_info'=>$parameter['token']),
+            'bind_param' => array(':complementary_info'=>$parameter['option']['token']),
             'where' => array('`complementary_info` = :complementary_info')
         );
         $result_row = $entity_account_obj->get($entity_account_param);
@@ -553,9 +666,9 @@ class entity_api_method extends entity
             'bind_param' => array(':import_id'=>$this->api_id),
             'where' => array('`importID` = :import_id')
         );
-        if (isset($parameter['page_size']))
+        if (isset($parameter['option']['page_size']))
         {
-            $entity_account_param['limit'] = intval($parameter['page_size']);
+            $entity_account_param['limit'] = intval($parameter['option']['page_size']);
             if ($entity_account_param['limit'] > 1000) $entity_account_param['limit'] = 1000;
             if ($entity_account_param['limit'] < 1) $entity_account_param['limit'] = 1;
         }
@@ -563,9 +676,9 @@ class entity_api_method extends entity
         {
             $entity_account_param['limit'] = 100;
         }
-        if (isset($parameter['page_number']))
+        if (isset($parameter['option']['page_number']))
         {
-            $entity_account_param['offset'] = intval($parameter['page_number']);
+            $entity_account_param['offset'] = intval($parameter['option']['page_number']);
             if ($entity_account_param['offset'] < 0) $entity_account_param['offset'] = 0;
         }
         else
@@ -600,7 +713,7 @@ class entity_api_method extends entity
 
     function select_business_by_uri(&$parameter = array())
     {
-        if (empty($parameter['uri']))
+        if (empty($parameter['option']['uri']))
         {
             // Error Handling, Website uri not provided
             $parameter['status'] = 'INVALID_REQUEST';
@@ -608,7 +721,7 @@ class entity_api_method extends entity
             return false;
         }
         $index_organization_obj = new index_organization();
-        if ($index_organization_obj->filter_by_uri($parameter['uri']) === FALSE)
+        if ($index_organization_obj->filter_by_uri($parameter['option']['uri']) === FALSE)
         {
             $parameter['status'] = 'SERVER_ERROR';
             $parameter['message'] = 'Database search request failed, try again later';

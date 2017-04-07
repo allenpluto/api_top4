@@ -81,7 +81,7 @@ class entity_listing extends entity
         }
         if (isset($value['title']))
         {
-            $value['friendly_url'] = $this->format->file_name($value['friendly_url'].' '.end($this->id_group));
+            $value['friendly_url'] = $this->format->file_name($value['title'].' '.end($this->id_group));
         }
         parent::update($value, $parameter);
     }

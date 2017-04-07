@@ -1058,8 +1058,8 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                     return true;
                 }
 
-                $method_variable = [];
-                if (!empty($this->request['option'])) $method_variable = $this->request['option'];
+                $method_variable = ['option'=>[]];
+                if (!empty($this->request['option'])) $method_variable['option'] = $this->request['option'];
                 if (!empty($this->request['value'])) $method_variable['value'] = $this->request['value'];
                 $method_variable['api_id'] = $auth_id;
                 $method_variable['status'] = 'OK';
