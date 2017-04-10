@@ -38,7 +38,7 @@ class entity_account extends entity
 
     function get($parameter = array())
     {
-        $get_account_parameter = ['fields' => ['id','username','importID','complementary_info','agree_tou','account_type','signup_as','other_company','other_company_phone','updated','entered']];
+        $get_account_parameter = ['fields' => ['id','username','password','importID','complementary_info','agree_tou','account_type','signup_as','other_company','other_company_phone','updated','entered']];
         $get_account_parameter = array_merge($get_account_parameter, $parameter);
         $get_account_result = parent::get($get_account_parameter);
 
@@ -97,7 +97,7 @@ class entity_account extends entity
                         $set_account_row['plain_password'] = $row['password'];
                     }
                 }
-                $set_account_row['complementary_info'] = md5('http://www.top4.com.au/members/login.php'.$row['username'].$row['password']);
+                $set_account_row['complementary_info'] = md5('http://www.top4.com.au/members/login.php'.$set_account_row['username'].$set_account_row['password']);
                 $set_account_row['agree_tou'] = 1;
                 $set_account_parameter['row'][] = $set_account_row;
             }
@@ -149,6 +149,10 @@ class entity_account extends entity
 
     function update($value = array(), $parameter = array())
     {
+        if (isset($value['password']))
+        {
+            $value['password'] = md5($value['password']);
+        }
         if (isset($value['username']) OR isset($value['password']))
         {
             $entity_account = new entity_account($this->id_group);
@@ -159,10 +163,6 @@ class entity_account extends entity
                 $record = array_merge($record, $value);
                 $value['complementary_info'] = md5('http://www.top4.com.au/members/login.php'.$record['username'].$record['password']);
             }
-        }
-        if (isset($value['password']))
-        {
-            $value['password'] = md5($value['password']);
         }
         parent::update($value, $parameter);
     }
