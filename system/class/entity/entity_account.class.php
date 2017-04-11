@@ -164,7 +164,7 @@ class entity_account extends entity
                 $value['complementary_info'] = md5('http://www.top4.com.au/members/login.php'.$record['username'].$record['password']);
             }
         }
-        parent::update($value, $parameter);
+        return parent::update($value, $parameter);
     }
 
     function authenticate($parameter = array())

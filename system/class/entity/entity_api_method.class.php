@@ -183,7 +183,7 @@ class entity_api_method extends entity
     function insert_business(&$parameter = array())
     {
         $entity_listing_obj = new entity_listing();
-        $listing_field_array = ['title','latitude','longitude','category','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
+        $listing_field_array = ['title','latitude','longitude','category','account_id','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
         $set_listing_parameter = array('row'=>array());
 
         if (empty($parameter['option']['title']) OR empty($parameter['option']['latitude']) OR empty($parameter['option']['longitude']) OR empty($parameter['option']['category']))
@@ -444,7 +444,7 @@ class entity_api_method extends entity
     function update_account(&$parameter = array())
     {
         $set_account_row = array();
-        $account_field_array = ['id','username','first_name','last_name','password','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
 
 
         if (empty($parameter['option']['id']))
@@ -468,6 +468,14 @@ class entity_api_method extends entity
             // Error Handling, last_name not provided
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'Account last_name is mandatory, cannot update to empty';
+            return false;
+        }
+
+        if (isset($parameter['option']['password']) AND empty($parameter['option']['password']))
+        {
+            // Error Handling, first_name not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Account password cannot be empty';
             return false;
         }
 
@@ -502,7 +510,7 @@ class entity_api_method extends entity
                 $set_account_row[$parameter_item_index] = $parameter_item;
             }
         }
-        $entity_account = new entity_account($set_account_row['id']);
+        $entity_account = new entity_account($parameter['option']['id']);
         if (empty($entity_account->id_group))
         {
             // Error Handling, category provided does not match database records
@@ -519,16 +527,16 @@ class entity_api_method extends entity
             return false;
         }
         unset($account_row);
-        $account_insert_result = $entity_account->update($set_account_row);
-        print_r($set_account_row);
-        if ($account_insert_result === FALSE)
+        $account_update_result = $entity_account->update($set_account_row);
+
+        if ($account_update_result === FALSE)
         {
             $parameter['status'] = 'SERVER_ERROR';
             $parameter['message'] = 'Database update request failed, try again later';
             return false;
         }
 
-        if (count($entity_account->row) == 0)
+        if ($account_update_result == 0)
         {
             $parameter['status'] = 'ZERO_RESULTS';
             $parameter['message'] = 'All values are same as before, nothing updated';
@@ -536,8 +544,11 @@ class entity_api_method extends entity
         }
         else
         {
+            $entity_account->get();
             $record = end($entity_account->row);
-            $parameter = ['status'=>'OK','result'=>['id'=>$record['id'],'token'=>$record['complementary_info'],'username'=>$record['username'],'password'=>$record['password']]];
+            $parameter['status'] = 'OK';
+            $parameter['message'] = $account_update_result.' record(s) updated';
+            $parameter['result'] = ['id'=>$record['id'],'token'=>$record['complementary_info'],'username'=>$record['username']];
             return $parameter['result'];
         }
     }
@@ -586,15 +597,20 @@ class entity_api_method extends entity
             return false;
         }
 
-        $entity_listing_obj = new entity_listing($set_listing_row['id']);
-        if (empty($entity_listing_obj->id_group))
+        if (isset($parameter['option']['status']) AND !in_array($parameter['option']['status'],['A','S']))
+        {
+            $set_listing_row['status'] = 'S';
+        }
+
+        $entity_listing = new entity_listing($set_listing_row['id']);
+        if (empty($entity_listing->id_group))
         {
             // Error Handling, category provided does not match database records
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'Listing does not exist, please use insert_business instead';
             return false;
         }
-        $listing_row = end($entity_listing_obj->row);
+        $listing_row = end($entity_listing->row);
 
         if (empty($listing_row['importID']) OR $listing_row['importID'] != $this->api_id)
         {
@@ -664,16 +680,16 @@ class entity_api_method extends entity
             $set_listing_row['category'] = implode($entity_category_obj->id_group);
         }
 
-        $listing_insert_result = $entity_listing_obj->update($set_listing_row);
+        $listing_update_result = $entity_listing->update($set_listing_row);
 
-        if ($listing_insert_result === FALSE)
+        if ($listing_update_result === FALSE)
         {
             $parameter['status'] = 'SERVER_ERROR';
             $parameter['message'] = 'Database insert request failed, try again later';
             return false;
         }
 
-        if (count($entity_listing_obj->row) == 0)
+        if ($listing_update_result == 0)
         {
             $parameter['status'] = 'ZERO_RESULTS';
             $parameter['message'] = 'All values are same as before, nothing updated';
@@ -681,15 +697,18 @@ class entity_api_method extends entity
         }
         else
         {
-            $record = end($entity_listing_obj->row);
-            $parameter = ['status'=>'OK','result'=>['id'=>$record['id']]];
+            $entity_listing->get();
+            $record = end($entity_listing->row);
+            $parameter['status'] = 'OK';
+            $parameter['message'] = $listing_update_result.' record(s) updated';
+            $parameter['result'] = ['id'=>$record['id'],'title'=>$record['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record['friendly_url']];
             return $parameter['result'];
         }
     }
 
-    function update_account_and_business(&$parameter = array())
+    function update_account_with_business(&$parameter = array())
     {
-        if (empty($set_listing_row['id']))
+        if (empty($parameter['option']['id']))
         {
             // Error Handling, id not provided
             $parameter['status'] = 'INVALID_REQUEST';
@@ -724,8 +743,7 @@ class entity_api_method extends entity
             unset($entity_account_check);
         }
 
-        $entity_account = new entity_account();
-        $account_field_array = ['id','username','first_name','last_name','password','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
 
         $set_account_row = array();
         foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
@@ -735,6 +753,22 @@ class entity_api_method extends entity
                 $set_account_row[$parameter_item_index] = $parameter_item;
             }
         }
+        $entity_account = new entity_account($parameter['option']['id']);
+        if (empty($entity_account->id_group))
+        {
+            // Error Handling, category provided does not match database records
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Account does not exist, please use insert_account instead';
+            return false;
+        }
+        $record_account = end($entity_account->row);
+        if (empty($record_account['importID']) OR $record_account['importID'] != $this->api_id)
+        {
+            $parameter['status'] = 'REQUEST_DENIED';
+            $parameter['message'] = 'Current API User does not have the permission to update this account';
+            return false;
+        }
+
         $account_update_result = $entity_account->update($set_account_row);
 
         if ($account_update_result === FALSE)
@@ -744,36 +778,37 @@ class entity_api_method extends entity
             return false;
         }
 
-        if (count($entity_account->row) == 0)
+        if ($account_update_result == 0)
         {
-            $parameter['status'] = 'ZERO_RESULTS';
-            $parameter['message'] = 'No account updated, make sure the account exists';
-            return false;
+            $parameter['message'] = 'Account record is not updated, values are same as before. ';
         }
-        $record_account = end($entity_account->row);
+        else
+        {
+            $parameter['message'] = $account_update_result.' account record(s) updated. ';
+            $entity_account->get();
+            $record_account = end($entity_account->row);
+        }
 
-        $entity_listing_obj = new entity_listing();
+        $entity_listing = new entity_listing();
         $entity_listing_param = array(
             'bind_param' => array(':account_id'=>$record_account['id']),
             'where' => array('`account_id` = :account_id','importID = '.$this->api_id)
         );
-        $entity_listing_obj->get($entity_listing_param);
-        if (count($entity_listing_obj->row) == 0)
+        $entity_listing->get($entity_listing_param);
+        if (count($entity_listing->row) == 0)
         {
             $parameter['status'] = 'REQUEST_DENIED';
             $parameter['message'] = 'This account has no listing imported. Please use insert_listing function instead.';
             return false;
         }
-        if (count($entity_listing_obj->row) > 1)
+        if (count($entity_listing->row) > 1)
         {
             $parameter['status'] = 'REQUEST_DENIED';
             $parameter['message'] = 'This account has more than 1 listing imported. Please use update_listing function instead.';
             return false;
         }
 
-        // Create Business Listing
-        $listing_field_array = ['latitude','longitude','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
-
+        $listing_field_array = ['latitude','longitude','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status'];
         $set_listing_row = array();
         foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
         {
@@ -781,6 +816,11 @@ class entity_api_method extends entity
             {
                 $set_listing_row[$parameter_item_index] = $parameter_item;
             }
+        }
+
+        if (isset($parameter['option']['status']) AND !in_array($parameter['option']['status'],['A','S']))
+        {
+            $set_listing_row['status'] = 'S';
         }
         if (isset($parameter['option']['company']))
         {
@@ -846,23 +886,36 @@ class entity_api_method extends entity
             $set_listing_row['category'] = implode($entity_category_obj->id_group);
         }
 
-        $listing_insert_result = $entity_listing_obj->update($set_listing_row);
+        $listing_update_result = $entity_listing->update($set_listing_row);
 
-        if ($listing_insert_result === FALSE)
+        if ($listing_update_result === FALSE)
         {
             $parameter['status'] = 'SERVER_ERROR';
             $parameter['message'] = 'Database update listing request failed, try again later';
             return false;
         }
 
-        if (count($entity_listing_obj->row) == 0)
+        if ($listing_update_result == 0)
         {
-            $parameter['status'] = 'ZERO_RESULTS';
-            $parameter['message'] = 'All values are same as before, nothing updated';
-            return false;
+            if ($account_update_result == 0)
+            {
+                $parameter['status'] = 'ZERO_RESULTS';
+                $parameter['message'] = 'All values are same as before, nothing updated';
+                return false;
+            }
+            else
+            {
+                $parameter['message'] .= 'Business listing record is not updated, values are same as before.';
+            }
         }
-        $record_listing = end($entity_listing_obj->row);
-        $parameter = ['status'=>'OK','result'=>['account'=>['id'=>$record_account['id'],'username'=>$record_account['username'],'password'=>$record_account['password']],'listing'=>['id'=>$record_listing['id'],'title'=>$record_listing['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record_listing['friendly_url']]]];
+        else
+        {
+            $parameter['message'] .= $listing_update_result.' business listing record(s) updated. ';
+        }
+        $entity_listing->get();
+        $record_listing = end($entity_listing->row);
+        $parameter['status'] = 'OK';
+        $parameter['result'] = ['id'=>$record_account['id'],'token'=>$record_account['complementary_info'],'username'=>$record_account['username'],'businesses'=>[['id'=>$record_listing['id'],'title'=>$record_listing['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record_listing['friendly_url']]]];
         return $parameter['result'];
     }
 
@@ -962,7 +1015,7 @@ class entity_api_method extends entity
 
     function select_account_index(&$parameter = array())
     {
-        $entity_account_obj = new entity_account();
+        $entity_account = new entity_account();
         $entity_account_param = array(
             'bind_param' => array(':import_id'=>$this->api_id),
             'where' => array('`importID` = :import_id')
@@ -986,29 +1039,37 @@ class entity_api_method extends entity
         {
             $entity_account_param['offset'] = 0;
         }
-        $result_row = $entity_account_obj->get($entity_account_param);
-        if (count($entity_account_obj->row) == 0)
+
+        $entity_account->get($entity_account_param);
+        if (count($entity_account->row) == 0)
         {
             $parameter['status'] = 'ZERO_RESULTS';
             $parameter['message'] = 'Account not available';
             return false;
         }
-        $field = ['username','nickname'];
-        foreach($result_row as $row_index=>$row)
+        foreach($entity_account->row as $record_account_index=>$record_account)
         {
-//            $result_row = ['status'=>'OK'];
-            $processed_result_row = [];
-            foreach ($row as $record_index=>$record)
+            $processed_result_row = ['id'=>$record_account['id'],'token'=>$record_account['complementary_info'],'username'=>$record_account['username']];
+
+            $entity_listing = new entity_listing();
+            $entity_listing_param = array(
+                'bind_param' => array(':account_id'=>$processed_result_row['id']),
+                'where' => array('`account_id` = :account_id')
+            );
+            $entity_listing->get($entity_listing_param);
+
+            if (count($entity_listing->row) > 0)
             {
-                if (in_array($record_index,$field))
+                $processed_result_row['businesses'] = [];
+                foreach($entity_listing->row as $record_listing_index=>$record_listing)
                 {
-                    $processed_result_row[$record_index] = $record;
+                    $processed_result_row['businesses'][] = ['id'=>$record_listing['id'],'title'=>$record_listing['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record_listing['friendly_url'],'accessible'=>($record_listing['importID'] == $this->api_id?'true':'false')];
                 }
             }
-            $processed_result_row['token'] = $row['complementary_info'];
 
             $parameter['result'][] = $processed_result_row;
         }
+
         return $parameter['result'];
     }
 

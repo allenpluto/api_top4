@@ -754,12 +754,12 @@ class entity extends base
             if ($query->rowCount() == 0)
             {
                 $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): '.get_class($this).' no row updated for '.print_r($parameter['bind_param'], true).' under condition '.print_r($where, true);
-                return false;
+                return 0;
             }
             else
             {
                 $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): '.get_class($this).' '.$query->rowCount().' row(s) updated';
-                return true;
+                return $query->rowCount();
             }
         }
         else

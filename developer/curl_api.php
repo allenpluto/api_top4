@@ -50,10 +50,11 @@ if (!isset($_GET['handler']))
     if ($method == 'insert_business')
     {
         $post_value = [
-            'title'=>'Mr Shrestha Dental',
+            'title'=>'Allen 1 Dental',
             'latitude'=>'-33.7606721',
             'longitude'=>'150.9930178',
             'category'=>'http://schema.org/Dentist',
+            'account_id'=>'2345',
             'abn'=>'123456',
             'address'=>'303 windsor rd',
             'address2'=>'Unit B',
@@ -119,8 +120,8 @@ clinic'
     if ($method == 'update_account')
     {
         $post_value = [
-            'id'=>2344,
-            'username'=>'allen2@top4.com.au',
+            'id'=>2345,
+            'username'=>'allen1@top4.com.au',
             'first_name'=>'Shailendra',
             'last_name'=>'Shrestha',
             'company'=>'top4',
@@ -143,12 +144,22 @@ clinic'
     if ($method == 'update_business')
     {
         $post_value = [
-            'id'=>'121495',
-            'title'=>'OMG',
-            'status'=>'S',
-            'address'=>'339 Windsor Road',
-            'address2'=>'TWMG'
+            'id'=>'121496',
+            'title'=>'Top4 Business Platform',
+            'status'=>'A',
+            'address'=>'305 Windsor Road',
+            'address2'=>''
         ];
+    }
+    if ($method == 'update_account_with_business')
+    {
+        $post_value = [
+            'id'=>'2346',
+            'username'=>'allen14@top4.com.au',
+            'company'=>'Testing Company 14',
+            'first_name'=>'Alex'
+        ];
+
     }
 
     //$handler_uri = 'https://api.top4.com.au/json/'.$method;

@@ -19,7 +19,7 @@ class entity_listing extends entity
 
     function get($parameter = array())
     {
-        $get_listing_parameter = ['fields' => ['id','title','abn','address','address2','city','state','zip_code','account_id','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status','bulked','importID','thumb_id','image_id','banner_id','category','updated','entered']];
+        $get_listing_parameter = ['fields' => ['id','title','friendly_url','abn','address','address2','city','state','zip_code','account_id','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status','bulked','importID','thumb_id','image_id','banner_id','category','updated','entered']];
         $get_listing_parameter = array_merge($get_listing_parameter, $parameter);
         $get_listing_result = parent::get($get_listing_parameter);
 
@@ -83,7 +83,7 @@ class entity_listing extends entity
         {
             $value['friendly_url'] = $this->format->file_name($value['title'].' '.end($this->id_group));
         }
-        parent::update($value, $parameter);
+        return parent::update($value, $parameter);
     }
 }
 
