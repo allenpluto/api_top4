@@ -94,7 +94,7 @@ class entity_account extends entity
                     {
                         $row['password'] = substr(sha1(openssl_random_pseudo_bytes(20)),-8);
                         $set_account_row['password'] = md5($row['password']);
-                        $set_account_row['plain_password'] = $row['password'];
+//                        $set_account_row['plain_password'] = $row['password'];
                     }
                 }
                 $set_account_row['complementary_info'] = md5('http://www.top4.com.au/members/login.php'.$set_account_row['username'].$set_account_row['password']);
@@ -147,6 +147,57 @@ class entity_account extends entity
         return $this->row;
     }
 
+    function delete($parameter = array())
+    {
+        $entity_contact_obj = new entity_contact($this->id_group);
+        $contact_delete_result = $entity_contact_obj->delete($parameter);
+        if ($contact_delete_result === false) return false;
+        unset($entity_contact_obj);
+
+        $entity_profile_obj = new entity_profile($this->id_group);
+        $profile_delete_result = $entity_profile_obj->delete($parameter);
+        if ($profile_delete_result === false) return false;
+        unset($entity_profile_obj);
+
+        // Process attached listings
+        if (!isset($parameter['process_attached_listing'])) $parameter['process_attached_listing'] = 'detach';
+        if ($parameter['process_attached_listing'] != 'keep')
+        {
+            $entity_listing_obj = new entity_listing();
+            $account_id = $this->format->id_group(['value'=>$this->id_group,'prefix'=>':account_id_']);
+            $entity_listing_param = array(
+                'bind_param' => $account_id,
+                'where' => array('`account_id` IN ('.implode(',',array_keys($account_id)).')')
+            );
+            $listing_result = $entity_listing_obj->get($entity_listing_param);
+            if ($listing_result !== false)
+            {
+                switch($parameter['process_attached_listing'])
+                {
+//                    case 'keep':
+//                        break;
+                    case 'delete':
+                        // Delete all listings belong to the account(s)
+                        $entity_listing_obj->delete();
+                    case 'detach':
+                    default:
+                        // Set all listings belong to the account(s) to suspended and belong to nobody
+                        $entity_listing_obj->update(['account_id'=>0,'status'=>'S']);
+                }
+            }
+            unset($listing_result);
+            unset($entity_listing_obj);
+        }
+
+
+        $account_delete_result = parent::delete($parameter);
+        if ($account_delete_result === false) return false;
+        else
+        {
+            return max($account_delete_result,$contact_delete_result,$profile_delete_result);
+        }
+    }
+
     function update($value = array(), $parameter = array())
     {
         if (isset($value['password']))
@@ -164,7 +215,29 @@ class entity_account extends entity
                 $value['complementary_info'] = md5('http://www.top4.com.au/members/login.php'.$record['username'].$record['password']);
             }
         }
-        return parent::update($value, $parameter);
+        $account_update_result = parent::update($value, $parameter);
+        if ($account_update_result === false)
+        {
+            return false;
+        }
+        else
+        {
+            $entity_contact_obj = new entity_contact($this->id_group);
+            $contact_update_result = $entity_contact_obj->update($value, $parameter);
+
+            $entity_profile_obj = new entity_profile($this->id_group);
+            $profile_update_result = $entity_profile_obj->update($value, $parameter);
+
+            if ($contact_update_result === false OR $profile_update_result === false)
+            {
+                return false;
+            }
+            else
+            {
+                return max($account_update_result,$contact_update_result,$profile_update_result);
+            }
+        }
+
     }
 
     function authenticate($parameter = array())

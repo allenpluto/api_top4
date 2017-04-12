@@ -27,7 +27,7 @@ if (!isset($_GET['handler']))
     if ($method == 'insert_account')
     {
         $post_value = [
-            'username'=>'allen1@top4.com.au',
+            'username'=>'allen3@top4.com.au',
             'first_name'=>'Shailendra',
             'last_name'=>'Shrestha',
             'company'=>'top4',
@@ -83,8 +83,8 @@ clinic'
     if ($method == 'insert_account_with_business')
     {
         $post_value = [
-            'username'=>'test14@top4.com.au',
-            'first_name'=>'Test 14',
+            'username'=>'test16@top4.com.au',
+            'first_name'=>'Test 16',
             'last_name'=>'User',
             'company'=>'AR Testing Company 14',
             'latitude'=>'-33.7606721',

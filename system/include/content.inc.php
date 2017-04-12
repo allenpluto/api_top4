@@ -1111,16 +1111,19 @@ if ($this->request['data_type'] == 'json' OR $this->request['data_type'] == 'xml
                 if (isset($method_variable['message'])) $this->content['api_result']['message'] = $method_variable['message'];
                 if ($api_call_result !== FALSE)
                 {
-                    foreach ($api_call_result as $record_index=>&$record)
+                    if (is_array($api_call_result))
                     {
-                        if (!empty($record['request_uri'])) $record['request_uri'] = URI_SITE_BASE.$this->content['format'].'/'.$record['request_uri'];
-                        if (!empty($record['friendly_url']))
+                        foreach ($api_call_result as $record_index=>&$record)
                         {
-                            $record['listing_url'] = 'http://www.top4.com.au/business/'.$record['friendly_url'];
-                            unset($record['friendly_url']);
+                            if (!empty($record['request_uri'])) $record['request_uri'] = URI_SITE_BASE.$this->content['format'].'/'.$record['request_uri'];
+                            if (!empty($record['friendly_url']))
+                            {
+                                $record['listing_url'] = 'http://www.top4.com.au/business/'.$record['friendly_url'];
+                                unset($record['friendly_url']);
+                            }
                         }
+                        $this->content['api_result']['result'] = &$api_call_result;
                     }
-                    $this->content['api_result']['result'] = &$api_call_result;
                 }
 
                 break;
