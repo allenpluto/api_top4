@@ -717,7 +717,7 @@ class entity extends base
         }
 
         $sql = 'UPDATE '.$parameter['table'].' SET ';
-        $rel_table_bind = array();
+        $field_bind = array();
         foreach ($parameter['table_fields'] as $field_index=>$field_name)
         {
             if (isset($value[$field_name]))
@@ -725,6 +725,11 @@ class entity extends base
                 $field_bind[] = '`'.$field_name.'` = :'.$field_name;
                 $parameter['bind_param'][':'.$field_name] = $value[$field_name];
             }
+        }
+        if (count($field_bind) == 0)
+        {
+            $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): '.get_class($this).' no row updated. Updating table '.$parameter['table'].' with no field value.';
+            return 0;
         }
         $sql .= implode(',',$field_bind);
         unset($field_bind);

@@ -27,9 +27,9 @@ if (!isset($_GET['handler']))
     if ($method == 'insert_account')
     {
         $post_value = [
-            'username'=>'allen3@top4.com.au',
-            'first_name'=>'Shailendra',
-            'last_name'=>'Shrestha',
+            'username'=>'allen1@top4.com.au',
+            'first_name'=>'Allen',
+            'last_name'=>'Test',
             'company'=>'top4',
             'address'=>'303 windsor rd',
             'address2'=>'Unit B',
@@ -51,6 +51,7 @@ if (!isset($_GET['handler']))
     {
         $post_value = [
             'title'=>'Allen 1 Dental',
+            'account_id'=>2349,
             'latitude'=>'-33.7606721',
             'longitude'=>'150.9930178',
             'category'=>'http://schema.org/Dentist',
@@ -83,18 +84,18 @@ clinic'
     if ($method == 'insert_account_with_business')
     {
         $post_value = [
-            'username'=>'test16@top4.com.au',
-            'first_name'=>'Test 16',
-            'last_name'=>'User',
-            'company'=>'AR Testing Company 14',
+            'username'=>'allen2@top4.com.au',
+            'first_name'=>'Alex',
+            'last_name'=>'Sander',
+            'company'=>'Alex Cleaning',
             'latitude'=>'-33.7606721',
             'longitude'=>'150.9930178',
-            'category'=>'http://schema.org/Dentist',
-            'nickname'=>'sha',
+            'category'=>'http://schema.org/ProfessionalService/CleaningServices',
+            'nickname'=>'alex123',
             'personal_message'=>'shailendra message',
             'abn'=>'123456',
-            'address'=>'303 windsor rd',
-            'address2'=>'Unit B',
+            'address'=>'305 windsor rd',
+            'address2'=>'Room 404',
             'city'=>'Castle Hill',
             'state'=>'NSW',
             'zip'=>'2154',
@@ -120,7 +121,7 @@ clinic'
     if ($method == 'update_account')
     {
         $post_value = [
-            'id'=>2345,
+            'id'=>2349,
             'username'=>'allen1@top4.com.au',
             'first_name'=>'Shailendra',
             'last_name'=>'Shrestha',
@@ -144,7 +145,8 @@ clinic'
     if ($method == 'update_business')
     {
         $post_value = [
-            'id'=>'121496',
+            'id'=>'121500',
+            'account_id'=>2349,
             'title'=>'Top4 Business Platform',
             'status'=>'A',
             'address'=>'305 Windsor Road',
@@ -154,7 +156,7 @@ clinic'
     if ($method == 'update_account_with_business')
     {
         $post_value = [
-            'id'=>'2346',
+            'id'=>'2350',
             'username'=>'allen14@top4.com.au',
             'company'=>'Testing Company 14',
             'first_name'=>'Alex'

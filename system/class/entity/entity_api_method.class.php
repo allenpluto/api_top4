@@ -469,7 +469,6 @@ class entity_api_method extends entity
             $parameter['message'] = 'Current API User does not have the permission to delete this account';
             return false;
         }
-        unset($account_row);
 
         $delete_result = $entity_account_obj->delete();
         if ($delete_result === false)
@@ -489,7 +488,7 @@ class entity_api_method extends entity
         {
             $parameter['status'] = 'OK';
             $parameter['message'] = $delete_result.' record(s) deleted';
-            $parameter['result'] = [];
+            $parameter['result'] = ['id'=>$account_row['id'],'username'=>$account_row['username']];
             return $parameter['result'];
         }
     }
@@ -542,7 +541,75 @@ class entity_api_method extends entity
             $parameter['result'] = ['id'=>$listing_row['id'],'title'=>$listing_row['title'],'listing_page'=>'http://www.top4.com.au/business/'.$listing_row['friendly_url']];
             return $parameter['result'];
         }
+    }
 
+    function delete_account_with_business(&$parameter = array())
+    {
+        if (empty($parameter['option']['id']))
+        {
+            // Error Handling, id not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Update Account ID not provided';
+            return false;
+        }
+
+        $entity_account_obj = new entity_account($parameter['option']['id']);
+        if (empty($entity_account_obj->id_group))
+        {
+            // Error Handling, category provided does not match database records
+            $parameter['status'] = 'REQUEST_DENIED';
+            $parameter['message'] = 'Account does not exist, it might have been deleted already';
+            return false;
+        }
+        $account_row = end($entity_account_obj->row);
+
+        if (empty($account_row['importID']) OR $account_row['importID'] != $this->api_id)
+        {
+            $parameter['status'] = 'REQUEST_DENIED';
+            $parameter['message'] = 'Current API User does not have the permission to delete this account';
+            return false;
+        }
+
+        $entity_listing_obj = new entity_listing();
+        $entity_listing_param = array(
+            'bind_param' => array(':account_id'=>$account_row['id']),
+            'where' => array('`account_id` = :account_id','importID = '.$this->api_id)
+        );
+        $listing_rows = $entity_listing_obj->get($entity_listing_param);
+        if (count($entity_listing_obj->id_group) > 0)
+        {
+            $entity_listing_obj->delete();
+        }
+
+        $delete_result = $entity_account_obj->delete();
+        if ($delete_result === false)
+        {
+            $parameter['status'] = 'SERVER_ERROR';
+            $parameter['message'] = 'Database delete request failed, try again later';
+            return false;
+        }
+
+        if ($delete_result == 0)
+        {
+            $parameter['status'] = 'ZERO_RESULTS';
+            $parameter['message'] = 'Nothing deleted, database records not changed';
+            return false;
+        }
+        else
+        {
+            $parameter['status'] = 'OK';
+            $parameter['message'] = $delete_result.' record(s) deleted';
+            $parameter['result'] = ['id'=>$account_row['id'],'username'=>$account_row['username']];
+            if (!empty($listing_rows))
+            {
+                $parameter['result']['business'] = [];
+                foreach ($listing_rows as $listing_row_index=>$listing_row)
+                {
+                    $parameter['result']['business'][] = ['id'=>$listing_row['id'],'title'=>$listing_row['title'],'listing_page'=>'http://www.top4.com.au/business/'.$listing_row['friendly_url']];
+                }
+            }
+            return $parameter['result'];
+        }
     }
 
     // Update Functions
@@ -692,7 +759,7 @@ class entity_api_method extends entity
             return false;
         }
 
-        $listing_field_array = ['id','title','latitude','longitude','category','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status'];
+        $listing_field_array = ['account_id','title','latitude','longitude','category','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status'];
         $set_listing_row = array();
         foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
         {
@@ -707,7 +774,7 @@ class entity_api_method extends entity
             $set_listing_row['status'] = 'S';
         }
 
-        $entity_listing_obj = new entity_listing($set_listing_row['id']);
+        $entity_listing_obj = new entity_listing($parameter['option']['id']);
         if (empty($entity_listing_obj->id_group))
         {
             // Error Handling, category provided does not match database records
