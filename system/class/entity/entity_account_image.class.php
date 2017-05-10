@@ -1,26 +1,19 @@
 <?php
 // Class Object
-// Name: entity_account
-// Description: account table, stores all user account related information
+// Name: entity_account_image
+// Description: account_image table, stores all user account related images
 
-class entity_account extends entity
+class entity_account_image extends entity
 {
     var $parameter = array(
-        'table' => '`Account`',
+        'table' => '`Image`',
         'primary_key' => 'id',
         'table_fields' => [
             'id'=>'id',
-            'username'=>'username',
-            'password'=>'password',
-            'importID'=>'importID',
-            'complementary_info'=>'complementary_info',
-            'agree_tou'=>'agree_tou',
-            'account_type'=>'account_type',
-            'signup_as'=>'signup_as',
-            'other_company'=>'other_company',
-            'other_company_phone'=>'other_company_phone',
-            'updated'=>'updated',
-            'entered'=>'entered'
+            'type'=>'type',
+            'width'=>'width',
+            'height'=>'height',
+            'prefix'=>'prefix'
         ]
     );
 

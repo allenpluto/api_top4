@@ -30,4 +30,9 @@ class entity_profile extends entity
 
         parent::__construct($value, $parameter);
     }
+
+    function set($parameter = array())
+    {
+        return parent::set($parameter);
+    }
 }
