@@ -34,7 +34,7 @@ class entity_api_method extends entity
     function insert_account(&$parameter = array())
     {
         $entity_account_obj = new entity_account();
-        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','image','banner','personal_message'];
         $set_account_parameter = array('row'=>array());
 
         if (empty($parameter['option']['username']) OR empty($parameter['option']['first_name']) OR empty($parameter['option']['last_name']))

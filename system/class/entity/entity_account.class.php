@@ -136,7 +136,7 @@ class entity_account extends entity
 
 
             $set_profile_parameter = [
-                'fields' => ['account_id','nickname','profile_image','profile_banner','personal_message','friendly_url','credit_points','updated','entered']
+                'fields' => ['account_id','nickname','image','banner','personal_message','friendly_url','credit_points','updated','entered']
             ];
             $set_profile_parameter = array_merge($parameter, $set_profile_parameter);
             $entity_profile_obj = new entity_profile();
