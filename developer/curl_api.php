@@ -27,7 +27,7 @@ if (!isset($_GET['handler']))
     if ($method == 'insert_account')
     {
         $post_value = [
-            'username'=>'allen12@top4.com.au',
+            'username'=>'allen13@top4.com.au',
             'first_name'=>'Allen',
             'last_name'=>'Test',
             'company'=>'top4',

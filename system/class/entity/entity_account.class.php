@@ -58,7 +58,7 @@ class entity_account extends entity
         $entity_contact_obj->get($get_contact_parameter);
 //print_r($entity_contact_obj);
         $get_profile_parameter = [
-            'fields' => ['account_id','nickname','personal_message','friendly_url','credit_points','updated','entered']
+            'fields' => ['account_id','nickname','image_id','banner_id','personal_message','friendly_url','credit_points','updated','entered']
         ];
         $entity_profile_obj = new entity_profile($this->id_group,[]);
         $entity_profile_obj->get($get_profile_parameter);
@@ -68,6 +68,20 @@ class entity_account extends entity
         {
             if (isset($entity_contact_obj->row[$row_index])) $row = array_merge($row,$entity_contact_obj->row[$row_index]);
             if (isset($entity_profile_obj->row[$row_index])) $row = array_merge($row,$entity_profile_obj->row[$row_index]);
+            if (!empty($row['image_id']))
+            {
+                $image_obj = new entity_account_image($row['image_id']);
+                $image_obj->get();
+                $image_row = end($image_obj->row);
+                $row['image'] = $image_row['file_uri'];
+            }
+            if (!empty($row['banner_id']))
+            {
+                $image_obj = new entity_account_image($row['banner_id']);
+                $image_obj->get();
+                $image_row = end($image_obj->row);
+                $row['banner'] = $image_row['file_uri'];
+            }
         }
         return $result_row;
     }
