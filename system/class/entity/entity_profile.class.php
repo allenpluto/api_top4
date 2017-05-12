@@ -35,8 +35,7 @@ class entity_profile extends entity
     {
         if (isset($parameter['row']))
         {
-            $row = $parameter['row'];
-            unset($parameter['row']);
+            $row = &$parameter['row'];
         }
         else
         {
@@ -47,7 +46,7 @@ class entity_profile extends entity
             }
             else
             {
-                $row = $this->row;
+                $row = &$this->row;
             }
         }
 
@@ -78,7 +77,7 @@ class entity_profile extends entity
 
                         }
                     }
-                    $image_obj['data'] = $record['image'];
+                    $image_row['data'] = $record['image'];
                 }
                 if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
                 $image_row['prefix'] = $record['account_id'].'_';
@@ -113,7 +112,7 @@ class entity_profile extends entity
 
                         }
                     }
-                    $image_obj['data'] = $record['banner'];
+                    $image_row['data'] = $record['banner'];
                 }
                 if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
                 $image_row['prefix'] = $record['account_id'].'_';
