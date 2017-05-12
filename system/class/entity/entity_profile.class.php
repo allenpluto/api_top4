@@ -11,6 +11,8 @@ class entity_profile extends entity
         'table_fields' => [
             'account_id'=>'account_id',
             'nickname'=>'nickname',
+            'image_id'=>'image_id',
+            'banner_id'=>'banner_id',
             'personal_message'=>'personal_message',
             'friendly_url'=>'friendly_url',
             'credit_points'=>'credit_points',
@@ -86,6 +88,11 @@ class entity_profile extends entity
 
                 $record['image_id'] = implode(',',$image_obj->id_group);
                 unset($image_obj);
+                if (isset($parameter['fields']['image']))
+                {
+                    unset($parameter['fields']['image']);
+
+                }
             }
             if (isset($record['banner']))
             {
@@ -122,8 +129,8 @@ class entity_profile extends entity
                 $record['banner_id'] = implode(',',$image_obj->id_group);
                 unset($image_obj);
             }
-
         }
+
         return parent::set($parameter);
     }
 }
