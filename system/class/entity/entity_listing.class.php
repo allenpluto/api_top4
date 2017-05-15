@@ -43,7 +43,12 @@ class entity_listing extends entity
                 $set_listing_row = $row;
                 if (isset($set_listing_row['image']))
                 {
-                    $image_row = [];
+                    $image_row = [
+                        'width'=>500,
+                        'height'=>500,
+                        'type'=>'JPG',
+                        'prefix'=>'sitemgr_'
+                    ];
                     $image_size = @getimagesize($set_listing_row['image']);
                     if ($image_size !== false)
                     {
@@ -68,8 +73,7 @@ class entity_listing extends entity
                         }
                         $image_row['data'] = $set_listing_row['image'];
                     }
-                    if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
-                    $image_row['prefix'] = $set_listing_row['account_id'].'_';
+                    if (!empty($set_listing_row['account_id'])) $image_row['prefix'] = $set_listing_row['account_id'].'_';
                     $image_obj = new entity_account_image();
                     $image_obj->set(['row'=>[$image_row]]);
 
@@ -80,12 +84,21 @@ class entity_listing extends entity
                     {
                         // Create Thumbnail Image for Business Logo
                         $thumb_row = [
-                            'width'=> 200,
+                            'width'=>200,
                             'height'=>200,
-                            'type'=>$image_row['type'],
                             'prefix'=>$image_row['prefix']
                         ];
-                        $source_image = imagecreatefromstring($set_listing_row['image']);
+                        if ($image_row['type'] == 'PNG')
+                        {
+                            $thumb_row['type'] = 'PNG';
+                            $thumb_row_mime = 'image/png';
+                        }
+                        else
+                        {
+                            $thumb_row['type'] = 'JPG';
+                            $thumb_row_mime = 'image/jpeg';
+                        }
+                        $source_image = imagecreatefromstring(file_get_contents($set_listing_row['image']));
                         $target_image = imagecreatetruecolor($thumb_row['width'],$thumb_row['height']);
 
                         imagecopyresampled($target_image,$source_image,0,0,0,0,$thumb_row['width'], $thumb_row['height'],$image_row['width'],$image_row['height']);
@@ -98,8 +111,10 @@ class entity_listing extends entity
                             imagesavealpha($target_image, true);
                             imagepng($target_image, NULL, 7, PNG_NO_FILTER);
                         }
-                        $thumb_row['data'] = ob_get_contents();
+                        $thumb_file = ob_get_contents();
                         ob_get_clean();
+                        $thumb_row['data'] = 'data:'.$thumb_row_mime.';base64,'.base64_encode($thumb_file);
+
                         $image_obj = new entity_account_image();
                         $image_obj->set(['row'=>[$thumb_row]]);
 
@@ -114,7 +129,12 @@ class entity_listing extends entity
                 }
                 if (isset($set_listing_row['banner']))
                 {
-                    $image_row = [];
+                    $image_row = [
+                        'width'=>1200,
+                        'height'=>200,
+                        'type'=>'JPG',
+                        'prefix'=>'sitemgr_'
+                    ];
                     $image_size = @getimagesize($set_listing_row['banner']);
                     if ($image_size !== false)
                     {
@@ -139,8 +159,7 @@ class entity_listing extends entity
                         }
                         $image_row['data'] = $set_listing_row['banner'];
                     }
-                    if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
-                    $image_row['prefix'] = $set_listing_row['account_id'].'_';
+                    if (!empty($set_listing_row['account_id'])) $image_row['prefix'] = $set_listing_row['account_id'].'_';
                     $image_obj = new entity_account_image();
                     $image_obj->set(['row'=>[$image_row]]);
 
