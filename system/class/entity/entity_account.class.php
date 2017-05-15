@@ -71,16 +71,22 @@ class entity_account extends entity
             if (!empty($row['image_id']))
             {
                 $image_obj = new entity_account_image($row['image_id']);
-                $image_obj->get();
-                $image_row = end($image_obj->row);
-                $row['image'] = $image_row['file_uri'];
+                $image_row = $image_obj->get();
+                if (!empty($image_row))
+                {
+                    $image_row = end($image_obj->row);
+                    $row['image'] = $image_row['file_uri'];
+                }
             }
             if (!empty($row['banner_id']))
             {
                 $image_obj = new entity_account_image($row['banner_id']);
-                $image_obj->get();
-                $image_row = end($image_obj->row);
-                $row['banner'] = $image_row['file_uri'];
+                $image_row = $image_obj->get();
+                if (!empty($image_row))
+                {
+                    $image_row = end($image_obj->row);
+                    $row['banner'] = $image_row['file_uri'];
+                }
             }
         }
         return $result_row;

@@ -1148,7 +1148,7 @@ class entity_api_method extends entity
         $parameter['status'] = 'OK';
         $parameter['result'] = [];
 
-        $return_field_list = ['id','title','latitude','longitude','category','account_id','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
+        $return_field_list = ['id','title','latitude','longitude','category','account_id','abn','address','address2','city','state','zip','image','banner','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
         foreach ($record as $field_name=>$field_value)
         {
             if (in_array($field_name,$return_field_list))

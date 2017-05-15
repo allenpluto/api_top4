@@ -21,15 +21,69 @@ class entity_listing extends entity
     {
         $get_listing_parameter = ['fields' => ['id','title','friendly_url','abn','address','address2','city','state','zip_code','account_id','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status','bulked','importID','thumb_id','image_id','banner_id','category','updated','entered']];
         $get_listing_parameter = array_merge($get_listing_parameter, $parameter);
+        if (in_array('thumb',$get_listing_parameter['fields']))
+        {
+            $get_listing_parameter['fields'] = array_diff($get_listing_parameter['fields'],['thumb']);
+            $get_listing_parameter['fields'][] = 'thumb_id';
+        }
+        if (in_array('image',$get_listing_parameter['fields']))
+        {
+            $get_listing_parameter['fields'] = array_diff($get_listing_parameter['fields'],['image']);
+            $get_listing_parameter['fields'][] = 'image_id';
+        }
+        if (in_array('banner',$get_listing_parameter['fields']))
+        {
+            $get_listing_parameter['fields'] = array_diff($get_listing_parameter['fields'],['banner']);
+            $get_listing_parameter['fields'][] = 'banner_id';
+        }
         $get_listing_result = parent::get($get_listing_parameter);
 
-        if (count($this->row) == 0)
+        if (empty($get_listing_result))
         {
-            // Error Handling, ZERO_RESULTS
-            $this->message->notice = 'No listing fits the get conditions';
-            return false;
+            return $get_listing_result;
         }
-        return $this->row;
+
+        foreach($get_listing_result as $row_index=>&$row)
+        {
+            if (!empty($row['thumb_id']))
+            {
+                $image_obj = new entity_listing_image($row['thumb_id']);
+                $image_row = $image_obj->get();
+                if (!empty($image_row))
+                {
+                    $image_row = end($image_obj->row);
+                    $row['thumb'] = $image_row['file_uri'];
+                }
+                unset($image_obj);
+                unset($image_row);
+            }
+            if (!empty($row['image_id']))
+            {
+                $image_obj = new entity_listing_image($row['image_id']);
+                $image_row = $image_obj->get();
+                if (!empty($image_row))
+                {
+                    $image_row = end($image_obj->row);
+                    $row['image'] = $image_row['file_uri'];
+                }
+                unset($image_obj);
+                unset($image_row);
+            }
+            if (!empty($row['banner_id']))
+            {
+                $image_obj = new entity_listing_image($row['banner_id']);
+                $image_row = $image_obj->get();
+                if (!empty($image_row))
+                {
+                    $image_row = end($image_obj->row);
+                    $row['banner'] = $image_row['file_uri'];
+                }
+                unset($image_obj);
+                unset($image_row);
+            }
+        }
+
+        return $get_listing_result;
     }
 
     function set($parameter = array())
