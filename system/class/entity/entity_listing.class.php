@@ -51,7 +51,7 @@ class entity_listing extends entity
                 $image_row = $image_obj->get();
                 if (!empty($image_row))
                 {
-                    $image_row = end($image_obj->row);
+                    $image_row = end($image_row);
                     $row['thumb'] = $image_row['file_uri'];
                 }
                 unset($image_obj);
@@ -63,7 +63,7 @@ class entity_listing extends entity
                 $image_row = $image_obj->get();
                 if (!empty($image_row))
                 {
-                    $image_row = end($image_obj->row);
+                    $image_row = end($image_row);
                     $row['image'] = $image_row['file_uri'];
                 }
                 unset($image_obj);
@@ -75,7 +75,7 @@ class entity_listing extends entity
                 $image_row = $image_obj->get();
                 if (!empty($image_row))
                 {
-                    $image_row = end($image_obj->row);
+                    $image_row = end($image_row);
                     $row['banner'] = $image_row['file_uri'];
                 }
                 unset($image_obj);

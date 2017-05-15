@@ -74,7 +74,7 @@ class entity_account extends entity
                 $image_row = $image_obj->get();
                 if (!empty($image_row))
                 {
-                    $image_row = end($image_obj->row);
+                    $image_row = end($image_row);
                     $row['image'] = $image_row['file_uri'];
                 }
             }
@@ -84,7 +84,7 @@ class entity_account extends entity
                 $image_row = $image_obj->get();
                 if (!empty($image_row))
                 {
-                    $image_row = end($image_obj->row);
+                    $image_row = end($image_row);
                     $row['banner'] = $image_row['file_uri'];
                 }
             }
