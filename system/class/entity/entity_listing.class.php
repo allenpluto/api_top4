@@ -41,6 +41,115 @@ class entity_listing extends entity
             foreach ($parameter['row'] as $row_index=>&$row)
             {
                 $set_listing_row = $row;
+                if (isset($set_listing_row['image']))
+                {
+                    $image_row = [];
+                    $image_size = @getimagesize($set_listing_row['image']);
+                    if ($image_size !== false)
+                    {
+                        $image_row['width'] = $image_size[0];
+                        $image_row['height'] = $image_size[1];
+                        if (isset($image_size['mime']))
+                        {
+                            switch ($image_size['mime'])
+                            {
+                                case 'image/gif':
+                                    $image_row['type'] = 'GIF';
+                                    break;
+                                case 'image/png':
+                                    $image_row['type'] = 'PNG';
+                                    break;
+                                case 'image/jpeg':
+                                case 'image/pjpeg';
+                                default:
+                                    $image_row['type'] = 'JPG';
+
+                            }
+                        }
+                        $image_row['data'] = $set_listing_row['image'];
+                    }
+                    if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
+                    $image_row['prefix'] = $set_listing_row['account_id'].'_';
+                    $image_obj = new entity_account_image();
+                    $image_obj->set(['row'=>[$image_row]]);
+
+                    $set_listing_row['image_id'] = implode(',',$image_obj->id_group);
+                    unset($image_obj);
+
+                    if (!empty($set_listing_row['image_id']))
+                    {
+                        // Create Thumbnail Image for Business Logo
+                        $thumb_row = [
+                            'width'=> 200,
+                            'height'=>200,
+                            'type'=>$image_row['type'],
+                            'prefix'=>$image_row['prefix']
+                        ];
+                        $source_image = imagecreatefromstring($set_listing_row['image']);
+                        $target_image = imagecreatetruecolor($thumb_row['width'],$thumb_row['height']);
+
+                        imagecopyresampled($target_image,$source_image,0,0,0,0,$thumb_row['width'], $thumb_row['height'],$image_row['width'],$image_row['height']);
+                        imageinterlace($target_image,true);
+
+                        ob_start();
+                        if ($thumb_row['type'] == 'JPG') imagejpeg($target_image, NULL, 80);
+                        if ($thumb_row['type'] == 'PNG')
+                        {
+                            imagesavealpha($target_image, true);
+                            imagepng($target_image, NULL, 7, PNG_NO_FILTER);
+                        }
+                        $thumb_row['data'] = ob_get_contents();
+                        ob_get_clean();
+                        $image_obj = new entity_account_image();
+                        $image_obj->set(['row'=>[$thumb_row]]);
+
+                        $set_listing_row['thumb_id'] = implode(',',$image_obj->id_group);
+                        unset($image_obj);
+
+                        imagedestroy($source_image);
+                        imagedestroy($target_image);
+                    }
+
+                    unset($set_listing_row['image']);
+                }
+                if (isset($set_listing_row['banner']))
+                {
+                    $image_row = [];
+                    $image_size = @getimagesize($set_listing_row['banner']);
+                    if ($image_size !== false)
+                    {
+                        $image_row['width'] = $image_size[0];
+                        $image_row['height'] = $image_size[1];
+                        if (isset($image_size['mime']))
+                        {
+                            switch ($image_size['mime'])
+                            {
+                                case 'image/gif':
+                                    $image_row['type'] = 'GIF';
+                                    break;
+                                case 'image/png':
+                                    $image_row['type'] = 'PNG';
+                                    break;
+                                case 'image/jpeg':
+                                case 'image/pjpeg';
+                                default:
+                                    $image_row['type'] = 'JPG';
+
+                            }
+                        }
+                        $image_row['data'] = $set_listing_row['banner'];
+                    }
+                    if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
+                    $image_row['prefix'] = $set_listing_row['account_id'].'_';
+                    $image_obj = new entity_account_image();
+                    $image_obj->set(['row'=>[$image_row]]);
+
+                    $set_listing_row['banner_id'] = implode(',',$image_obj->id_group);
+                    unset($image_obj);
+                    unset($set_listing_row['banner']);
+                }
+
+
                 $set_listing_parameter['row'][] = $set_listing_row;
             }
         }

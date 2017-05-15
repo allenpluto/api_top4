@@ -183,7 +183,7 @@ class entity_api_method extends entity
     function insert_business(&$parameter = array())
     {
         $entity_listing_obj = new entity_listing();
-        $listing_field_array = ['title','latitude','longitude','category','account_id','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
+        $listing_field_array = ['title','latitude','longitude','category','account_id','abn','address','address2','city','state','zip','image','banner','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
         $set_listing_parameter = array('row'=>array());
 
         if (empty($parameter['option']['title']) OR empty($parameter['option']['latitude']) OR empty($parameter['option']['longitude']) OR empty($parameter['option']['category']))
