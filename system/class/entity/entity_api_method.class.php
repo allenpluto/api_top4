@@ -630,7 +630,7 @@ class entity_api_method extends entity
     function update_account(&$parameter = array())
     {
         $set_account_row = array();
-        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
 
 
         if (empty($parameter['option']['id']))
@@ -1192,16 +1192,16 @@ class entity_api_method extends entity
             'where' => array('`username` = :username')
         );
         $result_row = $entity_account_obj->get($entity_account_param);
-        if (count($entity_account_obj->row) == 0)
+        if (empty($result_row) == 0)
         {
             $parameter['status'] = 'ZERO_RESULTS';
             $parameter['message'] = 'Account not available';
             return false;
         }
-        $record = end($entity_account_obj->row);
+        $record = end($result_row);
         $parameter['status'] = 'OK';
         $parameter['result'] = ['id'=>$record['id'],'token'=>$record['complementary_info']];
-        $return_field_list = ['username','first_name','last_name','company','address','address2','city','state','zip','country','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $return_field_list = ['username','first_name','last_name','company','address','address2','city','state','zip','image','banner','country','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
         foreach ($record as $field_name=>$field_value)
         {
             if (in_array($field_name,$return_field_list))
@@ -1229,16 +1229,16 @@ class entity_api_method extends entity
             'where' => array('`complementary_info` = :complementary_info')
         );
         $result_row = $entity_account_obj->get($entity_account_param);
-        if (count($entity_account_obj->row) == 0)
+        if (empty($result_row) == 0)
         {
             $parameter['status'] = 'ZERO_RESULTS';
             $parameter['message'] = 'Account not available';
             return false;
         }
-        $record = end($entity_account_obj->row);
+        $record = end($result_row);
         $parameter['status'] = 'OK';
         $parameter['result'] = ['id'=>$record['id'],'token'=>$record['complementary_info']];
-        $return_field_list = ['username','first_name','last_name','company','address','address2','city','state','zip','country','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $return_field_list = ['username','first_name','last_name','company','address','address2','city','state','zip','image','banner','country','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
         foreach ($record as $field_name=>$field_value)
         {
             if (in_array($field_name,$return_field_list))

@@ -133,4 +133,112 @@ class entity_profile extends entity
 
         return parent::set($parameter);
     }
+
+    function update($value = array(), $parameter = array())
+    {
+        if (empty($value))
+        {
+            if (empty($this->row))
+            {
+                $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): '.get_class($this).' INSERT/UPDATE entity with empty value';
+                return false;
+            }
+            else
+            {
+                if (count($this->row) > 1)
+                {
+                    $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): '.get_class($this).' UPDATE entity with multiple row';
+                    return false;
+                }
+                $value = end($this->row);
+            }
+        }
+
+        $current_row = $this->get();
+        if (empty($current_row))
+        {
+            $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): '.get_class($this).' Current Record for '.implode($this->id_group).' does not exist, cannot update';
+            return false;
+        }
+        $current_row = end($current_row);
+
+
+        if (isset($value['image']))
+        {
+            $image_row = [];
+            $image_size = @getimagesize($value['image']);
+            if ($image_size !== false)
+            {
+                $image_row['width'] = $image_size[0];
+                $image_row['height'] = $image_size[1];
+                if (isset($image_size['mime']))
+                {
+                    switch ($image_size['mime'])
+                    {
+                        case 'image/gif':
+                            $image_row['type'] = 'GIF';
+                            break;
+                        case 'image/png':
+                            $image_row['type'] = 'PNG';
+                            break;
+                        case 'image/jpeg':
+                        case 'image/pjpeg';
+                        default:
+                            $image_row['type'] = 'JPG';
+
+                    }
+                }
+                $image_row['data'] = $value['image'];
+            }
+            if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
+            $image_row['prefix'] = $value['account_id'].'_';
+            $image_obj = new entity_account_image();
+            $image_obj->set(['row'=>[$image_row]]);
+
+            $value['image_id'] = implode(',',$image_obj->id_group);
+            unset($image_obj);
+            if (isset($parameter['fields']['image']))
+            {
+                unset($parameter['fields']['image']);
+
+            }
+        }
+        if (isset($value['banner']))
+        {
+            $image_row = [];
+            $image_size = @getimagesize($value['banner']);
+            if ($image_size !== false)
+            {
+                $image_row['width'] = $image_size[0];
+                $image_row['height'] = $image_size[1];
+                if (isset($image_size['mime']))
+                {
+                    switch ($image_size['mime'])
+                    {
+                        case 'image/gif':
+                            $image_row['type'] = 'GIF';
+                            break;
+                        case 'image/png':
+                            $image_row['type'] = 'PNG';
+                            break;
+                        case 'image/jpeg':
+                        case 'image/pjpeg';
+                        default:
+                            $image_row['type'] = 'JPG';
+
+                    }
+                }
+                $image_row['data'] = $value['banner'];
+            }
+            if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
+            $image_row['prefix'] = $value['account_id'].'_';
+            $image_obj = new entity_account_image();
+            $image_obj->set(['row'=>[$image_row]]);
+
+            $value['banner_id'] = implode(',',$image_obj->id_group);
+            unset($image_obj);
+        }
+
+        return parent::update($value, $parameter);
+    }
 }
