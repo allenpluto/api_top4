@@ -74,7 +74,7 @@ class entity_listing extends entity
                         $image_row['data'] = $set_listing_row['image'];
                     }
                     if (!empty($set_listing_row['account_id'])) $image_row['prefix'] = $set_listing_row['account_id'].'_';
-                    $image_obj = new entity_account_image();
+                    $image_obj = new entity_listing_image();
                     $image_obj->set(['row'=>[$image_row]]);
 
                     $set_listing_row['image_id'] = implode(',',$image_obj->id_group);
@@ -115,7 +115,7 @@ class entity_listing extends entity
                         ob_get_clean();
                         $thumb_row['data'] = 'data:'.$thumb_row_mime.';base64,'.base64_encode($thumb_file);
 
-                        $image_obj = new entity_account_image();
+                        $image_obj = new entity_listing_image();
                         $image_obj->set(['row'=>[$thumb_row]]);
 
                         $set_listing_row['thumb_id'] = implode(',',$image_obj->id_group);
@@ -160,7 +160,7 @@ class entity_listing extends entity
                         $image_row['data'] = $set_listing_row['banner'];
                     }
                     if (!empty($set_listing_row['account_id'])) $image_row['prefix'] = $set_listing_row['account_id'].'_';
-                    $image_obj = new entity_account_image();
+                    $image_obj = new entity_listing_image();
                     $image_obj->set(['row'=>[$image_row]]);
 
                     $set_listing_row['banner_id'] = implode(',',$image_obj->id_group);

@@ -1,7 +1,7 @@
 <?php
 // Class Object
 // Name: entity_account_image
-// Description: account_image table, stores all user account related images
+// Description: Image table (under top4_main), stores all user account related images
 
 class entity_account_image extends entity
 {
