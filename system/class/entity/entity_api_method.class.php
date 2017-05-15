@@ -34,7 +34,7 @@ class entity_api_method extends entity
     function insert_account(&$parameter = array())
     {
         $entity_account_obj = new entity_account();
-        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','image','banner','personal_message'];
+        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
         $set_account_parameter = array('row'=>array());
 
         if (empty($parameter['option']['username']) OR empty($parameter['option']['first_name']) OR empty($parameter['option']['last_name']))
@@ -303,7 +303,7 @@ class entity_api_method extends entity
 
         // Create Account
         $entity_account_obj = new entity_account();
-        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
         $set_account_parameter = array('row'=>array());
 
         $entity_account_check = new entity_account();
@@ -414,9 +414,23 @@ class entity_api_method extends entity
         $set_listing_row['title'] = $parameter['option']['company'];
         $set_listing_row['status'] = 'A';
         $set_listing_row['bulked'] = 'y';
-        $set_listing_row['thumb_id'] = 0;
-        $set_listing_row['image_id'] = 0;
-        $set_listing_row['banner_id'] = 0;
+        if (!empty($parameter['option']['business_logo']))
+        {
+            $set_listing_row['image'] = $parameter['option']['business_logo'];
+        }
+        else
+        {
+            $set_listing_row['thumb_id'] = 0;
+            $set_listing_row['image_id'] = 0;
+        }
+        if (!empty($parameter['option']['business_banner']))
+        {
+            $set_listing_row['banner'] = $parameter['option']['business_banner'];
+        }
+        else
+        {
+            $set_listing_row['banner_id'] = 0;
+        }
         $set_listing_row['category'] = implode($entity_category_obj->id_group);
         $set_listing_parameter['row'][] = $set_listing_row;
 
@@ -1110,11 +1124,12 @@ class entity_api_method extends entity
             $parameter['message'] = 'Account not available';
             return false;
         }
-        $record = end($entity_account_obj->row);
+        $record = $entity_account_obj->get();
+        $record = end($record);
         $parameter['status'] = 'OK';
         $parameter['result'] = ['id'=>$record['id'],'token'=>$record['complementary_info']];
 
-        $return_field_list = ['username','first_name','last_name','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $return_field_list = ['username','first_name','last_name','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
         foreach ($record as $field_name=>$field_value)
         {
             if (in_array($field_name,$return_field_list))
@@ -1143,7 +1158,8 @@ class entity_api_method extends entity
             $parameter['message'] = 'Listing not available';
             return false;
         }
-        $record = end($entity_listing_obj->row);
+        $record = $entity_listing_obj->get();
+        $record = end($record);
 
         $parameter['status'] = 'OK';
         $parameter['result'] = [];
