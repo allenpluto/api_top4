@@ -281,12 +281,27 @@ class entity_listing extends entity
                     $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): '.get_class($this).' UPDATE entity with multiple row';
                     return false;
                 }
-                $value = $this->row[0];
+                $value = end($this->row);
             }
         }
 
+        $current_row = $this->get();
+        if (empty($current_row))
+        {
+            $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): '.get_class($this).' Current Record for '.implode($this->id_group).' does not exist, cannot update';
+            return false;
+        }
+        $current_row = end($current_row);
+
         if (isset($set_listing_row['image']))
         {
+            if (!empty($current_row['image_id']))
+            {
+                $image_obj = new entity_account_image($current_row['image_id']);
+                $image_obj->delete();
+                unset($image_obj);
+            }
+
             $image_row = [
                 'width'=>500,
                 'height'=>500,
@@ -317,7 +332,29 @@ class entity_listing extends entity
                 }
                 $image_row['data'] = $set_listing_row['image'];
             }
-            if (!empty($set_listing_row['account_id'])) $image_row['prefix'] = $set_listing_row['account_id'].'_';
+            if (isset($set_listing_row['account_id']))
+            {
+                if (empty($set_listing_row['account_id']))
+                {
+                    $image_row['prefix'] = 'sitemgr_';
+                }
+                else
+                {
+                    $image_row['prefix'] = $set_listing_row['account_id'].'_';
+                }
+            }
+            else
+            {
+                if (empty($current_row['account_id']))
+                {
+                    $image_row['prefix'] = 'sitemgr_';
+                }
+                else
+                {
+                    $image_row['prefix'] = $current_row['account_id'].'_';
+                }
+            }
+
             $image_obj = new entity_listing_image();
             $image_obj->set(['row'=>[$image_row]]);
 
@@ -373,6 +410,13 @@ class entity_listing extends entity
         }
         if (isset($set_listing_row['banner']))
         {
+            if (!empty($current_row['banner_id']))
+            {
+                $image_obj = new entity_account_image($current_row['banner_id']);
+                $image_obj->delete();
+                unset($image_obj);
+            }
+
             $image_row = [
                 'width'=>1200,
                 'height'=>200,
@@ -403,7 +447,29 @@ class entity_listing extends entity
                 }
                 $image_row['data'] = $set_listing_row['banner'];
             }
-            if (!empty($set_listing_row['account_id'])) $image_row['prefix'] = $set_listing_row['account_id'].'_';
+            if (isset($set_listing_row['account_id']))
+            {
+                if (empty($set_listing_row['account_id']))
+                {
+                    $image_row['prefix'] = 'sitemgr_';
+                }
+                else
+                {
+                    $image_row['prefix'] = $set_listing_row['account_id'].'_';
+                }
+            }
+            else
+            {
+                if (empty($current_row['account_id']))
+                {
+                    $image_row['prefix'] = 'sitemgr_';
+                }
+                else
+                {
+                    $image_row['prefix'] = $current_row['account_id'].'_';
+                }
+            }
+
             $image_obj = new entity_listing_image();
             $image_obj->set(['row'=>[$image_row]]);
 

@@ -165,6 +165,13 @@ class entity_profile extends entity
 
         if (isset($value['image']))
         {
+            if (!empty($current_row['image_id']))
+            {
+                $image_obj = new entity_account_image($current_row['image_id']);
+                $image_obj->delete();
+                unset($image_obj);
+            }
+
             $image_row = [];
             $image_size = @getimagesize($value['image']);
             if ($image_size !== false)
@@ -191,20 +198,25 @@ class entity_profile extends entity
                 $image_row['data'] = $value['image'];
             }
             if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
-            $image_row['prefix'] = $value['account_id'].'_';
+            if (!empty($value['account_id'])) $image_row['prefix'] = $value['account_id'].'_';
+            else $image_row['prefix'] = $current_row['account_id'].'_';
+
             $image_obj = new entity_account_image();
             $image_obj->set(['row'=>[$image_row]]);
 
             $value['image_id'] = implode(',',$image_obj->id_group);
             unset($image_obj);
-            if (isset($parameter['fields']['image']))
-            {
-                unset($parameter['fields']['image']);
-
-            }
         }
+
         if (isset($value['banner']))
         {
+            if (!empty($current_row['banner_id']))
+            {
+                $image_obj = new entity_account_image($current_row['banner_id']);
+                $image_obj->delete();
+                unset($image_obj);
+            }
+
             $image_row = [];
             $image_size = @getimagesize($value['banner']);
             if ($image_size !== false)
@@ -231,7 +243,9 @@ class entity_profile extends entity
                 $image_row['data'] = $value['banner'];
             }
             if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
-            $image_row['prefix'] = $value['account_id'].'_';
+            if (!empty($value['account_id'])) $image_row['prefix'] = $value['account_id'].'_';
+            else $image_row['prefix'] = $current_row['account_id'].'_';
+
             $image_obj = new entity_account_image();
             $image_obj->set(['row'=>[$image_row]]);
 

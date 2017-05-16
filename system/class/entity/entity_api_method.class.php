@@ -773,7 +773,7 @@ class entity_api_method extends entity
             return false;
         }
 
-        $listing_field_array = ['account_id','title','latitude','longitude','category','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status'];
+        $listing_field_array = ['account_id','title','latitude','longitude','category','abn','address','address2','city','state','zip','image','banner','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status'];
         $set_listing_row = array();
         foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
         {
@@ -929,7 +929,7 @@ class entity_api_method extends entity
             unset($entity_account_check);
         }
 
-        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
 
         $set_account_row = array();
         foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
@@ -1002,6 +1002,14 @@ class entity_api_method extends entity
             {
                 $set_listing_row[$parameter_item_index] = $parameter_item;
             }
+        }
+        if (isset($parameter['option']['business_logo']))
+        {
+            $set_listing_row['image'] = $parameter['option']['business_logo'];
+        }
+        if (isset($parameter['option']['business_banner']))
+        {
+            $set_listing_row['banner'] = $parameter['option']['business_banner'];
         }
 
         if (isset($parameter['option']['status']) AND !in_array($parameter['option']['status'],['A','S']))
