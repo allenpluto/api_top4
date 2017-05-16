@@ -56,78 +56,95 @@ class entity_profile extends entity
         {
             if (isset($record['image']))
             {
-                $image_row = [];
-                $image_size = @getimagesize($record['image']);
-                if ($image_size !== false)
+                if (empty($record['image']))
                 {
-                    $image_row['width'] = $image_size[0];
-                    $image_row['height'] = $image_size[1];
-                    if (isset($image_size['mime']))
-                    {
-                        switch ($image_size['mime'])
-                        {
-                            case 'image/gif':
-                                $image_row['type'] = 'GIF';
-                                break;
-                            case 'image/png':
-                                $image_row['type'] = 'PNG';
-                                break;
-                            case 'image/jpeg':
-                            case 'image/pjpeg';
-                            default:
-                                $image_row['type'] = 'JPG';
-
-                        }
-                    }
-                    $image_row['data'] = $record['image'];
+                    $record['image_id'] = 0;
                 }
-                if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
-                $image_row['prefix'] = $record['account_id'].'_';
-                $image_obj = new entity_account_image();
-                $image_obj->set(['row'=>[$image_row]]);
+                else
+                {
+                    $image_row = [];
+                    $image_size = @getimagesize($record['image']);
+                    if ($image_size !== false)
+                    {
+                        $image_row['width'] = $image_size[0];
+                        $image_row['height'] = $image_size[1];
+                        if (isset($image_size['mime']))
+                        {
+                            switch ($image_size['mime'])
+                            {
+                                case 'image/gif':
+                                    $image_row['type'] = 'GIF';
+                                    break;
+                                case 'image/png':
+                                    $image_row['type'] = 'PNG';
+                                    break;
+                                case 'image/jpeg':
+                                case 'image/pjpeg';
+                                default:
+                                    $image_row['type'] = 'JPG';
 
-                $record['image_id'] = implode(',',$image_obj->id_group);
-                unset($image_obj);
+                            }
+                        }
+                        $image_row['data'] = $record['image'];
+                    }
+                    if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
+                    $image_row['prefix'] = $record['account_id'].'_';
+                    $image_obj = new entity_account_image();
+                    $image_obj->set(['row'=>[$image_row]]);
+
+                    $record['image_id'] = implode(',',$image_obj->id_group);
+                    unset($image_obj);
+                }
                 if (isset($parameter['fields']['image']))
                 {
                     unset($parameter['fields']['image']);
-
                 }
             }
             if (isset($record['banner']))
             {
-                $image_row = [];
-                $image_size = @getimagesize($record['banner']);
-                if ($image_size !== false)
+                if (empty($record['banner']))
                 {
-                    $image_row['width'] = $image_size[0];
-                    $image_row['height'] = $image_size[1];
-                    if (isset($image_size['mime']))
-                    {
-                        switch ($image_size['mime'])
-                        {
-                            case 'image/gif':
-                                $image_row['type'] = 'GIF';
-                                break;
-                            case 'image/png':
-                                $image_row['type'] = 'PNG';
-                                break;
-                            case 'image/jpeg':
-                            case 'image/pjpeg';
-                            default:
-                                $image_row['type'] = 'JPG';
-
-                        }
-                    }
-                    $image_row['data'] = $record['banner'];
+                    $record['banner_id'] = 0;
                 }
-                if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
-                $image_row['prefix'] = $record['account_id'].'_';
-                $image_obj = new entity_account_image();
-                $image_obj->set(['row'=>[$image_row]]);
+                else
+                {
+                    $image_row = [];
+                    $image_size = @getimagesize($record['banner']);
+                    if ($image_size !== false)
+                    {
+                        $image_row['width'] = $image_size[0];
+                        $image_row['height'] = $image_size[1];
+                        if (isset($image_size['mime']))
+                        {
+                            switch ($image_size['mime'])
+                            {
+                                case 'image/gif':
+                                    $image_row['type'] = 'GIF';
+                                    break;
+                                case 'image/png':
+                                    $image_row['type'] = 'PNG';
+                                    break;
+                                case 'image/jpeg':
+                                case 'image/pjpeg';
+                                default:
+                                    $image_row['type'] = 'JPG';
 
-                $record['banner_id'] = implode(',',$image_obj->id_group);
-                unset($image_obj);
+                            }
+                        }
+                        $image_row['data'] = $record['banner'];
+                    }
+                    if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
+                    $image_row['prefix'] = $record['account_id'].'_';
+                    $image_obj = new entity_account_image();
+                    $image_obj->set(['row'=>[$image_row]]);
+
+                    $record['banner_id'] = implode(',',$image_obj->id_group);
+                    unset($image_obj);
+                }
+                if (isset($parameter['fields']['banner']))
+                {
+                    unset($parameter['fields']['banner']);
+                }
             }
         }
 
@@ -172,40 +189,47 @@ class entity_profile extends entity
                 unset($image_obj);
             }
 
-            $image_row = [];
-            $image_size = @getimagesize($value['image']);
-            if ($image_size !== false)
+            if (empty($value['image']))
             {
-                $image_row['width'] = $image_size[0];
-                $image_row['height'] = $image_size[1];
-                if (isset($image_size['mime']))
-                {
-                    switch ($image_size['mime'])
-                    {
-                        case 'image/gif':
-                            $image_row['type'] = 'GIF';
-                            break;
-                        case 'image/png':
-                            $image_row['type'] = 'PNG';
-                            break;
-                        case 'image/jpeg':
-                        case 'image/pjpeg';
-                        default:
-                            $image_row['type'] = 'JPG';
-
-                    }
-                }
-                $image_row['data'] = $value['image'];
+                $value['image_id'] = 0;
             }
-            if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
-            if (!empty($value['account_id'])) $image_row['prefix'] = $value['account_id'].'_';
-            else $image_row['prefix'] = $current_row['account_id'].'_';
+            else
+            {
+                $image_row = [];
+                $image_size = @getimagesize($value['image']);
+                if ($image_size !== false)
+                {
+                    $image_row['width'] = $image_size[0];
+                    $image_row['height'] = $image_size[1];
+                    if (isset($image_size['mime']))
+                    {
+                        switch ($image_size['mime'])
+                        {
+                            case 'image/gif':
+                                $image_row['type'] = 'GIF';
+                                break;
+                            case 'image/png':
+                                $image_row['type'] = 'PNG';
+                                break;
+                            case 'image/jpeg':
+                            case 'image/pjpeg';
+                            default:
+                                $image_row['type'] = 'JPG';
 
-            $image_obj = new entity_account_image();
-            $image_obj->set(['row'=>[$image_row]]);
+                        }
+                    }
+                    $image_row['data'] = $value['image'];
+                }
+                if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
+                if (!empty($value['account_id'])) $image_row['prefix'] = $value['account_id'].'_';
+                else $image_row['prefix'] = $current_row['account_id'].'_';
 
-            $value['image_id'] = implode(',',$image_obj->id_group);
-            unset($image_obj);
+                $image_obj = new entity_account_image();
+                $image_obj->set(['row'=>[$image_row]]);
+
+                $value['image_id'] = implode(',',$image_obj->id_group);
+                unset($image_obj);
+            }
         }
 
         if (isset($value['banner']))
@@ -217,40 +241,47 @@ class entity_profile extends entity
                 unset($image_obj);
             }
 
-            $image_row = [];
-            $image_size = @getimagesize($value['banner']);
-            if ($image_size !== false)
+            if (empty($value['banner']))
             {
-                $image_row['width'] = $image_size[0];
-                $image_row['height'] = $image_size[1];
-                if (isset($image_size['mime']))
-                {
-                    switch ($image_size['mime'])
-                    {
-                        case 'image/gif':
-                            $image_row['type'] = 'GIF';
-                            break;
-                        case 'image/png':
-                            $image_row['type'] = 'PNG';
-                            break;
-                        case 'image/jpeg':
-                        case 'image/pjpeg';
-                        default:
-                            $image_row['type'] = 'JPG';
-
-                    }
-                }
-                $image_row['data'] = $value['banner'];
+                $value['banner_id'] = 0;
             }
-            if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
-            if (!empty($value['account_id'])) $image_row['prefix'] = $value['account_id'].'_';
-            else $image_row['prefix'] = $current_row['account_id'].'_';
+            else
+            {
+                $image_row = [];
+                $image_size = @getimagesize($value['banner']);
+                if ($image_size !== false)
+                {
+                    $image_row['width'] = $image_size[0];
+                    $image_row['height'] = $image_size[1];
+                    if (isset($image_size['mime']))
+                    {
+                        switch ($image_size['mime'])
+                        {
+                            case 'image/gif':
+                                $image_row['type'] = 'GIF';
+                                break;
+                            case 'image/png':
+                                $image_row['type'] = 'PNG';
+                                break;
+                            case 'image/jpeg':
+                            case 'image/pjpeg';
+                            default:
+                                $image_row['type'] = 'JPG';
 
-            $image_obj = new entity_account_image();
-            $image_obj->set(['row'=>[$image_row]]);
+                        }
+                    }
+                    $image_row['data'] = $value['banner'];
+                }
+                if (!isset($image_row['type'])) $image_row['type'] = 'JPG';
+                if (!empty($value['account_id'])) $image_row['prefix'] = $value['account_id'].'_';
+                else $image_row['prefix'] = $current_row['account_id'].'_';
 
-            $value['banner_id'] = implode(',',$image_obj->id_group);
-            unset($image_obj);
+                $image_obj = new entity_account_image();
+                $image_obj->set(['row'=>[$image_row]]);
+
+                $value['banner_id'] = implode(',',$image_obj->id_group);
+                unset($image_obj);
+            }
         }
 
         return parent::update($value, $parameter);
