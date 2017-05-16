@@ -151,6 +151,33 @@ class entity_profile extends entity
         return parent::set($parameter);
     }
 
+    function delete($parameter = array())
+    {
+        $get_result = $this->get();
+
+        if (!empty($get_result))
+        {
+            foreach ($get_result as $row_index=>$row)
+            {
+                if (!empty($row['image_id']))
+                {
+                    $image_obj = new entity_account_image($row['image_id']);
+                    $image_obj->delete();
+                    unset($image_obj);
+                }
+
+                if (!empty($row['banner_id']))
+                {
+                    $image_obj = new entity_account_image($row['banner_id']);
+                    $image_obj->delete();
+                    unset($image_obj);
+                }
+            }
+        }
+
+        parent::delete($parameter);
+    }
+
     function update($value = array(), $parameter = array())
     {
         if (empty($value))
