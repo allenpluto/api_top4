@@ -175,7 +175,7 @@ class entity_profile extends entity
             }
         }
 
-        parent::delete($parameter);
+        return parent::delete($parameter);
     }
 
     function update($value = array(), $parameter = array())

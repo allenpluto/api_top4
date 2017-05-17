@@ -281,28 +281,28 @@ class entity_listing extends entity
             {
                 if (!empty($row['thumb_id']))
                 {
-                    $image_obj = new entity_account_image($row['image_id']);
+                    $image_obj = new entity_listing_image($row['image_id']);
                     $image_obj->delete();
                     unset($image_obj);
                 }
 
                 if (!empty($row['image_id']))
                 {
-                    $image_obj = new entity_account_image($row['image_id']);
+                    $image_obj = new entity_listing_image($row['image_id']);
                     $image_obj->delete();
                     unset($image_obj);
                 }
 
                 if (!empty($row['banner_id']))
                 {
-                    $image_obj = new entity_account_image($row['banner_id']);
+                    $image_obj = new entity_listing_image($row['banner_id']);
                     $image_obj->delete();
                     unset($image_obj);
                 }
             }
         }
 
-        parent::delete($parameter);
+        return parent::delete($parameter);
     }
 
     function update($value = array(), $parameter = array())
