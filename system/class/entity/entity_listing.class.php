@@ -281,7 +281,7 @@ class entity_listing extends entity
             {
                 if (!empty($row['thumb_id']))
                 {
-                    $image_obj = new entity_listing_image($row['image_id']);
+                    $image_obj = new entity_listing_image($row['thumb_id']);
                     $image_obj->delete();
                     unset($image_obj);
                 }
