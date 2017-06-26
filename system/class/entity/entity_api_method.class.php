@@ -1200,7 +1200,7 @@ class entity_api_method extends entity
             'where' => array('`username` = :username')
         );
         $result_row = $entity_account_obj->get($entity_account_param);
-        if (empty($result_row) == 0)
+        if (empty($result_row))
         {
             $parameter['status'] = 'ZERO_RESULTS';
             $parameter['message'] = 'Account not available';
@@ -1237,7 +1237,7 @@ class entity_api_method extends entity
             'where' => array('`complementary_info` = :complementary_info')
         );
         $result_row = $entity_account_obj->get($entity_account_param);
-        if (empty($result_row) == 0)
+        if (empty($result_row))
         {
             $parameter['status'] = 'ZERO_RESULTS';
             $parameter['message'] = 'Account not available';
