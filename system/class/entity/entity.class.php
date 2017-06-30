@@ -232,7 +232,7 @@ class entity extends base
         if (isset($parameter['relational_fields']))
         {
             if (isset($parameter['relational_fields'][0])) $parameter['relational_fields'] = array_flip($parameter['relational_fields']);
-            foreach ($parameter['relational_filed'] as $relational_field_name=>$relational_field)
+            foreach ($parameter['relational_fields'] as $relational_field_name=>$relational_field)
             {
                 if (empty($relational_field))
                 {
@@ -275,8 +275,15 @@ class entity extends base
         }
         foreach ($parameter['relational_fields'] as $relational_field_name=>$relational_field)
         {
+            if (!empty($relational_field['extra_field']))
+            {
+                foreach($relational_field['extra_field'] as $extra_field_name=>$extra_field)
+                {
+                    $fields[] = $extra_field.' AS '.$extra_field_name;
+                }
+            }
             $fields[] = 'GROUP_CONCAT('.$relational_field['table'].'.'.$relational_field['target_id_field'].') AS '.$relational_field_name;
-            $joins[] = 'LEFT JOIN '.$relational_field['table'].' ON '.$parameter['table'].'.'.$parameter['primary_key'].' = '.$relational_field['table'].'.'.$relational_field['source_id_field'];
+            $joins[] = 'LEFT JOIN '.$relational_field['table'].' ON '.$parameter['table'].'.'.$parameter['primary_key'].' = '.$relational_field['table'].'.'.$relational_field['source_id_field'].(empty($relational_field['where'])?'':' AND '.implode(' AND ',$relational_field['where']));
         }
         $sql = 'SELECT '.implode(',',$fields).' FROM '.$parameter['table'].' '.implode(' ',$joins);
         $where = array();
@@ -550,7 +557,7 @@ class entity extends base
                         {
                             $relational_table_bind_value = array();
                             $relational_table_bind_value[':'.$relational_field['source_id_field']] = $record_primary_key;
-                            $relational_sql = 'SELECT GROUP_CONCAT(DISTINCT '.$relational_field['target_id_field'].' ORDER BY '.$relational_field['target_id_field'].') AS current_target_id_values FROM '.$relational_field['table'].' WHERE '.$relational_field['source_id_field'].' = :'.$relational_field['source_id_field'].';';
+                            $relational_sql = 'SELECT GROUP_CONCAT(DISTINCT '.$relational_field['target_id_field'].' ORDER BY '.$relational_field['target_id_field'].') AS current_target_id_values FROM '.$relational_field['table'].' WHERE '.$relational_field['source_id_field'].' = :'.$relational_field['source_id_field'].(empty($relational_field['where'])?'':' AND '.implode(' AND ',$relational_field['where'])).';';
                             $relational_query = $this->query($relational_sql, $relational_table_bind_value);
                             if ($relational_query === false) continue;
                             $relational_result = $relational_query->fetch(PDO::FETCH_ASSOC);

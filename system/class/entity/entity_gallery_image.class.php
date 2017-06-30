@@ -1,0 +1,46 @@
+<?php
+// Class Object
+// Name: entity_gallery_image
+// Description: Image table (under top4_domain1), stores all listing related images
+
+class entity_gallery_image extends entity
+{
+    var $parameter = array(
+        'table' => '`Image`',
+        'primary_key' => 'id',
+        'relational_fields'=>[
+            'gallery'=>[
+                'table'=>'Gallery_Image',
+                'primary_key'=>['gallery_id','image_id'],
+                'source_id_field'=>'image_id',
+                'target_id_field'=>'gallery_id',
+                'extra_field'=>[
+                    'name'=>'Gallery_Image.image_caption'
+                ]
+            ]
+        ],
+        'table_fields' => [
+            'id'=>'id',
+            'type'=>'type',
+            'width'=>'width',
+            'height'=>'height',
+            'prefix'=>'prefix',
+            'data'=>'data'
+        ]
+    );
+
+    function get($parameter = array())
+    {
+        $get_result = parent::get();
+        if ($get_result === false) return false;
+
+        foreach ($get_result as $row_index=>&$row)
+        {
+            $row['file_uri'] = 'https://www.top4.com.au/custom/domain_1/image_files/'.$row['prefix'].'photo_'.$row['id'].'.'.strtolower($row['type']);
+        }
+
+        return $get_result;
+    }
+}
+
+?>

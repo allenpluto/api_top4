@@ -283,6 +283,50 @@ class entity_api_method extends entity
         }
     }
 
+    function insert_gallery(&$parameter = array())
+    {
+        if (empty($parameter['option']['account_id']) OR empty($parameter['option']['listing_id']))
+        {
+            // Error Handling, title, category, latitude or longitude not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Create New Gallery Failed. Account_id and listing_id are mandatory fields';
+            return false;
+        }
+
+        $entity_listing_obj = new entity_listing($parameter['option']['listing_id']);
+        if (empty($entity_listing_obj->id_group))
+        {
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Create New Gallery Failed. Listing does not exist';
+            return false;
+        }
+        $entity_listing_data = $entity_listing_obj->get(['fields'=>['id','account_id','title']]);
+        if ($entity_listing_data === false)
+        {
+            $parameter['status'] = 'SERVER_ERROR';
+            $parameter['message'] = 'Create New Gallery Failed. Cannot get listing data';
+            return false;
+        }
+        $entity_listing_data = end($entity_listing_data);
+
+        if (empty($parameter['option']['title']))
+        {
+            $parameter['option']['title'] = $entity_listing_data['title'].' Gallery - '.date('d M, Y');
+        }
+        if (empty($parameter['option']['entered']))
+        {
+            $parameter['option']['entered'] = date('Y-m-d H:i:s');
+        }
+        if (empty($parameter['option']['updated']))
+        {
+            $parameter['option']['updated'] = date('Y-m-d H:i:s');
+        }
+        $parameter['option']['listing'] = $parameter['option']['listing_id'];
+        unset($parameter['option']['listing_id']);
+
+
+    }
+
     function insert_account_with_business(&$parameter = array())
     {
         if (empty($parameter['option']['username']) OR empty($parameter['option']['first_name']) OR empty($parameter['option']['last_name']))
