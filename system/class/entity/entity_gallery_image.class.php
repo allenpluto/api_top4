@@ -15,7 +15,9 @@ class entity_gallery_image extends entity
                 'source_id_field'=>'image_id',
                 'target_id_field'=>'gallery_id',
                 'extra_field'=>[
-                    'name'=>'Gallery_Image.image_caption'
+                    'name'=>'Gallery_Image.image_caption',
+                    'thumb_id'=>'Gallery_Image.thumb_id',
+                    'order'=>'Gallery_Image.order'
                 ]
             ]
         ],

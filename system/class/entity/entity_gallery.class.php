@@ -38,36 +38,35 @@ class entity_gallery extends entity
         return $get_listing_result;
     }
 
-//    function fetch_value($parameter = array())
-//    {
-//        if (empty($parameter['relational_fields']))
-//        {
-//            $parameter['relational_fields'] = ['image'];
-//        }
-//
-//        $get_listing_result = parent::get($parameter);
-//        if (empty($get_listing_result))
-//        {
-//            return $get_listing_result;
-//        }
-//
-//        foreach($get_listing_result as $row_index=>&$row)
-//        {
-//            $row['image_row'] = [];
-//            if (!empty($row['image']))
-//            {
-//                $image_obj = new entity_gallery_image($row['image']);
-//                print_r($image_obj);
-//                $image_row = $image_obj->get();
-//                if (!empty($image_row))
-//                {
-//                    $row['image_row'] = $image_row;
-//                }
-//            }
-//        }
-//
-//        return $get_listing_result;
-//    }
+    function fetch_value($parameter = array())
+    {
+        if (empty($parameter['relational_fields']))
+        {
+            $parameter['relational_fields'] = ['image'];
+        }
+
+        $get_listing_result = parent::get($parameter);
+        if (empty($get_listing_result))
+        {
+            return $get_listing_result;
+        }
+
+        foreach($get_listing_result as $row_index=>&$row)
+        {
+            $row['image_row'] = [];
+            if (!empty($row['image']))
+            {
+                $image_obj = new entity_gallery_image($row['image']);
+                $image_row = $image_obj->get();
+                if (!empty($image_row))
+                {
+                    $row['image_row'] = $image_row;
+                }
+            }
+        }
+
+        return $get_listing_result;
+    }
 }
 
 ?>
