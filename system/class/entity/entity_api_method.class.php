@@ -456,7 +456,13 @@ class entity_api_method extends entity
                     }
 
                     $entity_image_obj = new entity_gallery_image();
-                    $entity_image_obj->set($set_row,['fields'=>array_keys($set_row)]);
+                    $set_parameter = ['row'=>[$set_row],'fields'=>array_keys($set_row)];
+//print_r("\ntest point 3\n");
+//$print_set_row = $set_row;
+//unset($print_set_row['data']);
+//print_r($set_parameter);
+                    $entity_image_obj->set($set_parameter);
+//print_r($entity_image_obj->message->display());exit;
                     unset($set_row);
 
                     if (empty($entity_image_obj->id_group))
@@ -467,7 +473,8 @@ class entity_api_method extends entity
                     {
                         $relational_table_row['image_id'] = end($entity_image_obj->id_group);
                         $entity_thumb_obj = new entity_gallery_image();
-                        $entity_thumb_obj->set($thumb_set_row,['fields'=>array_keys($thumb_set_row)]);
+                        $set_thumb_parameter = ['row'=>[$thumb_set_row],'fields'=>array_keys($thumb_set_row)];
+                        $entity_thumb_obj->set($set_thumb_parameter);
                         $relational_table_row['thumb_id'] = end($entity_thumb_obj->id_group);
                         unset($entity_thumb_obj);
                         unset($thumb_set_row);
@@ -475,10 +482,19 @@ class entity_api_method extends entity
                         $set_relational_parameter = $entity_image_obj->parameter['relational_fields']['gallery'];
                         $set_relational_parameter['primary_key'] = $set_relational_parameter['source_id_field'];
                         $set_relational_parameter['fields'] = array_keys($relational_table_row);
-                        $entity_image_obj->set($relational_table_row,$set_relational_parameter);
-                        $entity_gallery_data['image'][] = $entity_image_obj->get();
+                        $set_relational_parameter['row'] = [$relational_table_row];
+
+                        $entity_image_obj->set($set_relational_parameter);
+//$GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
+//file_put_contents($GLOBALS['debug_log'],print_r($entity_image_obj,true)."\n");
+//print_r($entity_image_obj);
                     }
                 }
+            }
+            if (!empty($new_image_id_group))
+            {
+                $entity_image_obj = new entity_gallery_image($new_image_id_group);
+                $entity_gallery_data['image'] = $entity_image_obj->get();
             }
 
             return $entity_gallery_data;
@@ -715,7 +731,7 @@ class entity_api_method extends entity
         {
             // Error Handling, id not provided
             $parameter['status'] = 'INVALID_REQUEST';
-            $parameter['message'] = 'Update Business Listing ID not provided';
+            $parameter['message'] = 'Delete Business Listing ID not provided';
             return false;
         }
 
@@ -757,6 +773,67 @@ class entity_api_method extends entity
             $parameter['result'] = ['id'=>$listing_row['id'],'title'=>$listing_row['title'],'listing_page'=>'http://www.top4.com.au/business/'.$listing_row['friendly_url']];
             return $parameter['result'];
         }
+    }
+
+    function delete_gallery(&$parameter = array())
+    {
+        if (empty($parameter['option']['id']))
+        {
+            // Error Handling, id not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Delete Gallery ID not provided';
+            return false;
+        }
+
+        $entity_gallery_obj = new entity_gallery($parameter['option']['id']);
+        if (empty($entity_gallery_obj->id_group))
+        {
+            // Error Handling, category provided does not match database records
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Gallery does not exist, it might have been deleted already';
+            return false;
+        }
+        $entity_gallery_row = $entity_gallery_obj->get(['relational_fields'=>['image']]);
+        $entity_gallery_row = end($entity_gallery_row);
+        if (!empty($entity_gallery_row['image']))
+        {
+            $entity_image_obj = new entity_gallery_image($entity_gallery_row['image']);
+            $relational_parameter = $entity_image_obj->parameter['relational_fields']['gallery'];
+            $relational_parameter['primary_key'] = $relational_parameter['source_id_field'];
+
+            $relational_result = $entity_image_obj->get($relational_parameter);
+$GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
+file_put_contents($GLOBALS['debug_log'],print_r($relational_result,true)."\n");
+file_put_contents($GLOBALS['debug_log'],print_r($entity_image_obj,true)."\n");
+
+            $entity_thumb_obj = new entity_image($relational_result['thumb_id']);
+
+            $entity_image_obj->delete();
+            $entity_thumb_obj->delete();
+        }
+        $delete_result = $entity_gallery_obj->delete();
+        if ($delete_result === false)
+        {
+            $parameter['status'] = 'SERVER_ERROR';
+            $parameter['message'] = 'Database delete request failed, try again later';
+            return false;
+        }
+
+        if ($delete_result == 0)
+        {
+            $parameter['status'] = 'ZERO_RESULTS';
+            $parameter['message'] = 'Nothing deleted, database records not changed';
+            return false;
+        }
+        else
+        {
+
+            $parameter['status'] = 'OK';
+            $parameter['message'] = $delete_result.' record(s) deleted';
+            $parameter['result'] = ['id'=>$entity_gallery_row['id'],'title'=>$entity_gallery_row['title'],'image'=>$entity_gallery_row['image']];
+            return $parameter['result'];
+        }
+
     }
 
     function delete_account_with_business(&$parameter = array())
@@ -1280,7 +1357,6 @@ class entity_api_method extends entity
         }
 
     }
-
 
     function update_account_with_business(&$parameter = array())
     {

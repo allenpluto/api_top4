@@ -190,10 +190,10 @@ clinic'
     //$handler_uri = 'http://localhost/allen_frame_trial/json/'.$method;
     //$handler_uri = $my_uri.($_SERVER['QUERY_STRING']?'?'.$_SERVER['QUERY_STRING']:'').'&handler=true';
     //$handler_uri = 'https://api.top4.com.au/json/select_business_by_uri?uri=http://www.caroma.com.au';
-    $handler_uri = 'http://apidev.top4.com.au/json/'.$method;
+    //$handler_uri = 'http://apidev.top4.com.au/json/'.$method;
     //$handler_uri = 'https://api.top4.com.au/json/'.$method;
     //$handler_uri = 'http://localhost/api_top4/json/'.$method;
-    //$handler_uri = 'http://apiloc.top4.com.au/json/'.$method;
+    $handler_uri = 'http://apiloc.top4.com.au/json/'.$method;
 
 
     $ch = curl_init();

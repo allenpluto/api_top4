@@ -164,6 +164,13 @@ class entity extends base
 
     function query($sql, $parameter=array())
     {
+if (!empty($GLOBALS['debug_log']))
+{
+    file_put_contents($GLOBALS['debug_log'],"\nsql\n",FILE_APPEND);
+    file_put_contents($GLOBALS['debug_log'],print_r($sql,true)."\n",FILE_APPEND);
+    file_put_contents($GLOBALS['debug_log'],print_r($parameter,true)."\n",FILE_APPEND);
+}
+
 //print_r($sql.'<br>');
 //print_r($parameter);
         $query = $this->_conn->prepare($sql);
@@ -216,48 +223,51 @@ class entity extends base
             }
         }
 
-        if (isset($parameter['table_fields']))
+        if (!isset($parameter['table']) OR ($parameter['table'] == $this->parameter['table']))
         {
-            $table_fields = array();
-            if (isset($parameter['table_fields'][0]))
+            if (isset($parameter['table_fields']))
             {
-                foreach($parameter['table_fields'] as $table_field_index=>$table_field)
+                $table_fields = array();
+                if (isset($parameter['table_fields'][0]))
                 {
-                    $table_fields[$table_field] = $table_field;
-                }
-                $parameter['table_fields'] = $table_fields;
-            }
-        }
-
-        if (isset($parameter['relational_fields']))
-        {
-            if (isset($parameter['relational_fields'][0])) $parameter['relational_fields'] = array_flip($parameter['relational_fields']);
-            foreach ($parameter['relational_fields'] as $relational_field_name=>$relational_field)
-            {
-                if (empty($relational_field))
-                {
-                    if (isset($this->parameter['relational_fields'][$relational_field_name]))
+                    foreach($parameter['table_fields'] as $table_field_index=>$table_field)
                     {
-                        $parameter['relational_fields'][$relational_field_name] = $this->parameter['relational_fields'][$relational_field_name];
+                        $table_fields[$table_field] = $table_field;
                     }
-                    else
-                    {
-                        $parameter['relational_fields'][$relational_field_name] = $this->construct_relational_fields([$relational_field_name]);
-                    }
+                    $parameter['table_fields'] = $table_fields;
                 }
             }
-        }
 
-        if (isset($parameter['fields']))
-        {
-            $parameter['table_fields'] = array();
-            $parameter['relational_fields'] = array();
-            foreach ($parameter['fields'] as $set_field_index=>$set_field)
+            if (isset($parameter['relational_fields']))
             {
-                if (isset($this->parameter['table_fields'][$set_field])) $parameter['table_fields'][$set_field] = $this->parameter['table_fields'][$set_field];
-                if (isset($this->parameter['relational_fields'][$set_field])) $parameter['relational_fields'][$set_field] = $this->parameter['relational_fields'][$set_field];
+                if (isset($parameter['relational_fields'][0])) $parameter['relational_fields'] = array_flip($parameter['relational_fields']);
+                foreach ($parameter['relational_fields'] as $relational_field_name=>$relational_field)
+                {
+                    if (empty($relational_field))
+                    {
+                        if (isset($this->parameter['relational_fields'][$relational_field_name]))
+                        {
+                            $parameter['relational_fields'][$relational_field_name] = $this->parameter['relational_fields'][$relational_field_name];
+                        }
+                        else
+                        {
+                            $parameter['relational_fields'][$relational_field_name] = $this->construct_relational_fields([$relational_field_name]);
+                        }
+                    }
+                }
             }
-            unset($parameter['fields']);
+
+            if (isset($parameter['fields']))
+            {
+                $parameter['table_fields'] = array();
+                $parameter['relational_fields'] = array();
+                foreach ($parameter['fields'] as $set_field_index=>$set_field)
+                {
+                    if (isset($this->parameter['table_fields'][$set_field])) $parameter['table_fields'][$set_field] = $this->parameter['table_fields'][$set_field];
+                    if (isset($this->parameter['relational_fields'][$set_field])) $parameter['relational_fields'][$set_field] = $this->parameter['relational_fields'][$set_field];
+                }
+                unset($parameter['fields']);
+            }
         }
 
         $parameter = array_merge($this->parameter,$parameter);
@@ -275,14 +285,14 @@ class entity extends base
         }
         foreach ($parameter['relational_fields'] as $relational_field_name=>$relational_field)
         {
+            $fields[] = 'GROUP_CONCAT('.$relational_field['table'].'.'.$relational_field['target_id_field'].') AS '.$relational_field_name;
             if (!empty($relational_field['extra_field']))
             {
                 foreach($relational_field['extra_field'] as $extra_field_name=>$extra_field)
                 {
-                    $fields[] = $extra_field.' AS '.$extra_field_name;
+                    $fields[] = 'GROUP_CONCAT('.$extra_field.') AS "'.$extra_field_name.'"';
                 }
             }
-            $fields[] = 'GROUP_CONCAT('.$relational_field['table'].'.'.$relational_field['target_id_field'].') AS '.$relational_field_name;
             $joins[] = 'LEFT JOIN '.$relational_field['table'].' ON '.$parameter['table'].'.'.$parameter['primary_key'].' = '.$relational_field['table'].'.'.$relational_field['source_id_field'].(empty($relational_field['where'])?'':' AND '.implode(' AND ',$relational_field['where']));
         }
         $sql = 'SELECT '.implode(',',$fields).' FROM '.$parameter['table'].' '.implode(' ',$joins);
@@ -387,47 +397,50 @@ class entity extends base
             }
         }
 
-        if (isset($parameter['table_fields']))
+        if (!isset($parameter['table']) OR ($parameter['table'] == $this->parameter['table']))
         {
-            $table_fields = array();
-            if (isset($parameter['table_fields'][0]))
+            if (isset($parameter['table_fields']))
             {
-                foreach($parameter['table_fields'] as $table_field_index=>$table_field)
+                $table_fields = array();
+                if (isset($parameter['table_fields'][0]))
                 {
-                    $table_fields[$table_field] = $table_field;
+                    foreach($parameter['table_fields'] as $table_field_index=>$table_field)
+                    {
+                        $table_fields[$table_field] = $table_field;
+                    }
+                    $parameter['table_fields'] = $table_fields;
                 }
-                $parameter['table_fields'] = $table_fields;
+                // By default, leave enter_time and update_time untended, let MYSQL update them with system timestamp if they are not specified in set fields
+                if (in_array('update_time', $parameter['table_fields']))
+                {
+                    $flag_keep_update_time = true;
+                }
+                if (in_array('enter_time', $parameter['table_fields']))
+                {
+                    $flag_keep_enter_time = true;
+                }
             }
-            // By default, leave enter_time and update_time untended, let MYSQL update them with system timestamp if they are not specified in set fields
-            if (in_array('update_time', $parameter['table_fields']))
-            {
-                $flag_keep_update_time = true;
-            }
-            if (in_array('enter_time', $parameter['table_fields']))
-            {
-                $flag_keep_enter_time = true;
-            }
-        }
 
-        if (isset($parameter['relational_fields']))
-        {
-            if (isset($parameter['relational_fields'][0])) $parameter['relational_fields'] = array_flip($parameter['relational_fields']);
-            $parameter['relational_fields'] = $this->construct_relational_fields($parameter['relational_fields']);
-        }
-
-        if (isset($parameter['fields']))
-        {
-            $parameter['table_fields'] = array();
-            $parameter['relational_fields'] = array();
-            foreach ($parameter['fields'] as $set_field_index=>$set_field)
+            if (isset($parameter['relational_fields']))
             {
-                // row provided value for updating current entity table
-                if (isset($this->parameter['table_fields'][$set_field])) $parameter['table_fields'][$set_field] = $this->parameter['table_fields'][$set_field];
-
-                // row provided value for updating relational tables, e.g. category field to update rel_category_to_organization table
-                if (isset($this->parameter['relational_fields'][$set_field])) $parameter['relational_fields'][$set_field] = $this->parameter['relational_fields'][$set_field];
+                if (isset($parameter['relational_fields'][0])) $parameter['relational_fields'] = array_flip($parameter['relational_fields']);
+                $parameter['relational_fields'] = $this->construct_relational_fields($parameter['relational_fields']);
             }
-            unset($parameter['fields']);
+
+            if (isset($parameter['fields']))
+            {
+                $parameter['table_fields'] = array();
+                $parameter['relational_fields'] = array();
+                foreach ($parameter['fields'] as $set_field_index=>$set_field)
+                {
+                    // row provided value for updating current entity table
+                    if (isset($this->parameter['table_fields'][$set_field])) $parameter['table_fields'][$set_field] = $this->parameter['table_fields'][$set_field];
+
+                    // row provided value for updating relational tables, e.g. category field to update rel_category_to_organization table
+                    if (isset($this->parameter['relational_fields'][$set_field])) $parameter['relational_fields'][$set_field] = $this->parameter['relational_fields'][$set_field];
+                }
+                unset($parameter['fields']);
+            }
         }
 
         $parameter = array_merge($this->parameter,$parameter);
@@ -500,7 +513,6 @@ class entity extends base
                     $bind_value[':'.$field_name] = '';
                 }
             }
-
             $bind_value = array_merge($bind_value,$parameter['bind_param']);
 
             if (count($bind_value) != count($parameter['table_fields']))
@@ -675,8 +687,29 @@ class entity extends base
             }
             else
             {
-                $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): '.get_class($this).' '.$query->rowCount().' row(s) deleted';
-                return $query->rowCount();
+                $select_sql = 'SELECT '. $parameter['primary_key'].' FROM '.$parameter['table'].' WHERE '.$parameter['primary_key'].' IN ('.implode(',',array_keys($this->id_group)).')';
+                $select_query = $this->query($select_sql,$this->id_group);
+                if ($select_query === false) return false;
+
+                $select_result = $select_query->fetchAll(PDO::FETCH_ASSOC);
+                $new_id_group = [];
+                foreach ($select_result as $select_result_row)
+                {
+                    $new_id_group[] = $select_result_row[$parameter['primary_key']];
+                }
+                $deleted_id_group = array_diff($this->id_group,$new_id_group);
+
+                if (count($deleted_id_group) > 0)
+                {
+                    foreach ($parameter['relational_fields'] as $relational_field_name=>$relational_field)
+                    {
+                        $relational_sql = 'DELETE FROM '.$relational_field['table'].' WHERE '.$relational_field['source_id_field'].' IN ('.implode(',',$deleted_id_group).')';
+                        $relational_delete_query = $this->query($relational_sql);
+                    }
+                }
+                $this->id_group = $this->format->id_group($new_id_group);
+                $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): '.get_class($this).' '.count($deleted_id_group).' row(s) deleted ['.implode(',',$deleted_id_group).'], new id_group ['.implode(',',$this->id_group).']';
+                return count($deleted_id_group);
             }
         }
         else

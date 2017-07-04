@@ -12,7 +12,7 @@ class entity_gallery extends entity
                 'table'=>'Gallery_Image',
                 'primary_key'=>['gallery_id','image_id'],
                 'source_id_field'=>'gallery_id',
-                'target_id_field'=>'image_id'
+                'target_id_field'=>'image_id',
             ],
             'listing'=>[
                 'table'=>'Gallery_Item',
@@ -26,16 +26,16 @@ class entity_gallery extends entity
 
     function get($parameter = array())
     {
-        $get_listing_parameter = ['fields' => ['id','account_id','title','image','updated','entered']];
-        $get_listing_parameter = array_merge($get_listing_parameter, $parameter);
-        $get_listing_result = parent::get($get_listing_parameter);
+        $get_parameter = ['fields' => ['id','account_id','title','image','updated','entered']];
+        $get_parameter = array_merge($get_parameter, $parameter);
+        $get_result = parent::get($get_parameter);
 
-        if (empty($get_listing_result))
+        if (empty($get_result))
         {
-            return $get_listing_result;
+            return $get_result;
         }
 
-        return $get_listing_result;
+        return $get_result;
     }
 
     function fetch_value($parameter = array())
@@ -45,13 +45,13 @@ class entity_gallery extends entity
             $parameter['relational_fields'] = ['image'];
         }
 
-        $get_listing_result = parent::get($parameter);
-        if (empty($get_listing_result))
+        $get_result = parent::get($parameter);
+        if (empty($get_result))
         {
-            return $get_listing_result;
+            return $get_result;
         }
 
-        foreach($get_listing_result as $row_index=>&$row)
+        foreach($get_result as $row_index=>&$row)
         {
             $row['image_row'] = [];
             if (!empty($row['image']))
@@ -65,7 +65,7 @@ class entity_gallery extends entity
             }
         }
 
-        return $get_listing_result;
+        return $get_result;
     }
 }
 
