@@ -278,7 +278,7 @@ class entity_api_method extends entity
         else
         {
             $record = end($entity_listing_obj->row);
-            $parameter = ['status'=>'OK','result'=>['id'=>$record['id'],'title'=>$record['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record['friendly_url']]];
+            $parameter = ['status'=>'OK','result'=>['id'=>$record['id'],'title'=>$record['title'],'listing_page'=>'https://www.top4.com.au/business/'.$record['friendly_url']]];
             return $parameter['result'];
         }
     }
@@ -287,7 +287,7 @@ class entity_api_method extends entity
     {
         if (empty($parameter['option']['account_id']) OR empty($parameter['option']['listing_id']))
         {
-            // Error Handling, title, category, latitude or longitude not provided
+            // Error Handling, account_id or listing_id not set
             $parameter['status'] = 'INVALID_REQUEST';
             $parameter['message'] = 'Create New Gallery Failed. Account_id and listing_id are mandatory fields';
             return false;
@@ -491,13 +491,9 @@ class entity_api_method extends entity
                     }
                 }
             }
-            if (!empty($new_image_id_group))
-            {
-                $entity_image_obj = new entity_gallery_image($new_image_id_group);
-                $entity_gallery_data['image'] = $entity_image_obj->get();
-            }
-
-            return $entity_gallery_data;
+            $get_parameter = ['option'=>['id'=>$entity_gallery_data['id']]];
+            $parameter['result'] = $this->select_gallery($get_parameter);
+            return $parameter['result'];
         }
     }
 
@@ -802,14 +798,21 @@ class entity_api_method extends entity
             $relational_parameter['primary_key'] = $relational_parameter['source_id_field'];
 
             $relational_result = $entity_image_obj->get($relational_parameter);
-$GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
-file_put_contents($GLOBALS['debug_log'],print_r($relational_result,true)."\n");
-file_put_contents($GLOBALS['debug_log'],print_r($entity_image_obj,true)."\n");
+//$GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
+//file_put_contents($GLOBALS['debug_log'],"relational_parameter\n".print_r($relational_parameter,true)."\n");
+//file_put_contents($GLOBALS['debug_log'],"relational_result\n".print_r($relational_result,true)."\n",FILE_APPEND);
+//file_put_contents($GLOBALS['debug_log'],"image_object\n".print_r($entity_image_obj,true)."\n",FILE_APPEND);
 
-            $entity_thumb_obj = new entity_image($relational_result['thumb_id']);
+            $thumb_id_group = [];
+            foreach ($relational_result as $relational_result_row_index=>$relational_result_row)
+            {
+                $thumb_id_group[] = $relational_result_row['thumb_id'];
+            }
+            $entity_thumb_obj = new entity_listing_image($thumb_id_group);
+            $entity_thumb_obj->delete();
+//file_put_contents($GLOBALS['debug_log'],"thumb_obj\n".print_r($entity_thumb_obj,true)."\n",FILE_APPEND);
 
             $entity_image_obj->delete();
-            $entity_thumb_obj->delete();
         }
         $delete_result = $entity_gallery_obj->delete();
         if ($delete_result === false)
@@ -1166,40 +1169,24 @@ file_put_contents($GLOBALS['debug_log'],print_r($entity_image_obj,true)."\n");
             $record = end($entity_listing_obj->row);
             $parameter['status'] = 'OK';
             $parameter['message'] = $listing_update_result.' record(s) updated';
-            $parameter['result'] = ['id'=>$record['id'],'title'=>$record['title'],'listing_page'=>'http://www.top4.com.au/business/'.$record['friendly_url']];
+            $parameter['result'] = ['id'=>$record['id'],'title'=>$record['title'],'listing_page'=>'https://www.top4.com.au/business/'.$record['friendly_url']];
             return $parameter['result'];
         }
     }
 
     function update_gallery(&$parameter = array())
     {
-        if (empty($parameter['option']['account_id']) OR empty($parameter['option']['listing_id']))
+        if (empty($parameter['option']['id']))
         {
-            // Error Handling, title, category, latitude or longitude not provided
+            // Error Handling, id not set
             $parameter['status'] = 'INVALID_REQUEST';
-            $parameter['message'] = 'Create New Gallery Failed. Account_id and listing_id are mandatory fields';
+            $parameter['message'] = 'Update Gallery Failed. Gallery id is mandatory field';
             return false;
         }
-
-        $entity_listing_obj = new entity_listing($parameter['option']['listing_id']);
-        if (empty($entity_listing_obj->id_group))
-        {
-            $parameter['status'] = 'INVALID_REQUEST';
-            $parameter['message'] = 'Create New Gallery Failed. Listing does not exist';
-            return false;
-        }
-        $entity_listing_data = $entity_listing_obj->get(['fields'=>['id','account_id','title']]);
-        if ($entity_listing_data === false)
-        {
-            $parameter['status'] = 'SERVER_ERROR';
-            $parameter['message'] = 'Create New Gallery Failed. Cannot get listing data';
-            return false;
-        }
-        $entity_listing_data = end($entity_listing_data);
-
-        $field_array = ['account_id','title','entered','updated','listing'];
-
         $set_row = array();
+
+        $field_array = ['account_id','title','entered','updated'];
+
         foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
         {
             if (in_array($parameter_item_index,$field_array))
@@ -1208,20 +1195,34 @@ file_put_contents($GLOBALS['debug_log'],print_r($entity_image_obj,true)."\n");
             }
         }
 
-        if (empty($set_row['title']))
+        if (!empty($parameter['option']['listing_id']))
         {
-            $set_row['title'] = $entity_listing_data['title'].' Gallery - '.date('d M, Y');
-        }
-        if (empty($parameter['option']['entered']))
-        {
-            $set_row['entered'] = date('Y-m-d H:i:s');
+            $entity_listing_obj = new entity_listing($parameter['option']['listing_id']);
+            if (empty($entity_listing_obj->id_group))
+            {
+                $parameter['status'] = 'INVALID_REQUEST';
+                $parameter['message'] = 'Update Gallery Failed. Listing does not exist';
+                return false;
+            }
+            $entity_listing_data = $entity_listing_obj->get(['fields'=>['id','account_id','title']]);
+            if ($entity_listing_data === false)
+            {
+                $parameter['status'] = 'SERVER_ERROR';
+                $parameter['message'] = 'Update Gallery Failed. Cannot get listing data';
+                return false;
+            }
+            $entity_listing_data = end($entity_listing_data);
+            $set_row['listing'] = $parameter['option']['listing_id'];
+            if (empty($set_row['title']))
+            {
+                $set_row['title'] = $entity_listing_data['title'].' Gallery - '.date('d M, Y');
+            }
         }
         if (empty($parameter['option']['updated']))
         {
             $set_row['updated'] = date('Y-m-d H:i:s');
         }
 
-        $set_row['listing'] = $parameter['option']['listing_id'];
 
         $entity_gallery_obj = new entity_gallery();
         $entity_gallery_result = $entity_gallery_obj->set(['row'=>[$set_row],'parameter'=>['field'=>$field_array]]);
@@ -1620,7 +1621,7 @@ file_put_contents($GLOBALS['debug_log'],print_r($entity_image_obj,true)."\n");
         {
             // Error Handling, id not provided
             $parameter['status'] = 'INVALID_REQUEST';
-            $parameter['message'] = 'Update Listing ID not provided';
+            $parameter['message'] = 'Select Listing ID not provided';
             return false;
         }
 
@@ -1647,6 +1648,70 @@ file_put_contents($GLOBALS['debug_log'],print_r($entity_image_obj,true)."\n");
             }
         }
         $parameter['result']['listing_page'] = URI_SITE_BASE.'business/'.$record['friendly_url'];
+        return $parameter['result'];
+    }
+
+    function select_gallery(&$parameter = array())
+    {
+        if (empty($parameter['option']['id']))
+        {
+            // Error Handling, id not provided
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Select Gallery ID not provided';
+            return false;
+        }
+
+        $entity_gallery_obj = new entity_gallery($parameter['option']['id']);
+        if (empty($entity_gallery_obj->id_group))
+        {
+            // Error Handling, category provided does not match database records
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Gallery does not exist, it might have been deleted';
+            return false;
+        }
+        $record = $entity_gallery_obj->get(['relational_fields'=>['image']]);
+        $record = end($record);
+
+        $parameter['status'] = 'OK';
+        $parameter['result'] = [];
+        $return_field_list = ['id','account_id','title'];
+        foreach ($record as $field_name=>$field_value)
+        {
+            if (in_array($field_name,$return_field_list))
+            {
+                $parameter['result'][$field_name] = $field_value;
+            }
+        }
+
+        $parameter['result']['image'] = [];
+        if (!empty($record['image']))
+        {
+            $entity_image_obj = new entity_gallery_image($record['image']);
+            $relational_parameter = $entity_image_obj->parameter['relational_fields']['gallery'];
+            $relational_parameter['primary_key'] = $relational_parameter['source_id_field'];
+
+            $relational_result = $entity_image_obj->get($relational_parameter);
+
+            if (!empty($relational_result))
+            {
+                foreach ($relational_result as $relational_result_row_index=>$relational_result_row)
+                {
+                    $result_image_row = [
+                        'id'=>$relational_result_row['id'],
+                        'name'=>$relational_result_row['name'],
+                        'thumb_id'=>$relational_result_row['thumb_id'],
+                        'image_uri'=>$relational_result_row['file_uri']
+                    ];
+
+                    if (!empty($result_image_row['thumb_id']) AND !empty($result_image_row['image_uri']))
+                    {
+                        $result_image_row['thumb_uri'] = str_replace($result_image_row['id'],$result_image_row['thumb_id'],$result_image_row['image_uri']);
+                    }
+                    $parameter['result']['image'][$relational_result_row['display_order']] = $result_image_row;
+                }
+                ksort($parameter['result']['image']);
+            }
+        }
         return $parameter['result'];
     }
 
