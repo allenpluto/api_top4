@@ -1183,6 +1183,14 @@ class entity_api_method extends entity
             $parameter['message'] = 'Update Gallery Failed. Gallery id is mandatory field';
             return false;
         }
+        $entity_gallery_obj = new entity_gallery($parameter['option']['id']);
+        if (empty($entity_gallery_obj->id_group))
+        {
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Update Gallery Failed. Gallery does not exist, it might have been deleted';
+            return false;
+        }
+
         $set_row = array();
 
         $field_array = ['account_id','title','entered','updated'];
@@ -1223,9 +1231,7 @@ class entity_api_method extends entity
             $set_row['updated'] = date('Y-m-d H:i:s');
         }
 
-
-        $entity_gallery_obj = new entity_gallery();
-        $entity_gallery_result = $entity_gallery_obj->set(['row'=>[$set_row],'parameter'=>['field'=>$field_array]]);
+        $entity_gallery_result = $entity_gallery_obj->update(['row'=>[$set_row],'parameter'=>['field'=>array_keys($set_row)]]);
 
         if ($entity_gallery_result === FALSE)
         {
@@ -1233,128 +1239,141 @@ class entity_api_method extends entity
             $parameter['message'] = 'Database insert request failed, try again later';
             return false;
         }
-
-        $entity_gallery_data = $entity_gallery_obj->get();
-
-        if (count($entity_gallery_data) == 0)
+        if (!empty($parameter['option']['image']))
         {
-            $parameter['status'] = 'ZERO_RESULTS';
-            $parameter['message'] = 'No row inserted';
-            return false;
-        }
-        else
-        {
-            $entity_gallery_data = end($entity_gallery_data);
-            if (!empty($parameter['option']['image']))
+            $entity_gallery_data = $entity_gallery_obj->fetch_value();
+            $current_image_id_group = [];
+            if (!empty($entity_gallery_data['image_row']))
             {
-                $image_field_array = ['id','type','width','height','prefix','data'];
-                $current_image_id_group = [];
-                if (!empty($entity_gallery_data['image']))
+                foreach ($entity_gallery_data['image_row'] as $current_image_row_index=>$current_image_row)
                 {
-                    $current_image_id = explode(',',$entity_gallery_data['image']);
+                    $current_image_id_group[$current_image_row['order']] = $current_image_row['id'];
                 }
-                $new_image_id_group = [];
-                $delete_image_id_group = [];
-                $relational_table_rows = [];
-
-                foreach ($parameter['option']['image'] as $image_row_index=>$image_row)
-                {
-                    $set_row = [];
-                    $relational_table_row = ['gallery_id'=>$entity_gallery_data['id'],'order'=>$image_row_index];
-                    if (!empty($image_row['name']))
-                    {
-                        $relational_table_row['image_caption'] = $image_row['name'];
-                        $relational_table_row['thumb_caption'] = $image_row['name'];
-                    }
-                    if (!empty($image_row['source_file']))
-                    {
-                        $image_size = @getimagesize($image_row['source_file']);
-                        if ($image_size !== false)
-                        {
-                            $set_row['width'] = $image_size[0];
-                            $set_row['height'] = $image_size[1];
-                            if (isset($image_size['mime']))
-                            {
-                                switch ($image_size['mime'])
-                                {
-                                    case 'image/gif':
-                                        $set_row['type'] = 'GIF';
-                                        break;
-                                    case 'image/png':
-                                        $set_row['type'] = 'PNG';
-                                        break;
-                                    case 'image/jpeg':
-                                    case 'image/pjpeg';
-                                    default:
-                                        $set_row['type'] = 'JPG';
-                                }
-                            }
-                            else
-                            {
-                                $image_size['mime'] = 'image/jpeg';
-                            }
-                            if (preg_match('/^data:/',$image_row['source_file']))
-                            {
-                                $set_row['data'] = $image_row['source_file'];
-                            }
-                            else
-                            {
-                                $image_file_content = file_get_contents($image_row['source_file']);
-                                $set_row['data'] = 'data:'.$image_size['mime'].';base64,'.base64_encode($image_file_content);
-                            }
-
-                        }
-                        $image_row['prefix'] = $parameter['option']['account_id'].'_';
-                    }
-                    foreach($image_row as $image_field_name=>$image_field_item)
-                    {
-                        if (in_array($image_field_name,$image_field_array))
-                        {
-                            $set_row[$image_field_name] = $image_field_item;
-                        }
-                    }
-
-                    if (!empty($set_row['id']))
-                    {
-                        // If image exists, update info
-                        $entity_image_obj = new entity_gallery_image($image_row['id']);
-                        if (!empty($entity_image_obj->id_group))
-                        {
-                            $entity_image_obj->update($set_row);
-                            $new_image_id_group[] = $set_row['id'];
-                            $relational_table_row['image_id'] = $set_row['id'];
-                            $update_result = $entity_image_obj->update($relational_table_row,['table'=>$entity_image_obj->parameter['relational_fields']['gallery']['table'],'primary_key'=>$entity_image_obj->parameter['relational_fields']['gallery']['source_id_field']]);
-                            if ($update_result === 0)
-                            {
-                                $entity_image_obj->set($relational_table_row,['table'=>$entity_image_obj->parameter['relational_fields']['gallery']['table'],'primary_key'=>$entity_image_obj->parameter['relational_fields']['gallery']['source_id_field']]);
-                            }
-                            continue;
-                        }
-                    }
-
-                    $entity_image_obj = new entity_image();
-                    $entity_image_obj->set($set_row,['fields'=>array_keys($set_row)]);
-
-                    if (empty($entity_image_obj->id_group))
-                    {
-                        $this->message->warning =  __FILE__.'(line '.__LINE__.'): '.get_class($this).' set failed';
-                    }
-                    else
-                    {
-                        $relational_table_row['image_id'] = end($entity_image_obj->id_group);
-                        $new_image_id_group[] = $relational_table_row['image_id'];
-                        $entity_image_obj->set($relational_table_row,['table'=>$entity_image_obj->parameter['relational_fields']['gallery']['table'],'primary_key'=>$entity_image_obj->parameter['relational_fields']['gallery']['source_id_field']]);
-                    }
-                    $relational_table_rows[] = $relational_table_row;
-                }
-
-                $delete_image_id_group = array_diff($current_image_id,$new_image_id_group);
-                $entity_image_obj = new entity_gallery_image($delete_image_id_group);
-                $entity_image_obj->delete();
-                $entity_image_obj->delete(['table'=>$entity_image_obj->parameter['relational_fields']['gallery']['table'],'primary_key'=>$entity_image_obj->parameter['relational_fields']['gallery']['source_id_field']]);
+                ksort($current_image_id_group);
             }
 
-            return $parameter['result'];
+            $new_image_id_group = $current_image_id_group;
+
+            $image_field_array = ['id','type','width','height','prefix','data'];
+
+            $delete_image_id_group = [];
+            $relational_table_rows = [];
+
+            foreach ($parameter['option']['image'] as $image_row_index=>$image_row)
+            {
+                $set_row = [];
+                $relational_table_row = [];
+                if (!empty($image_row['id']))
+                {
+                    if (!in_array($image_row['id'],$current_image_id_group))
+                    {
+                        $parameter['message'] .= PHP_EOL.'Image ['.$image_row['id'].'] is not in current gallery, cannot perform update';
+                        continue;
+                    }
+                    if (!empty($image_row['delete']))
+                    {
+                        $delete_image_id_group[] = $image_row['id'];
+                        $new_image_id_group = array_diff($new_image_id_group,[$image_row['id']]);
+                        continue;
+                    }
+                    if (isset($image_row['order']))
+                    {
+                        $new_image_id_group = array_diff($new_image_id_group,[$image_row['id']]);
+                        $new_image_id_group = array_splice($new_image_id_group,$image_row['order'],0,[$image_row['id']]);
+                    }
+                }
+                $relational_table_row = ['gallery_id'=>$entity_gallery_data['id'],'order'=>$image_row_index];
+                if (!empty($image_row['name']))
+                {
+                    $relational_table_row['image_caption'] = $image_row['name'];
+                    $relational_table_row['thumb_caption'] = $image_row['name'];
+                }
+                if (!empty($image_row['source_file']))
+                {
+                    $image_size = @getimagesize($image_row['source_file']);
+                    if ($image_size !== false)
+                    {
+                        $set_row['width'] = $image_size[0];
+                        $set_row['height'] = $image_size[1];
+                        if (isset($image_size['mime']))
+                        {
+                            switch ($image_size['mime'])
+                            {
+                                case 'image/gif':
+                                    $set_row['type'] = 'GIF';
+                                    break;
+                                case 'image/png':
+                                    $set_row['type'] = 'PNG';
+                                    break;
+                                case 'image/jpeg':
+                                case 'image/pjpeg';
+                                default:
+                                    $set_row['type'] = 'JPG';
+                            }
+                        }
+                        else
+                        {
+                            $image_size['mime'] = 'image/jpeg';
+                        }
+                        if (preg_match('/^data:/',$image_row['source_file']))
+                        {
+                            $set_row['data'] = $image_row['source_file'];
+                        }
+                        else
+                        {
+                            $image_file_content = file_get_contents($image_row['source_file']);
+                            $set_row['data'] = 'data:'.$image_size['mime'].';base64,'.base64_encode($image_file_content);
+                        }
+
+                    }
+                    $image_row['prefix'] = $parameter['option']['account_id'].'_';
+                }
+                foreach($image_row as $image_field_name=>$image_field_item)
+                {
+                    if (in_array($image_field_name,$image_field_array))
+                    {
+                        $set_row[$image_field_name] = $image_field_item;
+                    }
+                }
+
+                if (!empty($set_row['id']))
+                {
+                    // If image exists, update info
+                    $entity_image_obj = new entity_gallery_image($image_row['id']);
+                    if (!empty($entity_image_obj->id_group))
+                    {
+                        $entity_image_obj->update($set_row);
+                        $new_image_id_group[] = $set_row['id'];
+                        $relational_table_row['image_id'] = $set_row['id'];
+                        $update_result = $entity_image_obj->update($relational_table_row,['table'=>$entity_image_obj->parameter['relational_fields']['gallery']['table'],'primary_key'=>$entity_image_obj->parameter['relational_fields']['gallery']['source_id_field']]);
+                        if ($update_result === 0)
+                        {
+                            $entity_image_obj->set($relational_table_row,['table'=>$entity_image_obj->parameter['relational_fields']['gallery']['table'],'primary_key'=>$entity_image_obj->parameter['relational_fields']['gallery']['source_id_field']]);
+                        }
+                        continue;
+                    }
+                }
+
+                $entity_image_obj = new entity_image();
+                $entity_image_obj->set($set_row,['fields'=>array_keys($set_row)]);
+
+                if (empty($entity_image_obj->id_group))
+                {
+                    $this->message->warning =  __FILE__.'(line '.__LINE__.'): '.get_class($this).' set failed';
+                }
+                else
+                {
+                    $relational_table_row['image_id'] = end($entity_image_obj->id_group);
+                    $new_image_id_group[] = $relational_table_row['image_id'];
+                    $entity_image_obj->set($relational_table_row,['table'=>$entity_image_obj->parameter['relational_fields']['gallery']['table'],'primary_key'=>$entity_image_obj->parameter['relational_fields']['gallery']['source_id_field']]);
+                }
+                $relational_table_rows[] = $relational_table_row;
+            }
+
+            $delete_image_id_group = array_diff($current_image_id,$new_image_id_group);
+            $entity_image_obj = new entity_gallery_image($delete_image_id_group);
+            $entity_image_obj->delete();
+            $entity_image_obj->delete(['table'=>$entity_image_obj->parameter['relational_fields']['gallery']['table'],'primary_key'=>$entity_image_obj->parameter['relational_fields']['gallery']['source_id_field']]);
         }
 
     }
@@ -1707,7 +1726,7 @@ class entity_api_method extends entity
                     {
                         $result_image_row['thumb_uri'] = str_replace($result_image_row['id'],$result_image_row['thumb_id'],$result_image_row['image_uri']);
                     }
-                    $parameter['result']['image'][$relational_result_row['display_order']] = $result_image_row;
+                    $parameter['result']['image'][$relational_result_row['order']] = $result_image_row;
                 }
                 ksort($parameter['result']['image']);
             }

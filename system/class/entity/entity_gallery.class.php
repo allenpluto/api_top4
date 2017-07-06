@@ -40,7 +40,7 @@ class entity_gallery extends entity
 
     function fetch_value($parameter = array())
     {
-        if (empty($parameter['relational_fields']))
+        if (!isset($parameter['relational_fields']))
         {
             $parameter['relational_fields'] = ['image'];
         }
