@@ -734,8 +734,8 @@ if (!empty($GLOBALS['debug_log']))
                     $GLOBALS['global_message']->warning = __FILE__.'(line '.__LINE__.'): '.get_class($this).' UPDATE entity with multiple row';
                     return false;
                 }
-                $value = $this->row[0];
-                $this->row = null;
+                $value = end($this->row);
+//                $this->row = null;
             }
         }
         if (!$this->_initialized)

@@ -174,6 +174,18 @@ clinic'
             'address2'=>''
         ];
     }
+    if ($method == 'update_gallery')
+    {
+        $post_value = [
+            'id'=>52566,
+            'title'=>'Update Beta Gallery',
+            'image'=>[
+                ['name'=>'Car','source_file'=>'https://www.top4.com.au/custom/domain_1/image_files/191_photo_394298.jpg','order'=>1],
+                ['id'=>'355805','name'=>'Image 2 update','order'=>0],
+                ['id'=>'355803','name'=>'Image 1 update','order'=>2]
+            ]
+        ];
+    }
     if ($method == 'update_account_with_business')
     {
         $post_value = [

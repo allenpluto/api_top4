@@ -20,7 +20,17 @@ class entity_listing_image extends entity
 
     function get($parameter = array())
     {
-        $get_result = parent::get();
+        if (empty($parameter['table_fields']))
+        {
+            $parameter['table_fields'] = [
+                'id'=>'id',
+                'type'=>'type',
+                'width'=>'width',
+                'height'=>'height',
+                'prefix'=>'prefix'
+            ];
+        }
+        $get_result = parent::get($parameter);
         if ($get_result === false) return false;
 
         foreach ($get_result as $row_index=>&$row)

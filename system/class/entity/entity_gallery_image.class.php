@@ -33,12 +33,25 @@ class entity_gallery_image extends entity
 
     function get($parameter = array())
     {
-        $get_result = parent::get();
+        if (empty($parameter['table_fields']))
+        {
+            $parameter['table_fields'] = [
+                'id'=>'id',
+                'type'=>'type',
+                'width'=>'width',
+                'height'=>'height',
+                'prefix'=>'prefix'
+            ];
+        }
+        $get_result = parent::get($parameter);
         if ($get_result === false) return false;
 
         foreach ($get_result as $row_index=>&$row)
         {
-            $row['file_uri'] = 'https://www.top4.com.au/custom/domain_1/image_files/'.$row['prefix'].'photo_'.$row['id'].'.'.strtolower($row['type']);
+            if (isset($row['prefix']) AND isset($row['id']) AND isset($row['type']))
+            {
+                $row['file_uri'] = 'https://www.top4.com.au/custom/domain_1/image_files/'.$row['prefix'].'photo_'.$row['id'].'.'.strtolower($row['type']);
+            }
         }
 
         return $get_result;
