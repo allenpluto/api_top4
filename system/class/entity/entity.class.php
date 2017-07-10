@@ -93,6 +93,10 @@ class entity extends base
             else
             {
                 $this->id_group = $id_group;
+if (!empty($GLOBALS['debug_log']))
+{
+    file_put_contents($GLOBALS['debug_log'],"construct calling get\n",FILE_APPEND);
+}
                 $this->get();
             }
         }
@@ -197,6 +201,10 @@ if (!empty($GLOBALS['debug_log']))
     // Select id_group by conditions
     function get($parameter = array())
     {
+if (!empty($GLOBALS['debug_log']))
+{
+    file_put_contents($GLOBALS['debug_log'],"entity get\n",FILE_APPEND);
+}
         $format = format::get_obj();
         if (isset($parameter['id_group']))
         {

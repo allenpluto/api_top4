@@ -182,8 +182,21 @@ class entity_api_method extends entity
 
     function insert_business(&$parameter = array())
     {
+$GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
+if (!empty($GLOBALS['debug_log']))
+{
+    file_put_contents($GLOBALS['debug_log'],'insert_business start'.$this->api_id.PHP_EOL);
+}
         $entity_listing_obj = new entity_listing();
         $listing_field_array = ['title','latitude','longitude','category','account_id','abn','address','address2','city','state','zip','image','banner','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
+        if ($this->api_id == 10001 OR $this->api_id == 10003)
+        {
+            $listing_field_array = array_merge($listing_field_array,['cd_plan_name','cd_plan_period','cd_plan_transaction_id','cd_plan_transaction_amount']);
+        }
+if (!empty($GLOBALS['debug_log']))
+{
+    file_put_contents($GLOBALS['debug_log'],print_r($listing_field_array,true).PHP_EOL,FILE_APPEND);
+}
         $set_listing_parameter = array('row'=>array());
 
         if (empty($parameter['option']['title']) OR empty($parameter['option']['latitude']) OR empty($parameter['option']['longitude']) OR empty($parameter['option']['category']))
@@ -251,6 +264,7 @@ class entity_api_method extends entity
                 $set_listing_row[$parameter_item_index] = $parameter_item;
             }
         }
+
         $set_listing_row['importID'] = $this->api_id;
         $set_listing_row['status'] = 'A';
         $set_listing_row['bulked'] = 'y';
@@ -258,6 +272,63 @@ class entity_api_method extends entity
         $set_listing_row['image_id'] = 0;
         $set_listing_row['banner_id'] = 0;
         $set_listing_row['category'] = implode($entity_category_obj->id_group);
+if (!empty($GLOBALS['debug_log']))
+{
+    file_put_contents($GLOBALS['debug_log'],'set_listing_row before geo decode'.print_r($set_listing_row,true).PHP_EOL,FILE_APPEND);
+}
+
+        $entity_postcode_suburb_obj = new entity_postcode_suburb();
+        $location_data = $entity_postcode_suburb_obj->get_location_from_geo(['latitude'=>$parameter['option']['latitude'],'longitude'=>$parameter['option']['longitude']]);
+        if (!empty($location_data))
+        {
+            $api_location_log = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_location_log.txt';
+            if (!file_exists(dirname($api_location_log))) mkdir(dirname($api_location_log), 0755, true);
+
+            $set_listing_row['postcode_suburb_id'] = $location_data['id'];
+            if (empty($set_listing_row['address'])) $set_listing_row['address'] = $location_data['address'];
+            if (!empty($set_listing_row['city']))
+            {
+                if (strtolower($set_listing_row['city']) != strtolower($location_data['suburb']))
+                {
+                    file_put_contents($api_location_log,'Suburb Inconsistent: Geocode suburb '.$location_data['suburb'].' - API Posted suburb'.$set_listing_row['city'].PHP_EOL,FILE_APPEND);
+                }
+            }
+            else
+            {
+                $set_listing_row['city'] = $location_data['suburb'];
+            }
+
+            if (empty($set_listing_row['region'])) $set_listing_row['region'] = $location_data['region'];
+
+            if (!empty($set_listing_row['state']))
+            {
+                if (strtolower($set_listing_row['state']) != strtolower($location_data['state']))
+                {
+                    file_put_contents($api_location_log,'State Inconsistent: Geocode state '.$location_data['suburb'].' - API Posted state'.$set_listing_row['city'].PHP_EOL,FILE_APPEND);
+                }
+            }
+            else
+            {
+                $set_listing_row['state'] = $location_data['state'];
+            }
+
+            if (!empty($set_listing_row['zip_code']))
+            {
+                if (strtolower($set_listing_row['zip_code']) != strtolower($location_data['post_code']))
+                {
+                    file_put_contents($api_location_log,'Post Code Inconsistent: Geocode suburb '.$location_data['post_code'].' - API Posted suburb'.$set_listing_row['zip_code'].PHP_EOL,FILE_APPEND);
+                }
+            }
+            else
+            {
+                $set_listing_row['zip_code'] = $location_data['post_code'];
+            }
+        }
+if (!empty($GLOBALS['debug_log']))
+{
+    file_put_contents($GLOBALS['debug_log'],'set_listing_row after geo decode'.print_r($set_listing_row,true).PHP_EOL,FILE_APPEND);
+}
+
         $set_listing_parameter['row'][] = $set_listing_row;
 
         $listing_insert_result = $entity_listing_obj->set($set_listing_parameter);
@@ -1776,15 +1847,19 @@ file_put_contents($GLOBALS['debug_log'],"Gallery obj\n".print_r($entity_gallery_
         $parameter['result']['image'] = [];
         if (!empty($record['image']))
         {
+//$GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
+//file_put_contents($GLOBALS['debug_log'],"error_log_start\n");
             $entity_image_obj = new entity_gallery_image($record['image']);
-            $entity_image_data = $entity_image_obj->row;
+            $entity_image_data = $entity_image_obj->get();
+if (!empty($GLOBALS['debug_log']))
+{
+    file_put_contents($GLOBALS['debug_log'],"entity_image_data\n".print_r($entity_image_data,true)."\n",FILE_APPEND);
+}
             $relational_parameter = $entity_image_obj->parameter['relational_fields']['gallery'];
             $relational_parameter['primary_key'] = $relational_parameter['source_id_field'];
             $relational_parameter['relational_fields'] = [];
 
             $relational_result = $entity_image_obj->get($relational_parameter);
-$GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
-file_put_contents($GLOBALS['debug_log'],"select image\n".print_r($relational_result,true)."\n");
 
             if (!empty($relational_result))
             {
@@ -1793,10 +1868,17 @@ file_put_contents($GLOBALS['debug_log'],"select image\n".print_r($relational_res
                     $result_image_row = [
                         'id'=>$relational_result_row['image_id'],
                         'name'=>$relational_result_row['image_caption'],
-                        'thumb_id'=>$relational_result_row['thumb_id']
+                        'thumb_id'=>$relational_result_row['thumb_id'],
+                        'image_uri'=>$entity_image_data['id_'.$relational_result_row['image_id']]['file_uri']
                     ];
-file_put_contents($GLOBALS['debug_log'],"test point 1\n".$relational_result_row_index.print_r($result_image_row,true)."\n");
-
+if (!empty($GLOBALS['debug_log']))
+{
+    file_put_contents($GLOBALS['debug_log'],"entity_image_data 2\n".print_r($entity_image_data,true)."\n",FILE_APPEND);
+    file_put_contents($GLOBALS['debug_log'],"row_id\n".'id_'.$relational_result_row['image_id']."\n",FILE_APPEND);
+    file_put_contents($GLOBALS['debug_log'],"entity_image_data row_id\n".print_r($entity_image_data['id_'.$relational_result_row['image_id']],true)."\n",FILE_APPEND);
+    file_put_contents($GLOBALS['debug_log'],"result_image_row\n".print_r($result_image_row,true)."\n",FILE_APPEND);
+    exit;
+}
                     if (!empty($result_image_row['thumb_id']) AND !empty($result_image_row['image_uri']))
                     {
                         $result_image_row['thumb_uri'] = str_replace($result_image_row['id'],$result_image_row['thumb_id'],$result_image_row['image_uri']);

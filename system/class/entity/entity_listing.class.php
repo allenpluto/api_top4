@@ -19,7 +19,7 @@ class entity_listing extends entity
 
     function get($parameter = array())
     {
-        $get_listing_parameter = ['fields' => ['id','title','friendly_url','abn','address','address2','city','state','zip_code','account_id','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status','bulked','importID','thumb_id','image_id','banner_id','category','updated','entered']];
+        $get_listing_parameter = ['fields' => ['id','title','friendly_url','abn','address','address2','city','region','state','zip_code','account_id','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status','bulked','importID','thumb_id','image_id','banner_id','category','updated','entered']];
         $get_listing_parameter = array_merge($get_listing_parameter, $parameter);
         if (in_array('thumb',$get_listing_parameter['fields']))
         {
@@ -93,7 +93,7 @@ class entity_listing extends entity
             $parameter['row'] = $this->row;
         }
 //print_r($parameter);
-        $set_listing_parameter = ['fields' => ['id','title','abn','address','address2','city','state','zip_code','latitude','longitude','account_id','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status','bulked','importID','thumb_id','image_id','banner_id','category','updated','entered'],'row'=>[]];
+        $set_listing_parameter = ['fields' => ['id','title','abn','address','address2','postcode_suburb_id','city','region','state','zip_code','latitude','longitude','account_id','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status','bulked','importID','thumb_id','image_id','banner_id','category','updated','entered','cd_plan_name','cd_plan_period','cd_plan_transaction_id','cd_plan_transaction_amount'],'row'=>[]];
         foreach ($parameter['row'] as $row_index=>&$row)
         {
             $set_listing_row = $row;
