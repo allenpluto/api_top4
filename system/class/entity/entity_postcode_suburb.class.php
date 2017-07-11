@@ -118,7 +118,17 @@ if (!empty($GLOBALS['debug_log']))
             'post_code' => $google_place_result['postal_code']
         ];
 
-if (!empty($GLOBALS['debug_log']))
+        if (!empty($google_place_result['street_number']))
+        {
+            $location_result['address'] = $google_place_result['street_number'].' '.$location_result['address'];
+        }
+
+        if (!empty($google_place_result['subpremise']))
+        {
+            $location_result['address'] = $google_place_result['subpremise'].' / '.$location_result['address'];
+        }
+
+        if (!empty($GLOBALS['debug_log']))
 {
     file_put_contents($GLOBALS['debug_log'],'get_row'.print_r($this->row,true).PHP_EOL,FILE_APPEND);
 }

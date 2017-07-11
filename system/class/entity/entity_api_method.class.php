@@ -68,6 +68,56 @@ class entity_api_method extends entity
         }
         $set_account_row['importID'] = $this->api_id;
         $set_account_row['country'] = 'Australia';
+
+        if (!empty($parameter['option']['latitude']) AND !empty($parameter['option']['longitude']))
+        {
+            $entity_postcode_suburb_obj = new entity_postcode_suburb();
+            $location_data = $entity_postcode_suburb_obj->get_location_from_geo(['latitude'=>$parameter['option']['latitude'],'longitude'=>$parameter['option']['longitude']]);
+            if (!empty($location_data))
+            {
+                $api_location_log = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_location_log.txt';
+                if (!file_exists(dirname($api_location_log))) mkdir(dirname($api_location_log), 0755, true);
+                file_put_contents($api_location_log,PHP_EOL.'Location Request: ['.date('D, d M Y H:i:s').']'.PHP_EOL.PHP_EOL,FILE_APPEND);
+
+                if (empty($set_account_row['address'])) $set_account_row['address'] = $location_data['address'];
+                if (!empty($set_account_row['city']))
+                {
+                    if (strtolower($set_account_row['city']) != strtolower($location_data['suburb']))
+                    {
+                        file_put_contents($api_location_log,'Suburb Inconsistent: Geocode suburb '.$location_data['suburb'].' - API Posted suburb '.$set_account_row['city'].PHP_EOL,FILE_APPEND);
+                    }
+                }
+                else
+                {
+                    $set_account_row['city'] = $location_data['suburb'];
+                }
+
+                if (!empty($set_account_row['state']))
+                {
+                    if (strtolower($set_account_row['state']) != strtolower($location_data['state']))
+                    {
+                        file_put_contents($api_location_log,'State Inconsistent: Geocode state '.$location_data['state'].' - API Posted state '.$set_account_row['state'].PHP_EOL,FILE_APPEND);
+                    }
+                }
+                else
+                {
+                    $set_account_row['state'] = $location_data['state'];
+                }
+
+                if (!empty($set_account_row['zip']))
+                {
+                    if (strtolower($set_account_row['zip']) != strtolower($location_data['post_code']))
+                    {
+                        file_put_contents($api_location_log,'Post Code Inconsistent: Geocode suburb '.$location_data['post_code'].' - API Posted suburb '.$set_account_row['zip'].PHP_EOL,FILE_APPEND);
+                    }
+                }
+                else
+                {
+                    $set_account_row['zip'] = $location_data['post_code'];
+                }
+            }
+        }
+
         $set_account_parameter['row'][] = $set_account_row;
 
         $account_insert_result = $entity_account_obj->set($set_account_parameter);
@@ -283,6 +333,7 @@ if (!empty($GLOBALS['debug_log']))
         {
             $api_location_log = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_location_log.txt';
             if (!file_exists(dirname($api_location_log))) mkdir(dirname($api_location_log), 0755, true);
+            file_put_contents($api_location_log,PHP_EOL.'Location Request: ['.date('D, d M Y H:i:s').']'.PHP_EOL.PHP_EOL,FILE_APPEND);
 
             $set_listing_row['postcode_suburb_id'] = $location_data['id'];
             if (empty($set_listing_row['address'])) $set_listing_row['address'] = $location_data['address'];
@@ -290,7 +341,7 @@ if (!empty($GLOBALS['debug_log']))
             {
                 if (strtolower($set_listing_row['city']) != strtolower($location_data['suburb']))
                 {
-                    file_put_contents($api_location_log,'Suburb Inconsistent: Geocode suburb '.$location_data['suburb'].' - API Posted suburb'.$set_listing_row['city'].PHP_EOL,FILE_APPEND);
+                    file_put_contents($api_location_log,'Suburb Inconsistent: Geocode suburb '.$location_data['suburb'].' - API Posted suburb '.$set_listing_row['city'].PHP_EOL,FILE_APPEND);
                 }
             }
             else
@@ -304,7 +355,7 @@ if (!empty($GLOBALS['debug_log']))
             {
                 if (strtolower($set_listing_row['state']) != strtolower($location_data['state']))
                 {
-                    file_put_contents($api_location_log,'State Inconsistent: Geocode state '.$location_data['suburb'].' - API Posted state'.$set_listing_row['city'].PHP_EOL,FILE_APPEND);
+                    file_put_contents($api_location_log,'State Inconsistent: Geocode state '.$location_data['state'].' - API Posted state '.$set_listing_row['state'].PHP_EOL,FILE_APPEND);
                 }
             }
             else
@@ -316,7 +367,7 @@ if (!empty($GLOBALS['debug_log']))
             {
                 if (strtolower($set_listing_row['zip_code']) != strtolower($location_data['post_code']))
                 {
-                    file_put_contents($api_location_log,'Post Code Inconsistent: Geocode suburb '.$location_data['post_code'].' - API Posted suburb'.$set_listing_row['zip_code'].PHP_EOL,FILE_APPEND);
+                    file_put_contents($api_location_log,'Post Code Inconsistent: Geocode suburb '.$location_data['post_code'].' - API Posted suburb '.$set_listing_row['zip_code'].PHP_EOL,FILE_APPEND);
                 }
             }
             else
@@ -614,6 +665,53 @@ if (!empty($GLOBALS['debug_log']))
         }
         $set_account_row['importID'] = $this->api_id;
         $set_account_row['country'] = 'Australia';
+
+        $entity_postcode_suburb_obj = new entity_postcode_suburb();
+        $location_data = $entity_postcode_suburb_obj->get_location_from_geo(['latitude'=>$parameter['option']['latitude'],'longitude'=>$parameter['option']['longitude']]);
+        if (!empty($location_data))
+        {
+            $api_location_log = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_location_log.txt';
+            if (!file_exists(dirname($api_location_log))) mkdir(dirname($api_location_log), 0755, true);
+            file_put_contents($api_location_log,PHP_EOL.'Location Request: ['.date('D, d M Y H:i:s').']'.PHP_EOL.PHP_EOL,FILE_APPEND);
+
+            if (empty($set_account_row['address'])) $set_account_row['address'] = $location_data['address'];
+            if (!empty($set_account_row['city']))
+            {
+                if (strtolower($set_account_row['city']) != strtolower($location_data['suburb']))
+                {
+                    file_put_contents($api_location_log,'Suburb Inconsistent: Geocode suburb '.$location_data['suburb'].' - API Posted suburb '.$set_account_row['city'].PHP_EOL,FILE_APPEND);
+                }
+            }
+            else
+            {
+                $set_account_row['city'] = $location_data['suburb'];
+            }
+
+            if (!empty($set_account_row['state']))
+            {
+                if (strtolower($set_account_row['state']) != strtolower($location_data['state']))
+                {
+                    file_put_contents($api_location_log,'State Inconsistent: Geocode state '.$location_data['suburb'].' - API Posted state '.$set_account_row['state'].PHP_EOL,FILE_APPEND);
+                }
+            }
+            else
+            {
+                $set_account_row['state'] = $location_data['state'];
+            }
+
+            if (!empty($set_account_row['zip']))
+            {
+                if (strtolower($set_account_row['zip']) != strtolower($location_data['post_code']))
+                {
+                    file_put_contents($api_location_log,'Post Code Inconsistent: Geocode suburb '.$location_data['post_code'].' - API Posted suburb '.$set_account_row['zip'].PHP_EOL,FILE_APPEND);
+                }
+            }
+            else
+            {
+                $set_account_row['zip'] = $location_data['post_code'];
+            }
+        }
+
         $set_account_parameter['row'][] = $set_account_row;
 
         $account_insert_result = $entity_account_obj->set($set_account_parameter);
@@ -635,6 +733,10 @@ if (!empty($GLOBALS['debug_log']))
         // Create Business Listing
         $entity_listing_obj = new entity_listing();
         $listing_field_array = ['latitude','longitude','category','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
+        if ($this->api_id == 10001 OR $this->api_id == 10003)
+        {
+            $listing_field_array = array_merge($listing_field_array,['cd_plan_name','cd_plan_period','cd_plan_transaction_id','cd_plan_transaction_amount']);
+        }
         $set_listing_parameter = array('row'=>array());
 
         $category_array = explode(',',$parameter['option']['category']);
@@ -697,6 +799,7 @@ if (!empty($GLOBALS['debug_log']))
         $set_listing_row['importID'] = $this->api_id;
         $set_listing_row['account_id'] = $record_account['id'];
         $set_listing_row['title'] = $parameter['option']['company'];
+        if (isset($parameter['option']['zip'])) $set_listing_row['zip_code'] = $parameter['option']['zip'];
         $set_listing_row['status'] = 'A';
         $set_listing_row['bulked'] = 'y';
         if (!empty($parameter['option']['business_logo']))
@@ -717,6 +820,17 @@ if (!empty($GLOBALS['debug_log']))
             $set_listing_row['banner_id'] = 0;
         }
         $set_listing_row['category'] = implode($entity_category_obj->id_group);
+
+        if (!empty($location_data))
+        {
+            $set_listing_row['postcode_suburb_id'] = $location_data['id'];
+            if (empty($set_listing_row['address'])) $set_listing_row['address'] = $location_data['address'];
+            if (empty($set_listing_row['city'])) $set_listing_row['city'] = $location_data['suburb'];
+            if (empty($set_listing_row['region'])) $set_listing_row['region'] = $location_data['region'];
+            if (empty($set_listing_row['state'])) $set_listing_row['state'] = $location_data['state'];
+            if (empty($set_listing_row['zip_code'])) $set_listing_row['zip_code'] = $location_data['post_code'];
+        }
+
         $set_listing_parameter['row'][] = $set_listing_row;
 
         $listing_insert_result = $entity_listing_obj->set($set_listing_parameter);
@@ -1050,6 +1164,55 @@ if (!empty($GLOBALS['debug_log']))
                 $set_account_row[$parameter_item_index] = $parameter_item;
             }
         }
+        if (!empty($parameter['option']['latitude']) AND !empty($parameter['option']['longitude']))
+        {
+            $entity_postcode_suburb_obj = new entity_postcode_suburb();
+            $location_data = $entity_postcode_suburb_obj->get_location_from_geo(['latitude'=>$parameter['option']['latitude'],'longitude'=>$parameter['option']['longitude']]);
+            if (!empty($location_data))
+            {
+                $api_location_log = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_location_log.txt';
+                if (!file_exists(dirname($api_location_log))) mkdir(dirname($api_location_log), 0755, true);
+                file_put_contents($api_location_log,PHP_EOL.'Location Request: ['.date('D, d M Y H:i:s').']'.PHP_EOL.PHP_EOL,FILE_APPEND);
+
+                if (empty($set_account_row['address'])) $set_account_row['address'] = $location_data['address'];
+                if (!empty($set_account_row['city']))
+                {
+                    if (strtolower($set_account_row['city']) != strtolower($location_data['suburb']))
+                    {
+                        file_put_contents($api_location_log,'Suburb Inconsistent: Geocode suburb '.$location_data['suburb'].' - API Posted suburb '.$set_account_row['city'].PHP_EOL,FILE_APPEND);
+                    }
+                }
+                else
+                {
+                    $set_account_row['city'] = $location_data['suburb'];
+                }
+
+                if (!empty($set_account_row['state']))
+                {
+                    if (strtolower($set_account_row['state']) != strtolower($location_data['state']))
+                    {
+                        file_put_contents($api_location_log,'State Inconsistent: Geocode state '.$location_data['state'].' - API Posted state '.$set_account_row['state'].PHP_EOL,FILE_APPEND);
+                    }
+                }
+                else
+                {
+                    $set_account_row['state'] = $location_data['state'];
+                }
+
+                if (!empty($set_account_row['zip']))
+                {
+                    if (strtolower($set_account_row['zip']) != strtolower($location_data['post_code']))
+                    {
+                        file_put_contents($api_location_log,'Post Code Inconsistent: Geocode suburb '.$location_data['post_code'].' - API Posted suburb '.$set_account_row['zip'].PHP_EOL,FILE_APPEND);
+                    }
+                }
+                else
+                {
+                    $set_account_row['zip'] = $location_data['post_code'];
+                }
+            }
+        }
+
         $entity_account_obj = new entity_account($parameter['option']['id']);
         if (empty($entity_account_obj->id_group))
         {
@@ -1128,6 +1291,10 @@ if (!empty($GLOBALS['debug_log']))
         }
 
         $listing_field_array = ['account_id','title','latitude','longitude','category','abn','address','address2','city','state','zip','image','banner','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status'];
+        if ($this->api_id == 10001 OR $this->api_id == 10003)
+        {
+            $listing_field_array = array_merge($listing_field_array,['cd_plan_name','cd_plan_period','cd_plan_transaction_id','cd_plan_transaction_amount']);
+        }
         $set_listing_row = array();
         foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
         {
@@ -1140,6 +1307,58 @@ if (!empty($GLOBALS['debug_log']))
         if (isset($parameter['option']['status']) AND !in_array($parameter['option']['status'],['A','S']))
         {
             $set_listing_row['status'] = 'S';
+        }
+
+        if (!empty($parameter['option']['latitude']) AND !empty($parameter['option']['longitude']))
+        {
+            $entity_postcode_suburb_obj = new entity_postcode_suburb();
+            $location_data = $entity_postcode_suburb_obj->get_location_from_geo(['latitude'=>$parameter['option']['latitude'],'longitude'=>$parameter['option']['longitude']]);
+            if (!empty($location_data))
+            {
+                $api_location_log = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_location_log.txt';
+                if (!file_exists(dirname($api_location_log))) mkdir(dirname($api_location_log), 0755, true);
+                file_put_contents($api_location_log,PHP_EOL.'Location Request: ['.date('D, d M Y H:i:s').']'.PHP_EOL.PHP_EOL,FILE_APPEND);
+
+                $set_listing_row['postcode_suburb_id'] = $location_data['id'];
+                if (empty($set_listing_row['address'])) $set_listing_row['address'] = $location_data['address'];
+                if (!empty($set_listing_row['city']))
+                {
+                    if (strtolower($set_listing_row['city']) != strtolower($location_data['suburb']))
+                    {
+                        file_put_contents($api_location_log,'Suburb Inconsistent: Geocode suburb '.$location_data['suburb'].' - API Posted suburb '.$set_listing_row['city'].PHP_EOL,FILE_APPEND);
+                    }
+                }
+                else
+                {
+                    $set_listing_row['city'] = $location_data['suburb'];
+                }
+
+                if (empty($set_listing_row['region'])) $set_listing_row['region'] = $location_data['region'];
+
+                if (!empty($set_listing_row['state']))
+                {
+                    if (strtolower($set_listing_row['state']) != strtolower($location_data['state']))
+                    {
+                        file_put_contents($api_location_log,'State Inconsistent: Geocode state '.$location_data['state'].' - API Posted state '.$set_listing_row['state'].PHP_EOL,FILE_APPEND);
+                    }
+                }
+                else
+                {
+                    $set_listing_row['state'] = $location_data['state'];
+                }
+
+                if (!empty($set_listing_row['zip_code']))
+                {
+                    if (strtolower($set_listing_row['zip_code']) != strtolower($location_data['post_code']))
+                    {
+                        file_put_contents($api_location_log,'Post Code Inconsistent: Geocode suburb '.$location_data['post_code'].' - API Posted suburb '.$set_listing_row['zip_code'].PHP_EOL,FILE_APPEND);
+                    }
+                }
+                else
+                {
+                    $set_listing_row['zip_code'] = $location_data['post_code'];
+                }
+            }
         }
 
         $entity_listing_obj = new entity_listing($parameter['option']['id']);
@@ -1567,6 +1786,52 @@ file_put_contents($GLOBALS['debug_log'],"Gallery obj\n".print_r($entity_gallery_
                 $set_account_row[$parameter_item_index] = $parameter_item;
             }
         }
+        $entity_postcode_suburb_obj = new entity_postcode_suburb();
+        $location_data = $entity_postcode_suburb_obj->get_location_from_geo(['latitude'=>$parameter['option']['latitude'],'longitude'=>$parameter['option']['longitude']]);
+        if (!empty($location_data))
+        {
+            $api_location_log = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'api_location_log.txt';
+            if (!file_exists(dirname($api_location_log))) mkdir(dirname($api_location_log), 0755, true);
+            file_put_contents($api_location_log,PHP_EOL.'Location Request: ['.date('D, d M Y H:i:s').']'.PHP_EOL.PHP_EOL,FILE_APPEND);
+
+            if (empty($set_account_row['address'])) $set_account_row['address'] = $location_data['address'];
+            if (!empty($set_account_row['city']))
+            {
+                if (strtolower($set_account_row['city']) != strtolower($location_data['suburb']))
+                {
+                    file_put_contents($api_location_log,'Suburb Inconsistent: Geocode suburb '.$location_data['suburb'].' - API Posted suburb '.$set_account_row['city'].PHP_EOL,FILE_APPEND);
+                }
+            }
+            else
+            {
+                $set_account_row['city'] = $location_data['suburb'];
+            }
+
+            if (!empty($set_account_row['state']))
+            {
+                if (strtolower($set_account_row['state']) != strtolower($location_data['state']))
+                {
+                    file_put_contents($api_location_log,'State Inconsistent: Geocode state '.$location_data['suburb'].' - API Posted state '.$set_account_row['state'].PHP_EOL,FILE_APPEND);
+                }
+            }
+            else
+            {
+                $set_account_row['state'] = $location_data['state'];
+            }
+
+            if (!empty($set_account_row['zip']))
+            {
+                if (strtolower($set_account_row['zip']) != strtolower($location_data['post_code']))
+                {
+                    file_put_contents($api_location_log,'Post Code Inconsistent: Geocode suburb '.$location_data['post_code'].' - API Posted suburb '.$set_account_row['zip'].PHP_EOL,FILE_APPEND);
+                }
+            }
+            else
+            {
+                $set_account_row['zip'] = $location_data['post_code'];
+            }
+        }
+
         $entity_account_obj = new entity_account($parameter['option']['id']);
         if (empty($entity_account_obj->id_group))
         {
@@ -1623,6 +1888,10 @@ file_put_contents($GLOBALS['debug_log'],"Gallery obj\n".print_r($entity_gallery_
         }
 
         $listing_field_array = ['latitude','longitude','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status'];
+        if ($this->api_id == 10001 OR $this->api_id == 10003)
+        {
+            $listing_field_array = array_merge($listing_field_array,['cd_plan_name','cd_plan_period','cd_plan_transaction_id','cd_plan_transaction_amount']);
+        }
         $set_listing_row = array();
         foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
         {
@@ -1631,6 +1900,7 @@ file_put_contents($GLOBALS['debug_log'],"Gallery obj\n".print_r($entity_gallery_
                 $set_listing_row[$parameter_item_index] = $parameter_item;
             }
         }
+        if (isset($parameter['option']['zip'])) $set_listing_row['zip_code'] = $parameter['option']['zip'];
         if (isset($parameter['option']['business_logo']))
         {
             $set_listing_row['image'] = $parameter['option']['business_logo'];
@@ -1706,6 +1976,15 @@ file_put_contents($GLOBALS['debug_log'],"Gallery obj\n".print_r($entity_gallery_
                 return false;
             }
             $set_listing_row['category'] = implode($entity_category_obj->id_group);
+        }
+        if (!empty($location_data))
+        {
+            $set_listing_row['postcode_suburb_id'] = $location_data['id'];
+            if (empty($set_listing_row['address'])) $set_listing_row['address'] = $location_data['address'];
+            if (empty($set_listing_row['city'])) $set_listing_row['city'] = $location_data['suburb'];
+            if (empty($set_listing_row['region'])) $set_listing_row['region'] = $location_data['region'];
+            if (empty($set_listing_row['state'])) $set_listing_row['state'] = $location_data['state'];
+            if (empty($set_listing_row['zip_code'])) $set_listing_row['zip_code'] = $location_data['post_code'];
         }
 
         $listing_update_result = $entity_listing_obj->update($set_listing_row);
