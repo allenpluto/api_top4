@@ -194,12 +194,13 @@ clinic',
     if ($method == 'update_gallery')
     {
         $post_value = [
-            'id'=>52566,
+            'id'=>52573,
             'title'=>'Update Beta Gallery',
             'image'=>[
-                ['name'=>'Car','source_file'=>'https://www.top4.com.au/custom/domain_1/image_files/191_photo_394298.jpg','order'=>1],
-                ['id'=>'355805','name'=>'Image 2 update','order'=>0],
-                ['id'=>'355803','name'=>'Image 1 update','order'=>2]
+                ['id'=>'355940','name'=>'Image 1 updated','order'=>2],
+                ['name'=>'Car','source_file'=>'https://www.top4.com.au/custom/domain_1/image_files/191_photo_394298.jpg','order'=>0],
+                ['id'=>'355833','name'=>'Image 2 updated'],
+                ['id'=>'355835','name'=>'Image 3 updated']
             ]
         ];
     }

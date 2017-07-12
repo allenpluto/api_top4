@@ -1499,39 +1499,129 @@ if (!empty($GLOBALS['debug_log']))
 
 
 $GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
+$GLOBALS['time_stack']['update_gallery start'] = microtime(1);
+file_put_contents($GLOBALS['debug_log'],"update_gallery start (".$GLOBALS['time_stack']['update_gallery start'].")\n",FILE_APPEND);
 
-        $image_updated = false;
+        $set_row = array();
+
+        $field_array = ['title','entered','updated'];
+
+        foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
+        {
+            if (in_array($parameter_item_index,$field_array))
+            {
+                $set_row[$parameter_item_index] = $parameter_item;
+            }
+        }
+file_put_contents($GLOBALS['debug_log'],"Set gallery\n".print_r($set_row,true)."\n",FILE_APPEND);
+
+        if (empty($set_row) AND empty($parameter['option']['image']))
+        {
+            $parameter['status'] = 'ZERO_RESULTS';
+            $parameter['message'] = 'All values are same as before, nothing updated';
+            return false;
+        }
+
+        if (empty($set_row['updated']))
+        {
+            $set_row['updated'] = date('Y-m-d H:i:s');
+        }
+
+        $entity_gallery_result = $entity_gallery_obj->update(['row'=>[$set_row],'parameter'=>['field'=>array_keys($set_row)]]);
+file_put_contents($GLOBALS['debug_log'],"Gallery obj\n".print_r($entity_gallery_obj,true)."\n",FILE_APPEND);
+$GLOBALS['time_stack']['set gallery table complete'] = microtime(1) - $GLOBALS['time_stack']['update_gallery start'];
+file_put_contents($GLOBALS['debug_log'],"set gallery table complete (".$GLOBALS['time_stack']['set gallery table complete'].")\n",FILE_APPEND);
+
         if (!empty($parameter['option']['image']))
         {
             $entity_gallery_data_current = $entity_gallery_obj->fetch_value();
             $entity_gallery_data_current = end($entity_gallery_data_current);
-file_put_contents($GLOBALS['debug_log'],"gallery data\n".print_r($entity_gallery_data_current,true)."\n",FILE_APPEND);
-            $new_image_id_group = [];
+file_put_contents($GLOBALS['debug_log'],'current_gallery_data'.print_r($entity_gallery_data_current,true)."\n",FILE_APPEND);
+            $current_image_id_group = explode(',',$entity_gallery_data_current['image']);
+            $delete_image_id_group = [];
+            file_put_contents($GLOBALS['debug_log'],"gallery data\n".print_r($entity_gallery_data_current,true)."\n",FILE_APPEND);
 
+            $sort_image = [];
+            $update_image_row = [];
+
+$GLOBALS['time_stack']['gallery image start'] = microtime(1);
+file_put_contents($GLOBALS['debug_log'],'gallery image start ('.$GLOBALS['time_stack']['gallery image start'].PHP_EOL,FILE_APPEND);
             if (!empty($entity_gallery_data_current['image_row']))
             {
-                $sort_image = [];
                 foreach ($entity_gallery_data_current['image_row'] as $current_image_row_index=>$current_image_row)
                 {
-                    $sort_image[] =  $current_image_row['order'];
-                    $new_image_id_group[] = $current_image_row['id'];
+                    $sort_image['id_'.$current_image_row['id']] =  $current_image_row['order'];
+                    $update_image_row['id_'.$current_image_row['id']] = ['id'=>$current_image_row['id']];
                 }
-                array_multisort($sort_image, $new_image_id_group);
             }
-file_put_contents($GLOBALS['debug_log'],"current image id\n".print_r($new_image_id_group,true)."\n",FILE_APPEND);
-            $sort_image = [];
-            foreach ($parameter['option']['image'] as $image_row_index=>$image_row)
+            file_put_contents($GLOBALS['debug_log'],"image order get exist\n".print_r($sort_image,true)."\n",FILE_APPEND);
+            file_put_contents($GLOBALS['debug_log'],"update image rows get exist\n".print_r($update_image_row,true)."\n",FILE_APPEND);
+            foreach ($update_image_row as $image_row_index=>$image_row)
+            {
+                if (!empty($image_row['delete']))
+                {
+                    unset($update_image_row[$image_row_index]);
+                    unset($sort_image[$image_row_index]);
+                    if(!empty($image_row['id'])) $delete_image_id_group[] = $image_row['id'];
+                }
+            }
+            file_put_contents($GLOBALS['debug_log'],"image order before sort\n".print_r($sort_image,true)."\n",FILE_APPEND);
+            file_put_contents($GLOBALS['debug_log'],"update image rows before sort\n".print_r($update_image_row,true)."\n",FILE_APPEND);
+            array_multisort($sort_image, $update_image_row);
+            unset($sort_image);
+
+            $GLOBALS['time_stack']['update_gallery update image rows after sort'] = microtime(1) - $GLOBALS['time_stack']['update_gallery start'];
+            file_put_contents($GLOBALS['debug_log'],"update image rows after sort (".$GLOBALS['time_stack']['update_gallery update image rows after sort'].")\n".print_r($update_image_row,true)."\n",FILE_APPEND);
+
+            $sort_set_image_row = [];
+            $set_image_row = $parameter['option']['image'];
+            $set_image_row_counter = count($set_image_row)+count($update_image_row);
+            foreach ($set_image_row as $image_row_index=>&$image_row)
             {
                 if (!isset($image_row['order']))
                 {
-                    $image_row['order'] = 999;
+                    $sort_set_image_row[] = $set_image_row_counter;
+                    if (!isset($image_row['id']))
+                    {
+                        // new image goes to the end of gallery by default
+                        $image_row['order'] = $set_image_row_counter;
+                    }
+                    $set_image_row_counter++;
                 }
-                $sort_image[] =  $image_row['order'];
+                else
+                {
+                    $sort_set_image_row[] = $image_row['order'];
+                }
             }
-            array_multisort($sort_image, $parameter['option']['image']);
-//file_put_contents($GLOBALS['debug_log'],"After sort\n".print_r($parameter['option']['image'],true)."\n",FILE_APPEND);
+            array_multisort($sort_set_image_row, $set_image_row);
+            unset($sort_set_image_row);
 
-            foreach ($parameter['option']['image'] as $image_row_index=>$image_row)
+            foreach ($set_image_row as $image_row_index=>$image_row)
+            {
+                if (isset($image_row['order']))
+                {
+                    if (isset($update_image_row['id_'.$image_row['id']]))
+                    {
+                        unset($update_image_row['id_'.$image_row['id']]);
+                    }
+                    array_splice($update_image_row, $image_row['order'],0,[$image_row]);
+                }
+                else
+                {
+                    if (isset($update_image_row['id_'.$image_row['id']]))
+                    {
+                        $update_image_row['id_'.$image_row['id']] = $image_row;
+                    }
+                }
+            }
+            file_put_contents($GLOBALS['debug_log'],"update image rows get post\n".print_r($update_image_row,true)."\n",FILE_APPEND);
+
+            $entity_image_obj = new entity_gallery_image($delete_image_id_group);
+            $entity_image_obj->delete();
+            file_put_contents($GLOBALS['debug_log'],"delete image ids\n".print_r($delete_image_id_group,true)."\n",FILE_APPEND);
+
+            $new_order = 0;
+            foreach ($update_image_row as $image_row_index=>$image_row)
             {
                 $relational_set_row = [];
                 if (!empty($image_row['id']))
@@ -1541,15 +1631,12 @@ file_put_contents($GLOBALS['debug_log'],"current image id\n".print_r($new_image_
                         $parameter['message'] .= PHP_EOL.'Image ['.$image_row['id'].'] is not in current gallery, cannot perform update';
                         continue;
                     }
-                    if (!empty($image_row['delete']))
-                    {
-                        $new_image_id_group = array_diff($new_image_id_group,[$image_row['id']]);
-                        continue;
-                    }
                     $relational_set_row['image_id'] = $image_row['id'];
                 }
                 else
                 {
+$GLOBALS['time_stack']['create image start '.$image_row_index] = microtime(1) - $GLOBALS['time_stack']['update_gallery start'];
+file_put_contents($GLOBALS['debug_log'],'create image start '.$image_row_index.' ('.$GLOBALS['time_stack']['create image start '.$image_row_index].PHP_EOL,FILE_APPEND);
                     if (empty($image_row['source_file']))
                     {
                         $parameter['message'] .= PHP_EOL.'Cannot insert new image without source_file: '.json_encode($image_row);
@@ -1642,45 +1729,37 @@ file_put_contents($GLOBALS['debug_log'],"current image id\n".print_r($new_image_
                         $relational_set_row['image_id'] = end($entity_image_obj->id_group);
                         $relational_set_row['thumb_id'] = end($entity_thumb_obj->id_group);
                         unset($set_row);
+$GLOBALS['time_stack']['create image end '.$image_row_index] = microtime(1) - $GLOBALS['time_stack']['update_gallery start'];
+file_put_contents($GLOBALS['debug_log'],'create image end '.$image_row_index.' ('.($GLOBALS['time_stack']['create image end '.$image_row_index]-$GLOBALS['time_stack']['create image start '.$image_row_index]).PHP_EOL,FILE_APPEND);
                     }
                 }
-
-                if (!empty($image_row['name']))
-                {
-                    $relational_set_row['image_caption'] = $image_row['name'];
-                    $relational_set_row['thumb_caption'] = $image_row['name'];
-                }
-
-file_put_contents($GLOBALS['debug_log'],$relational_set_row['image_id']."Before sort\n".print_r($new_image_id_group,true)."\n",FILE_APPEND);
-                if (isset($image_row['order']))
-                {
-                    $new_image_id_group = array_diff($new_image_id_group,[$relational_set_row['image_id']]);
-                    $new_image_id_group = array_splice($new_image_id_group,$image_row['order'],0,[$relational_set_row['image_id']]);
-                    $relational_set_row['order'] = $image_row['order'];
-                }
-                else
-                {
-                    $relational_set_row['order'] = count($new_image_id_group);
-                    if (!is_array($image_row['id'], $new_image_id_group))
-                    {
-                        $new_image_id_group[] = $relational_set_row['image_id'];
-                    }
-                }
-file_put_contents($GLOBALS['debug_log'],"After sort\n".print_r($new_image_id_group,true)."\n",FILE_APPEND);
+file_put_contents($GLOBALS['debug_log'],$relational_set_row['image_id']."\n",FILE_APPEND);
 
                 $entity_image_obj = new entity_gallery_image();
 
                 $set_relational_parameter = $entity_image_obj->parameter['relational_fields']['gallery'];
                 $set_relational_parameter['primary_key'] = $set_relational_parameter['source_id_field'];
 
+                if (!empty($image_row['name']))
+                {
+                    $relational_set_row['image_caption'] = $image_row['name'];
+                    $relational_set_row['thumb_caption'] = $image_row['name'];
+                }
+                $relational_set_row['order'] = $new_order;
+$GLOBALS['time_stack']['relational_set_row ready'] = microtime(1) - $GLOBALS['time_stack']['update_gallery start'];
+file_put_contents($GLOBALS['debug_log'],'relational_set_row ('.$GLOBALS['time_stack']['relational_set_row ready'].') '.print_r($relational_set_row,true)."\n",FILE_APPEND);
+
                 if (!empty($image_row['id']))
                 {
-                    $entity_image_obj->get(['id_group'=>[$image_row['id']]]);
+                    $entity_image_obj->id_group = $this->format->id_group($relational_set_row['image_id']);
+file_put_contents($GLOBALS['debug_log'],'update existing image id '.print_r($entity_image_obj->id_group,true)."\n",FILE_APPEND);
+                    $entity_image_obj->get();
+$GLOBALS['time_stack']['update existing image'] = microtime(1) - $GLOBALS['time_stack']['update_gallery start'];
+file_put_contents($GLOBALS['debug_log'],'update existing image ('.$GLOBALS['time_stack']['update existing image'].') '.print_r($entity_image_obj,true)."\n",FILE_APPEND);
+
                     $set_relational_parameter['where'] = ['gallery_id = '.$entity_gallery_data['id']];
                     $set_relational_parameter['fields'] = array_keys($relational_set_row);
-                    $set_relational_parameter['row'] = [$relational_set_row];
-                    $result = $entity_image_obj->update($set_relational_parameter);
-                    if (!empty($result)) $image_updated = true;
+                    $result = $entity_image_obj->update($relational_set_row, $set_relational_parameter);
                 }
                 else
                 {
@@ -1688,51 +1767,17 @@ file_put_contents($GLOBALS['debug_log'],"After sort\n".print_r($new_image_id_gro
                     $set_relational_parameter['fields'] = array_keys($relational_set_row);
                     $set_relational_parameter['row'] = [$relational_set_row];
                     $result = $entity_image_obj->set($set_relational_parameter);
-                    if (!empty($result)) $image_updated = true;
                 }
-            }
 
-            $new_image_id_group = array_values($new_image_id_group);
+if (empty($result))
+{
+    file_put_contents($GLOBALS['debug_log'],'entity update object message:'.print_r($entity_image_obj->message->display(),true).PHP_EOL,FILE_APPEND);
+}
 
-            $update_order_image_obj = new entity_gallery_image();
-            $update_order_parameter =  $update_order_image_obj->parameter['relational_fields']['gallery'];
-            $update_order_parameter['primary_key'] = $update_order_parameter['source_id_field'];
-            $update_order_parameter['where'] = ['gallery_id = '.$entity_gallery_data['id']];
-            foreach ($new_image_id_group as $image_order=>$image_id)
-            {
-                $update_order_image_obj = new entity_gallery_image($image_id);
-                $result = $update_order_image_obj->update(['order'=>$image_order],$update_order_parameter);
-                if (!empty($result)) $image_updated = true;
+                $new_order++;
             }
         }
 
-        $set_row = array();
-
-        $field_array = ['title','entered','updated'];
-
-        foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
-        {
-            if (in_array($parameter_item_index,$field_array))
-            {
-                $set_row[$parameter_item_index] = $parameter_item;
-            }
-        }
-file_put_contents($GLOBALS['debug_log'],"Set gallery\n".print_r($set_row,true)."\n",FILE_APPEND);
-
-        if (empty($set_row) AND !$image_updated)
-        {
-            $parameter['status'] = 'ZERO_RESULTS';
-            $parameter['message'] = 'All values are same as before, nothing updated';
-            return false;
-        }
-
-        if (empty($set_row['updated']))
-        {
-            $set_row['updated'] = date('Y-m-d H:i:s');
-        }
-
-        $entity_gallery_result = $entity_gallery_obj->update(['row'=>[$set_row],'parameter'=>['field'=>array_keys($set_row)]]);
-file_put_contents($GLOBALS['debug_log'],"Gallery obj\n".print_r($entity_gallery_obj,true)."\n",FILE_APPEND);
 
         $get_parameter = ['option'=>['id'=>$entity_gallery_data['id']]];
         $parameter['result'] = $this->select_gallery($get_parameter);

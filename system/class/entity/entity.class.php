@@ -748,17 +748,20 @@ if (!empty($GLOBALS['debug_log']))
         }
         if (!$this->_initialized)
         {
-            $GLOBALS['global_message']->error = __FILE__.'(line '.__LINE__.'): '.get_class($this).' cannot perform upgrade before it is initialized with get() or set() function';
+            $GLOBALS['global_message']->error = __FILE__.'(line '.__LINE__.'): '.get_class($this).' cannot perform update before it is initialized with get() or set() function';
             return false;
         }
         if (empty($this->id_group))
         {
-            $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): '.get_class($this).' cannot perform upgrade with empty id_group';
+            $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): '.get_class($this).' cannot perform update with empty id_group';
             return array();
         }
         $parameter = array_merge($this->parameter,$parameter);
         $format = format::get_obj();
-
+if (!empty($GLOBALS['debug_log']))
+{
+    file_put_contents($GLOBALS['debug_log'],"entity update\n",FILE_APPEND);
+}
         if (empty($parameter['bind_param']))
         {
             $parameter['bind_param'] = array();
@@ -800,7 +803,11 @@ if (!empty($GLOBALS['debug_log']))
         {
             $sql .= ' WHERE '.implode(' AND ', $where);
         }
-
+if (!empty($GLOBALS['debug_log']))
+{
+    file_put_contents($GLOBALS['debug_log'],'entity update sql:'.$sql.PHP_EOL,FILE_APPEND);
+    file_put_contents($GLOBALS['debug_log'],print_r($parameter['bind_param'],true).PHP_EOL,FILE_APPEND);
+}
         $query = $this->query($sql, $parameter['bind_param']);
         if ($query !== false)
         {
