@@ -2070,13 +2070,24 @@ class entity_api_method extends entity
             $parameter['message'] = 'Listing not available';
             return false;
         }
-        $record = $entity_listing_obj->get();
+        $get_parameter = [];
+        if ($this->api_id == 10001 OR $this->api_id == 10003)
+        {
+            $get_parameter['fields'] = ['id','title','friendly_url','abn','address','address2','city','region','state','zip_code','account_id','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status','bulked','importID','thumb_id','image_id','banner_id','category','updated','entered','cd_plan_name','cd_plan_period','cd_plan_transaction_id','cd_plan_transaction_amount'];
+        }
+
+        $record = $entity_listing_obj->get($get_parameter);
         $record = end($record);
 
         $parameter['status'] = 'OK';
         $parameter['result'] = [];
 
         $return_field_list = ['id','title','latitude','longitude','category','account_id','abn','address','address2','city','state','zip','image','banner','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
+        if ($this->api_id == 10001 OR $this->api_id == 10003)
+        {
+            $return_field_list = array_merge($return_field_list,['cd_plan_name','cd_plan_period','cd_plan_transaction_id','cd_plan_transaction_amount']);
+        }
+
         foreach ($record as $field_name=>$field_value)
         {
             if (in_array($field_name,$return_field_list))

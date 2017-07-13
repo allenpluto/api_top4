@@ -195,10 +195,10 @@ clinic',
     {
         $post_value = [
             'id'=>35164,
-            'title'=>'Update Beta Gallery',
+            'title'=>'Test Gallery',
             'image'=>[
-                ['id'=>'228083','name'=>'Image 1 updated','order'=>2],
-                ['name'=>'Car','source_file'=>'https://www.top4.com.au/custom/domain_1/image_files/191_photo_394298.jpg','order'=>0]
+                ['name'=>'Office Kitchen','source_file'=>'https://www.top4.com.au/custom/domain_1/image_files/191_photo_146121.jpg'],
+                ['name'=>'Residential Kitchen','source_file'=>'https://www.top4.com.au/custom/domain_1/image_files/191_photo_146061.jpg','order'=>0]
             ]
         ];
     }
