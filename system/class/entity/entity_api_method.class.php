@@ -1561,7 +1561,7 @@ class entity_api_method extends entity
             {
                 if (isset($image_row['order']))
                 {
-                    if (isset($update_image_row['id_'.$image_row['id']]))
+                    if (isset($image_row['id']) AND isset($update_image_row['id_'.$image_row['id']]))
                     {
                         unset($update_image_row['id_'.$image_row['id']]);
                     }
@@ -1569,9 +1569,13 @@ class entity_api_method extends entity
                 }
                 else
                 {
-                    if (isset($update_image_row['id_'.$image_row['id']]))
+                    if (isset($image_row['id']) AND isset($update_image_row['id_'.$image_row['id']]))
                     {
                         $update_image_row['id_'.$image_row['id']] = $image_row;
+                    }
+                    else
+                    {
+                        $update_image_row[] = $image_row;
                     }
                 }
             }
