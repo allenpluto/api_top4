@@ -93,10 +93,6 @@ class entity extends base
             else
             {
                 $this->id_group = $id_group;
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],"construct calling get\n",FILE_APPEND);
-}
                 $this->get();
             }
         }
@@ -168,13 +164,6 @@ if (!empty($GLOBALS['debug_log']))
 
     function query($sql, $parameter=array())
     {
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],"\nsql\n",FILE_APPEND);
-    file_put_contents($GLOBALS['debug_log'],print_r($sql,true)."\n",FILE_APPEND);
-    file_put_contents($GLOBALS['debug_log'],print_r($parameter,true)."\n",FILE_APPEND);
-}
-
 //print_r($sql.'<br>');
 //print_r($parameter);
         $query = $this->_conn->prepare($sql);
@@ -201,10 +190,6 @@ if (!empty($GLOBALS['debug_log']))
     // Select id_group by conditions
     function get($parameter = array())
     {
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],"entity get\n",FILE_APPEND);
-}
         $format = format::get_obj();
         if (isset($parameter['id_group']))
         {
@@ -758,10 +743,6 @@ if (!empty($GLOBALS['debug_log']))
         }
         $parameter = array_merge($this->parameter,$parameter);
         $format = format::get_obj();
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],"entity update\n",FILE_APPEND);
-}
         if (empty($parameter['bind_param']))
         {
             $parameter['bind_param'] = array();
@@ -803,11 +784,6 @@ if (!empty($GLOBALS['debug_log']))
         {
             $sql .= ' WHERE '.implode(' AND ', $where);
         }
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],'entity update sql:'.$sql.PHP_EOL,FILE_APPEND);
-    file_put_contents($GLOBALS['debug_log'],print_r($parameter['bind_param'],true).PHP_EOL,FILE_APPEND);
-}
         $query = $this->query($sql, $parameter['bind_param']);
         if ($query !== false)
         {

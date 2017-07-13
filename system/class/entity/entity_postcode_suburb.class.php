@@ -36,10 +36,6 @@ class entity_postcode_suburb extends entity
 
     function get_location_from_geo($parameter = array())
     {
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],'get_location_from_geo start'.print_r($parameter,true).PHP_EOL,FILE_APPEND);
-}
         if (is_string($parameter))
         {
             $parameter = implode(',',$parameter);
@@ -73,10 +69,6 @@ if (!empty($GLOBALS['debug_log']))
                 'bounds_sw_lng < '.$parameter['longitude']
             ]
         ];
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],'get_location_from_geo get'.print_r($parameter,true).PHP_EOL,FILE_APPEND);
-}
         $this->get($get_parameter);
         if (count($this->row) == 0)
         {
@@ -128,10 +120,6 @@ if (!empty($GLOBALS['debug_log']))
             $location_result['address'] = $google_place_result['subpremise'].' / '.$location_result['address'];
         }
 
-        if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],'get_row'.print_r($this->row,true).PHP_EOL,FILE_APPEND);
-}
 
         if (count($this->row) == 1)
         {
@@ -152,10 +140,6 @@ if (!empty($GLOBALS['debug_log']))
                 $location_result['region'] = end($this->row)['region'];
             }
         }
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],'location_result'.print_r($location_result,true).PHP_EOL,FILE_APPEND);
-}
 
         return $location_result;
     }

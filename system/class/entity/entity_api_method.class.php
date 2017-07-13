@@ -232,21 +232,13 @@ class entity_api_method extends entity
 
     function insert_business(&$parameter = array())
     {
-$GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],'insert_business start'.$this->api_id.PHP_EOL);
-}
         $entity_listing_obj = new entity_listing();
         $listing_field_array = ['title','latitude','longitude','category','account_id','abn','address','address2','city','state','zip','image','banner','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
         if ($this->api_id == 10001 OR $this->api_id == 10003)
         {
             $listing_field_array = array_merge($listing_field_array,['cd_plan_name','cd_plan_period','cd_plan_transaction_id','cd_plan_transaction_amount']);
         }
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],print_r($listing_field_array,true).PHP_EOL,FILE_APPEND);
-}
+
         $set_listing_parameter = array('row'=>array());
 
         if (empty($parameter['option']['title']) OR empty($parameter['option']['latitude']) OR empty($parameter['option']['longitude']) OR empty($parameter['option']['category']))
@@ -322,10 +314,6 @@ if (!empty($GLOBALS['debug_log']))
         $set_listing_row['image_id'] = 0;
         $set_listing_row['banner_id'] = 0;
         $set_listing_row['category'] = implode($entity_category_obj->id_group);
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],'set_listing_row before geo decode'.print_r($set_listing_row,true).PHP_EOL,FILE_APPEND);
-}
 
         $entity_postcode_suburb_obj = new entity_postcode_suburb();
         $location_data = $entity_postcode_suburb_obj->get_location_from_geo(['latitude'=>$parameter['option']['latitude'],'longitude'=>$parameter['option']['longitude']]);
@@ -375,10 +363,6 @@ if (!empty($GLOBALS['debug_log']))
                 $set_listing_row['zip_code'] = $location_data['post_code'];
             }
         }
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],'set_listing_row after geo decode'.print_r($set_listing_row,true).PHP_EOL,FILE_APPEND);
-}
 
         $set_listing_parameter['row'][] = $set_listing_row;
 
@@ -545,16 +529,20 @@ if (!empty($GLOBALS['debug_log']))
                         $image_ratio = $set_row['width']/$set_row['height'];
                         $image_offset_x = 0;
                         $image_offset_y = 0;
+                        $source_image_width = $set_row['width'];
+                        $source_image_height = $set_row['height'];
                         if ($image_ratio > $thumb_ratio)
                         {
                             $image_offset_x = floor(($set_row['width'] - $set_row['height'] * $thumb_ratio)/2);
+                            $source_image_width = $set_row['height'] * $thumb_ratio;
                         }
                         else
                         {
                             $image_offset_y = floor(($set_row['height'] - $set_row['width'] / $thumb_ratio)/2);
+                            $source_image_height = $set_row['width'] / $thumb_ratio;
                         }
 
-                        imagecopyresampled($target_image,$source_image,0,0,$image_offset_x,$image_offset_y,$thumb_set_row['width'], $thumb_set_row['height'],$set_row['width'],$set_row['height']);
+                        imagecopyresampled($target_image,$source_image,0,0,$image_offset_x,$image_offset_y,$thumb_set_row['width'], $thumb_set_row['height'],$source_image_width,$source_image_height);
                         imageinterlace($target_image,true);
 
                         ob_start();
@@ -607,9 +595,6 @@ if (!empty($GLOBALS['debug_log']))
                         $set_relational_parameter['row'] = [$relational_table_row];
 
                         $entity_image_obj->set($set_relational_parameter);
-//$GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
-//file_put_contents($GLOBALS['debug_log'],print_r($entity_image_obj,true)."\n");
-//print_r($entity_image_obj);
                     }
                 }
             }
@@ -984,10 +969,6 @@ if (!empty($GLOBALS['debug_log']))
             $relational_parameter['relational_fields'] = [];
 
             $relational_result = $entity_image_obj->get($relational_parameter);
-//$GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
-//file_put_contents($GLOBALS['debug_log'],"delete thumb\n".print_r($entity_image_obj,true)."\n");
-//file_put_contents($GLOBALS['debug_log'],"relational_result\n".print_r($relational_result,true)."\n",FILE_APPEND);
-//file_put_contents($GLOBALS['debug_log'],"image_object\n".print_r($entity_image_obj,true)."\n",FILE_APPEND);
 
             $thumb_id_group = [];
             foreach ($relational_result as $relational_result_row_index=>$relational_result_row)
@@ -996,7 +977,6 @@ if (!empty($GLOBALS['debug_log']))
             }
             $entity_thumb_obj = new entity_listing_image($thumb_id_group);
             $entity_thumb_obj->delete();
-//file_put_contents($GLOBALS['debug_log'],"thumb_obj\n".print_r($entity_thumb_obj,true)."\n",FILE_APPEND);
 
             $entity_image_obj->delete();
         }
@@ -1497,11 +1477,6 @@ if (!empty($GLOBALS['debug_log']))
 //            return false;
 //        }
 
-
-$GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
-$GLOBALS['time_stack']['update_gallery start'] = microtime(1);
-file_put_contents($GLOBALS['debug_log'],"update_gallery start (".$GLOBALS['time_stack']['update_gallery start'].")\n",FILE_APPEND);
-
         $set_row = array();
 
         $field_array = ['title','entered','updated'];
@@ -1513,7 +1488,6 @@ file_put_contents($GLOBALS['debug_log'],"update_gallery start (".$GLOBALS['time_
                 $set_row[$parameter_item_index] = $parameter_item;
             }
         }
-file_put_contents($GLOBALS['debug_log'],"Set gallery\n".print_r($set_row,true)."\n",FILE_APPEND);
 
         if (empty($set_row) AND empty($parameter['option']['image']))
         {
@@ -1528,24 +1502,18 @@ file_put_contents($GLOBALS['debug_log'],"Set gallery\n".print_r($set_row,true)."
         }
 
         $entity_gallery_result = $entity_gallery_obj->update(['row'=>[$set_row],'parameter'=>['field'=>array_keys($set_row)]]);
-file_put_contents($GLOBALS['debug_log'],"Gallery obj\n".print_r($entity_gallery_obj,true)."\n",FILE_APPEND);
-$GLOBALS['time_stack']['set gallery table complete'] = microtime(1) - $GLOBALS['time_stack']['update_gallery start'];
-file_put_contents($GLOBALS['debug_log'],"set gallery table complete (".$GLOBALS['time_stack']['set gallery table complete'].")\n",FILE_APPEND);
 
         if (!empty($parameter['option']['image']))
         {
             $entity_gallery_data_current = $entity_gallery_obj->fetch_value();
             $entity_gallery_data_current = end($entity_gallery_data_current);
-file_put_contents($GLOBALS['debug_log'],'current_gallery_data'.print_r($entity_gallery_data_current,true)."\n",FILE_APPEND);
+
             $current_image_id_group = explode(',',$entity_gallery_data_current['image']);
             $delete_image_id_group = [];
-            file_put_contents($GLOBALS['debug_log'],"gallery data\n".print_r($entity_gallery_data_current,true)."\n",FILE_APPEND);
 
             $sort_image = [];
             $update_image_row = [];
 
-$GLOBALS['time_stack']['gallery image start'] = microtime(1);
-file_put_contents($GLOBALS['debug_log'],'gallery image start ('.$GLOBALS['time_stack']['gallery image start'].PHP_EOL,FILE_APPEND);
             if (!empty($entity_gallery_data_current['image_row']))
             {
                 foreach ($entity_gallery_data_current['image_row'] as $current_image_row_index=>$current_image_row)
@@ -1554,8 +1522,6 @@ file_put_contents($GLOBALS['debug_log'],'gallery image start ('.$GLOBALS['time_s
                     $update_image_row['id_'.$current_image_row['id']] = ['id'=>$current_image_row['id']];
                 }
             }
-            file_put_contents($GLOBALS['debug_log'],"image order get exist\n".print_r($sort_image,true)."\n",FILE_APPEND);
-            file_put_contents($GLOBALS['debug_log'],"update image rows get exist\n".print_r($update_image_row,true)."\n",FILE_APPEND);
             foreach ($update_image_row as $image_row_index=>$image_row)
             {
                 if (!empty($image_row['delete']))
@@ -1565,13 +1531,8 @@ file_put_contents($GLOBALS['debug_log'],'gallery image start ('.$GLOBALS['time_s
                     if(!empty($image_row['id'])) $delete_image_id_group[] = $image_row['id'];
                 }
             }
-            file_put_contents($GLOBALS['debug_log'],"image order before sort\n".print_r($sort_image,true)."\n",FILE_APPEND);
-            file_put_contents($GLOBALS['debug_log'],"update image rows before sort\n".print_r($update_image_row,true)."\n",FILE_APPEND);
             array_multisort($sort_image, $update_image_row);
             unset($sort_image);
-
-            $GLOBALS['time_stack']['update_gallery update image rows after sort'] = microtime(1) - $GLOBALS['time_stack']['update_gallery start'];
-            file_put_contents($GLOBALS['debug_log'],"update image rows after sort (".$GLOBALS['time_stack']['update_gallery update image rows after sort'].")\n".print_r($update_image_row,true)."\n",FILE_APPEND);
 
             $sort_set_image_row = [];
             $set_image_row = $parameter['option']['image'];
@@ -1614,11 +1575,9 @@ file_put_contents($GLOBALS['debug_log'],'gallery image start ('.$GLOBALS['time_s
                     }
                 }
             }
-            file_put_contents($GLOBALS['debug_log'],"update image rows get post\n".print_r($update_image_row,true)."\n",FILE_APPEND);
 
             $entity_image_obj = new entity_gallery_image($delete_image_id_group);
             $entity_image_obj->delete();
-            file_put_contents($GLOBALS['debug_log'],"delete image ids\n".print_r($delete_image_id_group,true)."\n",FILE_APPEND);
 
             $new_order = 0;
             foreach ($update_image_row as $image_row_index=>$image_row)
@@ -1635,8 +1594,6 @@ file_put_contents($GLOBALS['debug_log'],'gallery image start ('.$GLOBALS['time_s
                 }
                 else
                 {
-$GLOBALS['time_stack']['create image start '.$image_row_index] = microtime(1) - $GLOBALS['time_stack']['update_gallery start'];
-file_put_contents($GLOBALS['debug_log'],'create image start '.$image_row_index.' ('.$GLOBALS['time_stack']['create image start '.$image_row_index].PHP_EOL,FILE_APPEND);
                     if (empty($image_row['source_file']))
                     {
                         $parameter['message'] .= PHP_EOL.'Cannot insert new image without source_file: '.json_encode($image_row);
@@ -1691,16 +1648,20 @@ file_put_contents($GLOBALS['debug_log'],'create image start '.$image_row_index.'
                         $image_ratio = $set_row['width']/$set_row['height'];
                         $image_offset_x = 0;
                         $image_offset_y = 0;
+                        $source_image_width = $set_row['width'];
+                        $source_image_height = $set_row['height'];
                         if ($image_ratio > $thumb_ratio)
                         {
                             $image_offset_x = floor(($set_row['width'] - $set_row['height'] * $thumb_ratio)/2);
+                            $source_image_width = $set_row['height'] * $thumb_ratio;
                         }
                         else
                         {
                             $image_offset_y = floor(($set_row['height'] - $set_row['width'] / $thumb_ratio)/2);
+                            $source_image_height = $set_row['width'] / $thumb_ratio;
                         }
 
-                        imagecopyresampled($target_image,$source_image,0,0,$image_offset_x,$image_offset_y,$thumb_set_row['width'], $thumb_set_row['height'],$set_row['width'],$set_row['height']);
+                        imagecopyresampled($target_image,$source_image,0,0,$image_offset_x,$image_offset_y,$thumb_set_row['width'], $thumb_set_row['height'],$source_image_width,$source_image_height);
                         imageinterlace($target_image,true);
 
                         ob_start();
@@ -1729,11 +1690,8 @@ file_put_contents($GLOBALS['debug_log'],'create image start '.$image_row_index.'
                         $relational_set_row['image_id'] = end($entity_image_obj->id_group);
                         $relational_set_row['thumb_id'] = end($entity_thumb_obj->id_group);
                         unset($set_row);
-$GLOBALS['time_stack']['create image end '.$image_row_index] = microtime(1) - $GLOBALS['time_stack']['update_gallery start'];
-file_put_contents($GLOBALS['debug_log'],'create image end '.$image_row_index.' ('.($GLOBALS['time_stack']['create image end '.$image_row_index]-$GLOBALS['time_stack']['create image start '.$image_row_index]).PHP_EOL,FILE_APPEND);
                     }
                 }
-file_put_contents($GLOBALS['debug_log'],$relational_set_row['image_id']."\n",FILE_APPEND);
 
                 $entity_image_obj = new entity_gallery_image();
 
@@ -1746,16 +1704,11 @@ file_put_contents($GLOBALS['debug_log'],$relational_set_row['image_id']."\n",FIL
                     $relational_set_row['thumb_caption'] = $image_row['name'];
                 }
                 $relational_set_row['order'] = $new_order;
-$GLOBALS['time_stack']['relational_set_row ready'] = microtime(1) - $GLOBALS['time_stack']['update_gallery start'];
-file_put_contents($GLOBALS['debug_log'],'relational_set_row ('.$GLOBALS['time_stack']['relational_set_row ready'].') '.print_r($relational_set_row,true)."\n",FILE_APPEND);
 
                 if (!empty($image_row['id']))
                 {
                     $entity_image_obj->id_group = $this->format->id_group($relational_set_row['image_id']);
-file_put_contents($GLOBALS['debug_log'],'update existing image id '.print_r($entity_image_obj->id_group,true)."\n",FILE_APPEND);
                     $entity_image_obj->get();
-$GLOBALS['time_stack']['update existing image'] = microtime(1) - $GLOBALS['time_stack']['update_gallery start'];
-file_put_contents($GLOBALS['debug_log'],'update existing image ('.$GLOBALS['time_stack']['update existing image'].') '.print_r($entity_image_obj,true)."\n",FILE_APPEND);
 
                     $set_relational_parameter['where'] = ['gallery_id = '.$entity_gallery_data['id']];
                     $set_relational_parameter['fields'] = array_keys($relational_set_row);
@@ -1768,11 +1721,6 @@ file_put_contents($GLOBALS['debug_log'],'update existing image ('.$GLOBALS['time
                     $set_relational_parameter['row'] = [$relational_set_row];
                     $result = $entity_image_obj->set($set_relational_parameter);
                 }
-
-if (empty($result))
-{
-    file_put_contents($GLOBALS['debug_log'],'entity update object message:'.print_r($entity_image_obj->message->display(),true).PHP_EOL,FILE_APPEND);
-}
 
                 $new_order++;
             }
@@ -2171,14 +2119,9 @@ if (empty($result))
         $parameter['result']['image'] = [];
         if (!empty($record['image']))
         {
-//$GLOBALS['debug_log'] = PATH_ASSET.'log'.DIRECTORY_SEPARATOR.'debug_log.txt';
-//file_put_contents($GLOBALS['debug_log'],"error_log_start\n");
             $entity_image_obj = new entity_gallery_image($record['image']);
             $entity_image_data = $entity_image_obj->get();
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],"entity_image_data\n".print_r($entity_image_data,true)."\n",FILE_APPEND);
-}
+
             $relational_parameter = $entity_image_obj->parameter['relational_fields']['gallery'];
             $relational_parameter['primary_key'] = $relational_parameter['source_id_field'];
             $relational_parameter['relational_fields'] = [];
@@ -2195,14 +2138,7 @@ if (!empty($GLOBALS['debug_log']))
                         'thumb_id'=>$relational_result_row['thumb_id'],
                         'image_uri'=>$entity_image_data['id_'.$relational_result_row['image_id']]['file_uri']
                     ];
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],"entity_image_data 2\n".print_r($entity_image_data,true)."\n",FILE_APPEND);
-    file_put_contents($GLOBALS['debug_log'],"row_id\n".'id_'.$relational_result_row['image_id']."\n",FILE_APPEND);
-    file_put_contents($GLOBALS['debug_log'],"entity_image_data row_id\n".print_r($entity_image_data['id_'.$relational_result_row['image_id']],true)."\n",FILE_APPEND);
-    file_put_contents($GLOBALS['debug_log'],"result_image_row\n".print_r($result_image_row,true)."\n",FILE_APPEND);
-    exit;
-}
+
                     if (!empty($result_image_row['thumb_id']) AND !empty($result_image_row['image_uri']))
                     {
                         $result_image_row['thumb_uri'] = str_replace($result_image_row['id'],$result_image_row['thumb_id'],$result_image_row['image_uri']);

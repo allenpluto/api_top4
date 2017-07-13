@@ -33,10 +33,6 @@ class entity_gallery_image extends entity
 
     function get($parameter = array())
     {
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],"entity_gallery_image get\n",FILE_APPEND);
-}
         if (empty($parameter['table_fields']))
         {
             $parameter['table_fields'] = [
@@ -57,10 +53,7 @@ if (!empty($GLOBALS['debug_log']))
                 $row['file_uri'] = 'https://www.top4.com.au/custom/domain_1/image_files/'.$row['prefix'].'photo_'.$row['id'].'.'.strtolower($row['type']);
             }
         }
-if (!empty($GLOBALS['debug_log']))
-{
-    file_put_contents($GLOBALS['debug_log'],"get_result\n".print_r($get_result,true)."\n",FILE_APPEND);
-}
+
         return $get_result;
     }
 }
