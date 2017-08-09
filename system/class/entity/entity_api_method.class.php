@@ -34,7 +34,7 @@ class entity_api_method extends entity
     function insert_account(&$parameter = array())
     {
         $entity_account_obj = new entity_account();
-        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message','entered','updated'];
         $set_account_parameter = array('row'=>array());
 
         if (empty($parameter['option']['username']) OR empty($parameter['option']['first_name']) OR empty($parameter['option']['last_name']))
@@ -117,7 +117,14 @@ class entity_api_method extends entity
                 }
             }
         }
-
+        if (empty($parameter['option']['entered']))
+        {
+            $set_account_row['entered'] = date('Y-m-d H:i:s');
+        }
+        if (empty($parameter['option']['updated']))
+        {
+            $set_account_row['updated'] = date('Y-m-d H:i:s');
+        }
         $set_account_parameter['row'][] = $set_account_row;
 
         $account_insert_result = $entity_account_obj->set($set_account_parameter);
@@ -233,7 +240,7 @@ class entity_api_method extends entity
     function insert_business(&$parameter = array())
     {
         $entity_listing_obj = new entity_listing();
-        $listing_field_array = ['title','latitude','longitude','category','account_id','abn','address','address2','city','state','zip','image','banner','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
+        $listing_field_array = ['title','latitude','longitude','category','account_id','abn','address','address2','city','state','zip','image','banner','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','entered','updated'];
         if ($this->api_id == 10001 OR $this->api_id == 10003)
         {
             $listing_field_array = array_merge($listing_field_array,['cd_plan_name','cd_plan_period','cd_plan_transaction_id','cd_plan_transaction_amount']);
@@ -362,6 +369,15 @@ class entity_api_method extends entity
             {
                 $set_listing_row['zip_code'] = $location_data['post_code'];
             }
+        }
+
+        if (empty($parameter['option']['entered']))
+        {
+            $set_listing_row['entered'] = date('Y-m-d H:i:s');
+        }
+        if (empty($parameter['option']['updated']))
+        {
+            $set_listing_row['updated'] = date('Y-m-d H:i:s');
         }
 
         $set_listing_parameter['row'][] = $set_listing_row;
@@ -624,7 +640,7 @@ class entity_api_method extends entity
 
         // Create Account
         $entity_account_obj = new entity_account();
-        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message','entered','updated'];
         $set_account_parameter = array('row'=>array());
 
         $entity_account_check = new entity_account();
@@ -696,7 +712,14 @@ class entity_api_method extends entity
                 $set_account_row['zip'] = $location_data['post_code'];
             }
         }
-
+        if (empty($parameter['option']['entered']))
+        {
+            $set_account_row['entered'] = date('Y-m-d H:i:s');
+        }
+        if (empty($parameter['option']['updated']))
+        {
+            $set_account_row['updated'] = date('Y-m-d H:i:s');
+        }
         $set_account_parameter['row'][] = $set_account_row;
 
         $account_insert_result = $entity_account_obj->set($set_account_parameter);
@@ -717,7 +740,7 @@ class entity_api_method extends entity
 
         // Create Business Listing
         $entity_listing_obj = new entity_listing();
-        $listing_field_array = ['latitude','longitude','category','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords'];
+        $listing_field_array = ['latitude','longitude','category','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','entered','updated'];
         if ($this->api_id == 10001 OR $this->api_id == 10003)
         {
             $listing_field_array = array_merge($listing_field_array,['cd_plan_name','cd_plan_period','cd_plan_transaction_id','cd_plan_transaction_amount']);
@@ -815,7 +838,14 @@ class entity_api_method extends entity
             if (empty($set_listing_row['state'])) $set_listing_row['state'] = $location_data['state'];
             if (empty($set_listing_row['zip_code'])) $set_listing_row['zip_code'] = $location_data['post_code'];
         }
-
+        if (empty($parameter['option']['entered']))
+        {
+            $set_listing_row['entered'] = date('Y-m-d H:i:s');
+        }
+        if (empty($parameter['option']['updated']))
+        {
+            $set_listing_row['updated'] = date('Y-m-d H:i:s');
+        }
         $set_listing_parameter['row'][] = $set_listing_row;
 
         $listing_insert_result = $entity_listing_obj->set($set_listing_parameter);
@@ -1078,7 +1108,7 @@ class entity_api_method extends entity
     function update_account(&$parameter = array())
     {
         $set_account_row = array();
-        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message','entered','updated'];
 
 
         if (empty($parameter['option']['id']))
@@ -1210,6 +1240,11 @@ class entity_api_method extends entity
             return false;
         }
         unset($account_row);
+
+        if (empty($parameter['option']['updated']))
+        {
+            $set_account_row['updated'] = date('Y-m-d H:i:s');
+        }
         $account_update_result = $entity_account_obj->update($set_account_row);
 
         if ($account_update_result === FALSE)
@@ -1270,7 +1305,7 @@ class entity_api_method extends entity
             return false;
         }
 
-        $listing_field_array = ['account_id','title','latitude','longitude','category','abn','address','address2','city','state','zip','image','banner','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status'];
+        $listing_field_array = ['account_id','title','latitude','longitude','category','abn','address','address2','city','state','zip','image','banner','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status','entered','updated'];
         if ($this->api_id == 10001 OR $this->api_id == 10003)
         {
             $listing_field_array = array_merge($listing_field_array,['cd_plan_name','cd_plan_period','cd_plan_transaction_id','cd_plan_transaction_amount']);
@@ -1419,6 +1454,10 @@ class entity_api_method extends entity
             $set_listing_row['category'] = implode($entity_category_obj->id_group);
         }
 
+        if (empty($parameter['option']['updated']))
+        {
+            $set_listing_row['updated'] = date('Y-m-d H:i:s');
+        }
         $listing_update_result = $entity_listing_obj->update($set_listing_row);
 
         if ($listing_update_result === FALSE)
@@ -1773,7 +1812,7 @@ class entity_api_method extends entity
             unset($entity_account_check);
         }
 
-        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message'];
+        $account_field_array = ['username','first_name','last_name','password','company','address','address2','city','state','zip','image','banner','latitude','longitude','phone','fax','email','url','nickname','personal_message','entered','updated'];
 
         $set_account_row = array();
         foreach($parameter['option'] as $parameter_item_index=>$parameter_item)
@@ -1844,7 +1883,10 @@ class entity_api_method extends entity
             $parameter['message'] = 'Current API User does not have the permission to update this account';
             return false;
         }
-
+        if (empty($parameter['option']['updated']))
+        {
+            $set_account_row['updated'] = date('Y-m-d H:i:s');
+        }
         $account_update_result = $entity_account_obj->update($set_account_row);
 
         if ($account_update_result === FALSE)
@@ -1884,7 +1926,7 @@ class entity_api_method extends entity
             return false;
         }
 
-        $listing_field_array = ['latitude','longitude','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status'];
+        $listing_field_array = ['latitude','longitude','abn','address','address2','city','state','zip','phone','alternate_phone','mobile_phone','fax','email','url','facebook_link','twitter_link','linkedin_link','blog_link','pinterest_link','googleplus_link','business_type','description','long_description','keywords','status','entered','updated'];
         if ($this->api_id == 10001 OR $this->api_id == 10003)
         {
             $listing_field_array = array_merge($listing_field_array,['cd_plan_name','cd_plan_period','cd_plan_transaction_id','cd_plan_transaction_amount']);
@@ -1983,7 +2025,10 @@ class entity_api_method extends entity
             if (empty($set_listing_row['state'])) $set_listing_row['state'] = $location_data['state'];
             if (empty($set_listing_row['zip_code'])) $set_listing_row['zip_code'] = $location_data['post_code'];
         }
-
+        if (empty($parameter['option']['updated']))
+        {
+            $set_listing_row['updated'] = date('Y-m-d H:i:s');
+        }
         $listing_update_result = $entity_listing_obj->update($set_listing_row);
 
         if ($listing_update_result === FALSE)
