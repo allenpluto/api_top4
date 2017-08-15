@@ -238,7 +238,10 @@ class entity_listing extends entity
                 }
                 unset($set_listing_row['banner']);
             }
-
+            if (isset($set_listing_row['phone'])) {$set_listing_row['phone'] = $this->format->phone_remove_format($set_listing_row['phone']);}
+            if (isset($set_listing_row['alternate_phone'])) {$set_listing_row['alternate_phone'] = $this->format->phone_remove_format($set_listing_row['alternate_phone']);}
+            if (isset($set_listing_row['mobile_phone'])) {$set_listing_row['mobile_phone'] = $this->format->phone_remove_format($set_listing_row['mobile_phone']);}
+            if (isset($set_listing_row['fax'])) {$set_listing_row['fax'] = $this->format->phone_remove_format($set_listing_row['fax']);}
 
             $set_listing_parameter['row'][] = $set_listing_row;
         }
@@ -544,6 +547,10 @@ class entity_listing extends entity
             }
             unset($value['banner']);
         }
+        if (isset($value['phone'])) {$value['phone'] = $this->format->phone_remove_format($value['phone']);}
+        if (isset($value['alternate_phone'])) {$value['alternate_phone'] = $this->format->phone_remove_format($value['alternate_phone']);}
+        if (isset($value['mobile_phone'])) {$value['mobile_phone'] = $this->format->phone_remove_format($value['mobile_phone']);}
+        if (isset($value['fax'])) {$value['fax'] = $this->format->phone_remove_format($value['fax']);}
 
         return parent::update($value, $parameter);
 

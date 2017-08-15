@@ -119,6 +119,9 @@ class entity_account extends entity
                 }
                 $set_account_row['complementary_info'] = md5('http://www.top4.com.au/members/login.php'.$set_account_row['username'].$set_account_row['password']);
                 $set_account_row['agree_tou'] = 1;
+                if (isset($set_account_row['phone'])) {$set_account_row['phone'] = $this->format->phone_remove_format($set_account_row['phone']);}
+                if (isset($set_account_row['fax'])) {$set_account_row['fax'] = $this->format->phone_remove_format($set_account_row['fax']);}
+
                 $set_account_parameter['row'][] = $set_account_row;
             }
         }
@@ -235,6 +238,9 @@ class entity_account extends entity
                 $value['complementary_info'] = md5('http://www.top4.com.au/members/login.php'.$record['username'].$record['password']);
             }
         }
+        if (isset($value['phone'])) {$value['phone'] = $this->format->phone_remove_format($value['phone']);}
+        if (isset($value['fax'])) {$value['fax'] = $this->format->phone_remove_format($value['fax']);}
+
         $account_update_result = parent::update($value, $parameter);
         if ($account_update_result === false)
         {

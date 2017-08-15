@@ -90,8 +90,8 @@ class format
         return $result;
     }
 
-    // Display Phone Number
-    private function phone($value)
+    // Store Phone Number($value)
+    private function phone_remove_format($value)
     {
         $value = preg_replace('/[abc]/i', '2', $value);
         $value = preg_replace('/[def]/i', '3', $value);
@@ -103,6 +103,21 @@ class format
         $value = preg_replace('/[wxyz]/i', '9', $value);
         $value = preg_replace('/[^\d]/', '', $value);
 
+        if (substr($value,0,2) == '61')
+        {
+            $value = substr($value,2);
+            if (in_array(substr($value,0,1),[2,3,4,7,8]))
+            {
+                $value = '0'.$value;
+            }
+        }
+
+        return $value;
+    }
+
+    // Display Phone Number
+    private function phone($value)
+    {
         switch(strlen($value))
         {
             case 10:
