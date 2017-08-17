@@ -103,6 +103,8 @@ class entity_account extends entity
                 $row['updated'] = date('Y-m-d H:i:s');
                 $row['entered'] = $row['updated'];
                 $row['credit_points'] = 100;
+                if (isset($row['phone'])) {$row['phone'] = $this->format->phone_remove_format($row['phone']);}
+                if (isset($row['fax'])) {$row['fax'] = $this->format->phone_remove_format($row['fax']);}
                 $set_account_row = $row;
                 if (isset($set_account_row['password']))
                 {
@@ -119,8 +121,6 @@ class entity_account extends entity
                 }
                 $set_account_row['complementary_info'] = md5('http://www.top4.com.au/members/login.php'.$set_account_row['username'].$set_account_row['password']);
                 $set_account_row['agree_tou'] = 1;
-                if (isset($set_account_row['phone'])) {$set_account_row['phone'] = $this->format->phone_remove_format($set_account_row['phone']);}
-                if (isset($set_account_row['fax'])) {$set_account_row['fax'] = $this->format->phone_remove_format($set_account_row['fax']);}
 
                 $set_account_parameter['row'][] = $set_account_row;
             }
