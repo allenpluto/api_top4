@@ -870,6 +870,47 @@ class entity_api_method extends entity
         return $parameter['result'];
     }
 
+    function insert_account_login_hash(&$parameter = array())
+    {
+        if (empty($parameter['option']['id']))
+        {
+            // Error Handling, account_id or listing_id not set
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Create New Login Failed. Id is mandatory.';
+            return false;
+        }
+        $entity_account_obj = new entity_account($parameter['option']['id']);
+        if (empty($entity_account_obj->id_group))
+        {
+            // Error Handling, category provided does not match database records
+            $parameter['status'] = 'INVALID_REQUEST';
+            $parameter['message'] = 'Account does not exist';
+            return false;
+        }
+
+        $account_row = end($entity_account_obj->row);
+        if ((empty($account_row['importID']) OR $account_row['importID'] != $this->api_id) AND $this->api_id != 10001)
+        {
+            $parameter['status'] = 'REQUEST_DENIED';
+            $parameter['message'] = 'Current API User does not have the permission to create login for this account';
+            return false;
+        }
+
+        $set_result = $entity_account_obj->set_login_hash();
+        if (empty($set_result))
+        {
+            $parameter['status'] = 'SERVER_ERROR';
+            $parameter['message'] = 'Database insert request failed, try again later';
+            return false;
+        }
+        $set_result = end($set_result);
+
+        $parameter['status'] = 'OK';
+        $parameter['message'] = 'Token generated.';
+        $parameter['result'] = $set_result;
+        return $parameter['result'];
+    }
+
     // Delete Functions
     function delete_account(&$parameter = array())
     {

@@ -100,7 +100,7 @@ clinic',
     if ($method == 'insert_account_with_business')
     {
         $post_value = [
-            'username'=>'allen24@top4.com.au',
+            'username'=>'allen25@top4.com.au',
             'first_name'=>'Alex',
             'last_name'=>'Sander',
             'company'=>'Alex Cleaning',
@@ -134,8 +134,8 @@ clinic',
             'long_description'=>'shailendra shrestha the man the legend, founder of Mr Shrestha Dental',
             'keywords'=>'dental
 clinic',
-            'cd_plan_name'=>'enterprise',
-            'cd_plan_period'=>'6',
+            'cd_plan_name'=>'basic',
+            'cd_plan_period'=>'12',
             'cd_plan_transaction_id'=>'TRANSACTEaaaHhcgLikxMC4pLSwzOko+MzZGNyyuM',
             'cd_plan_transaction_amount'=>'1099.99'
         ];
@@ -220,9 +220,9 @@ clinic',
     //$handler_uri = 'http://localhost/allen_frame_trial/json/'.$method;
     //$handler_uri = $my_uri.($_SERVER['QUERY_STRING']?'?'.$_SERVER['QUERY_STRING']:'').'&handler=true';
     //$handler_uri = 'https://api.top4.com.au/json/select_business_by_uri?uri=http://www.caroma.com.au';
-    $handler_uri = 'http://apidev.top4.com.au/json/'.$method;
+    //$handler_uri = 'http://apidev.top4.com.au/json/'.$method;
     //$handler_uri = 'https://api.top4.com.au/json/'.$method;
-    //$handler_uri = 'http://localhost/api_top4/json/'.$method;
+    $handler_uri = 'http://localhost/api_top4/json/'.$method;
     //$handler_uri = 'http://apiloc.top4.com.au/json/'.$method;
 
 

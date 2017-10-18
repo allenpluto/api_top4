@@ -170,6 +170,43 @@ class entity_account extends entity
         return $this->row;
     }
 
+    function set_login_hash($parameter = array())
+    {
+        if (!$this->_initialized)
+        {
+            $GLOBALS['global_message']->error = __FILE__.'(line '.__LINE__.'): '.get_class($this).' cannot perform update before it is initialized with get() or set() function';
+            return false;
+        }
+        if (empty($this->id_group))
+        {
+            $GLOBALS['global_message']->notice = __FILE__.'(line '.__LINE__.'): '.get_class($this).' cannot perform update with empty id_group';
+            return array();
+        }
+        $default_parameter = [
+            'table' => '`Account_Token`',
+            'primary_key' => 'id',
+            'table_fields' => [
+                'account_id'=>'account_id',
+                'token'=>'token',
+                'expire_time'=>'expire_time'
+            ],
+            'row' => []
+        ];
+        $parameter = array_merge($default_parameter,$parameter);
+        $datetime_tomorrow = new DateTime('NOW');
+        $datetime_tomorrow->modify('+1 hour');
+        foreach($this->id_group as $id_key=>$id)
+        {
+            $parameter['row'][] = [$id,sha1(openssl_random_pseudo_bytes(20)),$datetime_tomorrow->format('Y-m-d H:i:s')];
+        }
+        $result = parent::set($parameter);
+        if (empty($result))
+        {
+            return $result;
+        }
+        return $parameter['row'];
+    }
+
     function delete($parameter = array())
     {
         $entity_contact_obj = new entity_contact($this->id_group);
