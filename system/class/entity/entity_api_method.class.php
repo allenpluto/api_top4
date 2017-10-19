@@ -903,7 +903,6 @@ class entity_api_method extends entity
             $parameter['message'] = 'Database insert request failed, try again later';
             return false;
         }
-        $set_result = end($set_result);
 
         $parameter['status'] = 'OK';
         $parameter['message'] = 'Token generated.';

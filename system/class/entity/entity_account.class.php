@@ -204,7 +204,12 @@ class entity_account extends entity
         {
             return $result;
         }
-        return $parameter['row'];
+        $result_set = array_values($this->row);
+        foreach($result_set as $result_row_index=>&$result_row)
+        {
+            unset($result_row['id']);
+        }
+        return $result_set;
     }
 
     function delete($parameter = array())
