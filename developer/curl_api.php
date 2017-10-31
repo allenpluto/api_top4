@@ -221,8 +221,8 @@ clinic',
     //$handler_uri = $my_uri.($_SERVER['QUERY_STRING']?'?'.$_SERVER['QUERY_STRING']:'').'&handler=true';
     //$handler_uri = 'https://api.top4.com.au/json/select_business_by_uri?uri=http://www.caroma.com.au';
     //$handler_uri = 'http://apidev.top4.com.au/json/'.$method;
-    //$handler_uri = 'https://api.top4.com.au/json/'.$method;
-    $handler_uri = 'http://localhost/api_top4/json/'.$method;
+    $handler_uri = 'https://api.top4.com.au/json/'.$method;
+//    $handler_uri = 'http://localhost/api_top4/json/'.$method;
     //$handler_uri = 'http://apiloc.top4.com.au/json/'.$method;
 
 
@@ -231,12 +231,12 @@ clinic',
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
         //'Auth-Key: dbf5-6923-311e-367c-1a4b-14ed-aa00-f5ce'
-        'Auth-Key: 0650-2370-f1fa-24bf-019d-800f-a1b3-cf66'       // localhost - account:Top4 / dev - account:Top4
-        //'Auth-Key: 1380-8bae-313a-5f31-e507-abe9-4e9d-9350'       //api.top4.com.au - account:Crazy Domain
+//        'Auth-Key: 0650-2370-f1fa-24bf-019d-800f-a1b3-cf66'       // localhost - account:Top4 / dev - account:Top4
+        'Auth-Key: 1380-8bae-313a-5f31-e507-abe9-4e9d-9350'       //api.top4.com.au - account:Crazy Domain
         //'Auth-Key: e1c8-dce3-e711-8b91-ee27-a0eb-5ff9-da33'
         //'Auth-Key: 3f47-59c9-ea71-766b-a24e-1be8-9022-8985'
 //        'Auth-Key: 0814-3ec7-e441-5c51-7a7e-bf9e-7f93-7831'
-//        'Auth-Key: 8e36-a30d-f13f-2cff-8761-3ff6-0ba4-880f'       //api.top4.com.au - account:Top4
+        //'Auth-Key: 8e36-a30d-f13f-2cff-8761-3ff6-0ba4-880f'       //api.top4.com.au - account:Top4
         //'Auth-Key: 0650-2370-f1fa-24bf-019d-800f-a1b3-cf66'
     ));
     curl_setopt($ch,CURLOPT_POST, count($post_value));

@@ -2378,7 +2378,7 @@ class entity_api_method extends entity
         }
         if (isset($parameter['option']['page_number']))
         {
-            $entity_account_param['offset'] = intval($parameter['option']['page_number']);
+            $entity_account_param['offset'] = intval($parameter['option']['page_number'])*$entity_account_param['limit'];
             if ($entity_account_param['offset'] < 0) $entity_account_param['offset'] = 0;
         }
         else
@@ -2438,7 +2438,7 @@ class entity_api_method extends entity
         }
         if (isset($parameter['option']['page_number']))
         {
-            $entity_listing_param['offset'] = intval($parameter['option']['page_number']);
+            $entity_listing_param['offset'] = intval($parameter['option']['page_number'])*$entity_listing_param['limit'];
             if ($entity_listing_param['offset'] < 0) $entity_listing_param['offset'] = 0;
         }
         else
