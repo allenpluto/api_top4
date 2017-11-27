@@ -320,7 +320,7 @@ class entity_api_method extends entity
         $set_listing_row['thumb_id'] = 0;
         $set_listing_row['image_id'] = 0;
         $set_listing_row['banner_id'] = 0;
-        $set_listing_row['category'] = implode($entity_category_obj->id_group);
+        $set_listing_row['category'] = implode(',',$entity_category_obj->id_group);
 
         $entity_postcode_suburb_obj = new entity_postcode_suburb();
         $location_data = $entity_postcode_suburb_obj->get_location_from_geo(['latitude'=>$parameter['option']['latitude'],'longitude'=>$parameter['option']['longitude']]);
@@ -827,7 +827,7 @@ class entity_api_method extends entity
         {
             $set_listing_row['banner_id'] = 0;
         }
-        $set_listing_row['category'] = implode($entity_category_obj->id_group);
+        $set_listing_row['category'] = implode(',',$entity_category_obj->id_group);
 
         if (!empty($location_data))
         {
@@ -1491,7 +1491,7 @@ class entity_api_method extends entity
                 $parameter['message'] = 'Category does not exist or in wrong format';
                 return false;
             }
-            $set_listing_row['category'] = implode($entity_category_obj->id_group);
+            $set_listing_row['category'] = implode(',',$entity_category_obj->id_group);
         }
 
         if (empty($parameter['option']['updated']))
@@ -2054,7 +2054,7 @@ class entity_api_method extends entity
                 $parameter['message'] = 'Category does not exist or in wrong format';
                 return false;
             }
-            $set_listing_row['category'] = implode($entity_category_obj->id_group);
+            $set_listing_row['category'] = implode(',',$entity_category_obj->id_group);
         }
         if (!empty($location_data))
         {

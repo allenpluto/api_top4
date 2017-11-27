@@ -12,7 +12,8 @@ class entity_listing extends entity
                 'table'=>'Listing_Category',
                 'primary_key'=>['listing_id','category_id'],
                 'source_id_field'=>'listing_id',
-                'target_id_field'=>'category_id'
+                'target_id_field'=>'category_id',
+                'order'=>'id'
             ],
         ]
     );
