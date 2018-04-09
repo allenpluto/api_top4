@@ -246,14 +246,15 @@ class entity_listing extends entity
             if (isset($set_listing_row['cd_plan_name']))
             {
                 $set_listing_parameter['fields'][] = 'level';
-                if ($set_listing_row['cd_plan_name'] == 'basic')
-                {
-                    $set_listing_row['level'] = 10;
-                }
-                else
-                {
-                    $set_listing_row['level'] = 70;
-                }
+//                if ($set_listing_row['cd_plan_name'] == 'basic')
+//                {
+//                    $set_listing_row['level'] = 10;
+//                }
+//                else
+//                {
+//                    $set_listing_row['level'] = 70;
+//                }
+                $set_listing_row['level'] = 70;
             }
 
             $set_listing_parameter['row'][] = $set_listing_row;
@@ -566,14 +567,15 @@ class entity_listing extends entity
         if (isset($value['fax'])) {$value['fax'] = $this->format->phone_remove_format($value['fax']);}
         if (isset($value['cd_plan_name']))
         {
-            if ($value['cd_plan_name'] == 'basic')
-            {
-                $value['level'] = 10;
-            }
-            else
-            {
-                $value['level'] = 70;
-            }
+//            if ($value['cd_plan_name'] == 'basic')
+//            {
+//                $value['level'] = 10;
+//            }
+//            else
+//            {
+//                $value['level'] = 70;
+//            }
+            $value['level'] = 70;
         }
         return parent::update($value, $parameter);
 
