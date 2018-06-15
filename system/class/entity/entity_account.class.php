@@ -145,7 +145,7 @@ class entity_account extends entity
                         }
                         else
                         {
-                            $row['nickname'] = $row['first_name'].' '. $row['last_name'];
+                            $row['nickname'] = $row['first_name'];
                             $row['friendly_url'] = $row['first_name'].' '.$row['last_name'].' '.$row['friendly_url'];
                         }
                         $row['friendly_url'] = $this->format->file_name($row['friendly_url']);
